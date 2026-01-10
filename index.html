@@ -56,6 +56,16 @@
               0 0 5px rgba(16, 185, 129, 0.2),
               inset 0 0 20px rgba(0, 0, 0, 0.5),
               2px 4px 10px rgba(0,0,0,0.8);
+      }
+      .retro-terminal-background {
+        background-color: rgba(13, 42, 26, 0.85);
+        background-image:
+            linear-gradient(rgba(0, 255, 0, 0.05) 1px, transparent 1px);
+        background-size: 100% 2px;
+        box-shadow: 0 0 10px #0d2a1a, inset 0 0 10px #0d2a1a;
+              0 0 5px rgba(16, 185, 129, 0.2),
+              inset 0 0 20px rgba(0, 0, 0, 0.5),
+              2px 4px 10px rgba(0,0,0,0.8);
           position: relative;
           backdrop-filter: blur(4px);
       }
@@ -125,6 +135,7 @@
         transform-origin: 50% 100%;
         animation: crawl-anim 200s linear infinite;
         transform: rotateX(25deg);
+        text-shadow: 0 0 5px #000, 0 0 10px #000, 0 0 15px #000;
       }
 
       @keyframes crawl-anim {
