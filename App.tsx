@@ -2167,7 +2167,7 @@ export default function App() {
       if (modal.type === 'none') {
           if (!priorityAcknowledged) {
               return (
-                  <div className="flex flex-col h-full bg-slate-900/80 p-8 space-y-6 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="flex flex-col h-full bg-transparent p-8 space-y-6 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-4 duration-500">
                       <div className="flex justify-between items-start border-b border-cyan-900 pb-4">
                         <h2 className="text-4xl font-scifi text-cyan-400 tracking-tighter">Things to do First</h2>
                         <span className="text-[10px] text-cyan-800 font-mono uppercase mt-2">Directive: 098-ALPHA</span>
@@ -3155,7 +3155,7 @@ export default function App() {
   };
 
   return (
-    <div className="app-viewport flex flex-col p-2 md:p-4 space-y-4 no-scrollbar custom-scrollbar overflow-y-auto">
+    <div className="app-viewport flex flex-col p-2 md:p-4 space-y-4 no-scrollbar custom-scrollbar overflow-y-auto bg-transparent">
        
        {modal.type !== 'welcome' && (
          <>
@@ -3244,7 +3244,9 @@ export default function App() {
               </div>
            </div>
 
-           <div className="card sci-fi-box rounded-b-xl rounded-t-none p-0 flex-grow flex flex-col bg-transparent overflow-hidden min-h-0 border-t-2 border-t-blue-500/30">
+           <div className={`card sci-fi-box rounded-b-xl rounded-t-none p-0 flex-grow flex flex-col bg-transparent overflow-hidden min-h-0 border-t-2 border-t-blue-500/30 ${
+               modal.type === 'none' ? 'retro-terminal-background' : ''
+             }`}>
               {renderTerminalContent()}
            </div>
          </>
