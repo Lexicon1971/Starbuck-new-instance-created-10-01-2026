@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS TRADE EMPIRE 5
- * VERSION: v10.2.6 Jackpot
+ * VERSION: v10.2.7 RETROSPEAK
  * ============================================================================
  * 
  * FEATURE MANIFEST / INTEGRITY CHECKLIST:
@@ -339,35 +339,48 @@ class SpeechSynthesisQueue {
     private speaking: boolean = false;
 
     constructor() {
-        // Ensure voices are loaded
         window.speechSynthesis.getVoices();
     }
 
     add(utterance: SpeechSynthesisUtterance) {
         this.queue.push(utterance);
-        this.processQueue();
+        if (!this.speaking) {
+            this.processQueue();
+        }
     }
 
     private processQueue() {
-        if (this.speaking || this.queue.length === 0) {
+        if (this.queue.length === 0) {
+            if (this.speaking) {
+                this.setSpeaking(false);
+            }
             return;
         }
 
-        this.speaking = true;
+        if (!this.speaking) {
+            this.setSpeaking(true);
+        }
+
         const utterance = this.queue.shift()!;
 
         utterance.onend = () => {
-            this.speaking = false;
             this.processQueue();
         };
 
         window.speechSynthesis.speak(utterance);
     }
 
+    private setSpeaking(isSpeaking: boolean) {
+        this.speaking = isSpeaking;
+        window.dispatchEvent(new CustomEvent('speech-state-change', { detail: { speaking: isSpeaking } }));
+    }
+
     cancel() {
         window.speechSynthesis.cancel();
         this.queue = [];
-        this.speaking = false;
+        if (this.speaking) {
+            this.setSpeaking(false);
+        }
     }
 }
 
@@ -561,7 +574,21 @@ export default function App() {
   const [state, setState] = useState<GameState | null>(null);
   const [modal, setModal] = useState<{ type: string, data: any, color?: string }>({ type: 'none', data: null });
   const [isMuted, setIsMuted] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const commsContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleSpeechStateChange = (event: Event) => {
+        const customEvent = event as CustomEvent<{ speaking: boolean }>;
+        setIsSpeaking(customEvent.detail.speaking);
+    };
+
+    window.addEventListener('speech-state-change', handleSpeechStateChange);
+
+    return () => {
+        window.removeEventListener('speech-state-change', handleSpeechStateChange);
+    };
+  }, []);
   const [hasSave, setHasSave] = useState(false);
   
   // -- STATE: INPUTS & UI -----------------------------------------------------
@@ -793,6 +820,13 @@ export default function App() {
   
   useEffect(() => { runTutorialCheck(); }, [state?.day, modal.type]);
 
+  useEffect(() => {
+    if (state && !state.tutorialFlags['welcome_message']) {
+        speakRetro("Welcome Captain.");
+        setState(prev => prev ? ({...prev, tutorialFlags: {...prev.tutorialFlags, welcome_message: true}}) : null);
+    }
+  }, [state]);
+
   // -- LOGIC: PERSISTENCE & TUTORIAL ------------------------------------------
 
   const saveAndExit = (e?: React.MouseEvent) => {
@@ -830,17 +864,13 @@ export default function App() {
      if (!state) return;
      
      if (state.day === 5 && !state.tutorialFlags['day5_save_msg'] && modal.type === 'none') {
-         setTimeout(() => {
-             setState(prev => prev ? ({...prev, tutorialFlags: {...prev.tutorialFlags, day5_save_msg: true}}) : null);
-             setModal({type:'message', data: "Captain, we have added an option to save and continue your progress. Select the Save icon in the HUD.", color: 'text-yellow-400'});
-         }, 1000);
+        setState(prev => prev ? ({...prev, tutorialFlags: {...prev.tutorialFlags, day5_save_msg: true}}) : null);
+        speakRetro("Captain, we have added an option to save and continue your progress. Select the Save icon in the HUD.");
      }
      if (!state.tutorialActive) return;
      if (state.day === 2 && !state.tutorialFlags['day2_mining'] && modal.type === 'none') {
-         setTimeout(() => {
-             setState(prev => prev ? ({...prev, tutorialFlags: {...prev.tutorialFlags, day2_mining: true}}) : null);
-             setModal({type:'message', data: `Reminder: Free resources are floating in space! Buy a Mining Laser (Upgrades Deck) and enable 'Mining Run' in C.A.T. Station. Mine, mine, mine!`, color: 'text-yellow-400'});
-         }, 1000);
+        setState(prev => prev ? ({...prev, tutorialFlags: {...prev.tutorialFlags, day2_mining: true}}) : null);
+        speakRetro(`Reminder: Free resources are floating in space! Buy a Mining Laser (Upgrades Deck) and enable 'Mining Run' in C.A.T. Station. Mine, mine, mine!`);
      }
   };
 
@@ -1707,7 +1737,7 @@ export default function App() {
                      s.stats.largestSingleWin = Math.max(s.stats.largestSingleWin, c.reward);
                      const fulfillmentMsg = `CONTRACT FULFILLED: ${c.firm} received shipment at ${VENUES[c.destinationIndex]}. Reward: ${formatCurrencyLog(c.reward)}`;
                      report.events.push(fulfillmentMsg);
-                     speakRetro(`The contract for ${c.firm} consignment of ${c.commodity} has been shipped to ${VENUES[c.destinationIndex]} for fulfilment, expect to be paid any day now.`);
+                     speakRetro(`The contract for ${c.firm} consignment of ${c.commodity} has arrived at ${VENUES[c.destinationIndex]} the contact has been successfully completed.`);
                      c.status = 'completed';
                      c.dayCompleted = s.day;
                      if (item.quantity <= 0) consumed = true;
@@ -1745,7 +1775,9 @@ export default function App() {
             if (c.daysRemaining <= 0) {
                 s.cash -= c.penalty;
                 s.venueTradeBans[c.destinationIndex] = TRADE_BAN_DURATION;
-                report.events.push(`BREACH OF CONTRACT: ${c.firm} order failed. Penalty: ${formatCurrencyLog(c.penalty)} & P.I.G.S. trade restriction (3 days).`);
+                const message = `Unfortunately, the contract for ${c.firm} consignment of ${c.commodity} failed. You have been fined ${formatCurrencyLog(c.penalty)} and are banned from trading at ${VENUES[c.destinationIndex]} for 3 days.`;
+                report.events.push(message);
+                speakRetro(message);
                 c.status = 'failed';
                 c.dayCompleted = s.day;
             } else if (c.daysRemaining === 1) {
@@ -2024,9 +2056,9 @@ export default function App() {
       }
   };
 
-  const showCommodityIntel = (name: string) => {
+  const showCommodityIntel = (name: string, source: 'market' | 'storage' = 'market', venueIndex?: number) => {
       if (!state) return;
-      setModal({ type: 'commodity_intel', data: { name } });
+      setModal({ type: 'commodity_intel', data: { name, source, venueIndex } });
       SFX.play('click');
   };
 
@@ -2180,14 +2212,7 @@ export default function App() {
 
   const forwardWarehouseItem = (vIdx: number, name: string) => {
       if (!state) return;
-      setLogisticsTab('shipping');
-      setShippingSource({ [name]: { type: 'warehouse', venueIdx: vIdx } });
-      const whItem = state.warehouse[vIdx]?.[name];
-      if (whItem) {
-          setShippingQuantities({ [name]: whItem.quantity.toString() });
-      }
-      setHighlightShippingItem(name);
-      SFX.play('click');
+      showCommodityIntel(name, 'storage', vIdx);
   };
 
   const setMaxBuy = (c: Commodity, mItem: any) => {
@@ -2269,7 +2294,7 @@ export default function App() {
                          ))}
                      </div>
                  </div>
-                 <button onClick={() => { setModal({type:'none', data:null}); SFX.play('click'); window.speechSynthesis.cancel(); }} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-5 rounded-2xl text-2xl shadow-xl action-btn uppercase">Proceed to Operations</button>
+                 <button onClick={() => { setModal({type:'none', data:null}); SFX.play('click'); window.speechSynthesis.cancel(); }} className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-5 rounded-2xl text-2xl shadow-xl action-btn uppercase ${isSpeaking ? 'opacity-50 cursor-not-allowed' : ''}`} disabled={isSpeaking}>Proceed to Operations</button>
             </div>
         );
       }
@@ -2306,7 +2331,7 @@ export default function App() {
       }
 
       if (modal.type === 'commodity_intel') {
-        const name = modal.data.name;
+        const { name, source, venueIndex } = modal.data;
         const c = COMMODITIES.find(x=>x.name === name)!;
 
         let minPrice = Infinity;
@@ -2374,13 +2399,33 @@ export default function App() {
                                         {isBestSell && <span className="bg-red-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded">BEST SELL</span>}
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        <button onClick={() => {
-                                            setShippingDestinations({ ...shippingDestinations, [name]: i.toString() });
-                                            setLogisticsTab('shipping');
-                                            setModal({ type: 'shipping', data: null });
-                                            setHighlightShippingItem(name);
-                                            SFX.play('click');
-                                        }} className="text-[10px] bg-cyan-900 hover:bg-cyan-800 border border-cyan-500 text-cyan-300 px-2 py-1 rounded font-black shrink-0">SET DESTINATION</button>
+                                        {source === 'storage' && venueIndex === i ? (
+                                            <button
+                                                onClick={() => {
+                                                    const whItem = state.warehouse[venueIndex!]?.[name];
+                                                    if (whItem) {
+                                                        sellWarehouseItem(venueIndex!, name, whItem.quantity);
+                                                    }
+                                                    setModal({type: 'none', data: null});
+                                                }}
+                                                className="text-[10px] bg-red-600 hover:bg-red-500 border border-red-400 text-white px-2 py-1 rounded font-black shrink-0"
+                                            >
+                                                SELL
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => {
+                                                    setShippingDestinations({ ...shippingDestinations, [name]: i.toString() });
+                                                    setLogisticsTab('shipping');
+                                                    setModal({ type: 'shipping', data: null });
+                                                    setHighlightShippingItem(name);
+                                                    SFX.play('click');
+                                                }}
+                                                className="text-[10px] bg-cyan-900 hover:bg-cyan-800 border border-cyan-500 text-cyan-300 px-2 py-1 rounded font-black shrink-0"
+                                            >
+                                                SET DESTINATION
+                                            </button>
+                                        )}
                                         <span className="text-xs text-gray-500 font-mono">Stock: <span className="text-white">{stock}</span></span>
                                         <div className={priceColorClass}><PriceDisplay value={price} size="text-md" compact /></div>
                                     </div>
@@ -2688,35 +2733,23 @@ export default function App() {
                    <div className="flex-grow flex justify-center"><PriceDisplay value={state.cash} size="text-2xl" colored /></div>
                    <span className="text-xs text-gray-500 font-mono">MODULE: SHIP_REPAIR_v5.8.0</span>
                 </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
-                   <div className="bg-slate-800/80 p-4 rounded-xl border border-lime-700/50 shadow-lg">
-                      <h3 className="text-lime-400 font-bold mb-4 flex items-center text-lg"><Wrench size={20} className="mr-2"/> Dockyard Repairs</h3>
-                      <div className="space-y-4">
-                          <div className="flex justify-between items-center bg-black/30 p-3 rounded-lg border border-white/5">
-                             <span className="text-gray-300">Hull Integrity ({state.shipHealth}%)</span>
-                             <button onClick={()=>performRepair('full_hull')} className={`px-4 py-2 rounded-lg text-white text-xs font-bold transition-all ${state.shipHealth >= MAX_REPAIR_HEALTH ? 'bg-green-700/50 cursor-default' : 'bg-red-700 hover:bg-red-600 shadow-md border-b-4 border-red-900'}`}>{state.shipHealth >= MAX_REPAIR_HEALTH ? 'NOMINAL' : `Repair MAX (${formatCompactNumber(calculateFullRepairCost())})`}</button>
-                          </div>
-                          <div className="flex justify-between items-center bg-black/30 p-3 rounded-lg border border-white/5">
-                             <span className="text-gray-300">Laser Realignment ({state.laserHealth}%)</span>
-                             <button onClick={()=>performRepair('full_laser')} disabled={!hasLaser(state)} className={`px-4 py-2 rounded-lg text-white text-xs font-bold transition-all ${state.laserHealth >= 100 ? 'bg-green-700/50 cursor-default' : 'bg-red-700 hover:bg-red-600 shadow-md disabled:opacity-20 border-b-4 border-red-900'}`}>
-                                {state.laserHealth >= 100 ? 'NOMINAL' : `Repair MAX (${formatCompactNumber(calculateFullLaserRepairCost())})`}
-                            </button>
-                          </div>
-                          {state.warrantLevel > 0 && (
-                            <div className="flex justify-between items-center bg-red-900/30 p-3 rounded-lg border border-red-500/30 animate-pulse">
-                                <span className="text-red-400 font-bold flex items-center"><Skull size={14} className="mr-1"/> Warrant Bounty</span>
-                                <button onClick={() => {
-                                    const fee = state.warrantLevel * 25000;
-                                    if (state.cash < fee) return setModal({type:'message', data: `Insufficient funds to clear bounty. Need ${formatCurrencyLog(fee)}.`});
-                                    setState(prev => prev ? ({ ...prev, cash: prev.cash - fee, warrantLevel: 0 }) : null);
-                                    SFX.play('success');
-                                    log(`LEGAL: Warrants cleared via high-level bribe.`, 'profit');
-                                }} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded font-black text-[10px] shadow-md uppercase">Clear: {formatCompactNumber(state.warrantLevel * 25000)}</button>
-                            </div>
-                          )}
-                      </div>
-                   </div>
+                <div className="bg-slate-800/80 p-4 rounded-xl border border-lime-700/50 shadow-lg mb-4">
+                    <h3 className="text-lime-400 font-bold mb-4 flex items-center text-lg"><Wrench size={20} className="mr-2"/> Dockyard Repairs</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex justify-between items-center bg-black/30 p-3 rounded-lg border border-white/5">
+                           <span className="text-gray-300">Hull Integrity ({state.shipHealth}%)</span>
+                           <button onClick={()=>performRepair('full_hull')} className={`px-4 py-2 rounded-lg text-white text-xs font-bold transition-all ${state.shipHealth >= MAX_REPAIR_HEALTH ? 'bg-green-700/50 cursor-default' : 'bg-red-700 hover:bg-red-600 shadow-md border-b-4 border-red-900'}`}>{state.shipHealth >= MAX_REPAIR_HEALTH ? 'NOMINAL' : `Repair MAX (${formatCompactNumber(calculateFullRepairCost())})`}</button>
+                        </div>
+                        <div className="flex justify-between items-center bg-black/30 p-3 rounded-lg border border-white/5">
+                           <span className="text-gray-300">Laser Realignment ({state.laserHealth}%)</span>
+                           <button onClick={()=>performRepair('full_laser')} disabled={!hasLaser(state)} className={`px-4 py-2 rounded-lg text-white text-xs font-bold transition-all ${state.laserHealth >= 100 ? 'bg-green-700/50 cursor-default' : 'bg-red-700 hover:bg-red-600 shadow-md disabled:opacity-20 border-b-4 border-red-900'}`}>
+                              {state.laserHealth >= 100 ? 'NOMINAL' : `Repair MAX (${formatCompactNumber(calculateFullLaserRepairCost())})`}
+                          </button>
+                        </div>
+                    </div>
+                </div>
 
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
                    <div className="bg-slate-800/80 p-4 rounded-xl border border-blue-700/50 shadow-lg">
                       <div className="flex justify-between items-start mb-4">
                           <div className="text-white font-bold text-lg flex items-center"><Box size={20} className="mr-2 text-blue-400"/>Cargo Expansion</div>
@@ -2764,8 +2797,7 @@ export default function App() {
                       </div>
                    </div>
 
-                   {(hasScanner2(state) || hasScanner3(state)) && (
-                    <div className="bg-slate-800/80 p-4 rounded-xl border border-cyan-700/50 shadow-lg mb-8">
+                   <div className="bg-slate-800/80 p-4 rounded-xl border border-cyan-700/50 shadow-lg">
                       <h3 className="text-cyan-400 font-bold mb-4 flex items-center text-lg"><Radar size={20} className="mr-2"/> Scanner Intel</h3>
                       <div className="flex justify-between items-center bg-black/30 p-3 rounded-lg border border-white/5 mb-4">
                         <span className="text-gray-300">Consecutive Days Used:</span>
@@ -2786,7 +2818,7 @@ export default function App() {
                             }
                           }}
                           disabled={!hasScanner2(state) || state.gamePhase < 2 || !!state.fixedCommodity}
-                          className="bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-700 text-white font-bold py-3 rounded-lg text-xs transition-all shadow-md border-b-4 border-cyan-900 action-btn"
+                          className="bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg text-xs transition-all shadow-md border-b-4 border-cyan-900 action-btn"
                         >
                           {state.fixedCommodity ? `Price Fixed: ${state.fixedCommodity.name}` : 'Fix Commodity Price (Lvl 2)'}
                         </button>
@@ -2799,14 +2831,13 @@ export default function App() {
                             }
                           }}
                           disabled={!hasScanner3(state) || state.gamePhase < 3 || !!state.boostedCommodity}
-                          className="bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-700 text-white font-bold py-3 rounded-lg text-xs transition-all shadow-md border-b-4 border-cyan-900 action-btn"
+                          className="bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg text-xs transition-all shadow-md border-b-4 border-cyan-900 action-btn"
                         >
                           {state.boostedCommodity ? `Range Boosted: ${state.boostedCommodity.name}` : 'Boost Price Range (Lvl 3)'}
                         </button>
                       </div>
                       <p className="text-[9px] text-gray-500 text-center mt-4 italic uppercase">Level 2 requires Phase 2. Level 3 requires Phase 3.</p>
-                    </div>
-                   )}
+                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -2847,7 +2878,7 @@ export default function App() {
                                             <div className="text-xs text-gray-500 mb-4">{nextUpgradeItem.description}</div>
                                             <button 
                                                 onClick={() => buyEquipment(nextUpgradeItem)}
-                                                disabled={state.cash < (nextUpgradeItem.cost * (nextUpgradeItem.type === 'defense' ? state.gamePhase : 1))}
+                                        disabled={state.cash < (nextUpgradeItem.cost * (nextUpgradeItem.type === 'defense' ? state.gamePhase : 1)) || (nextUpgradeItem.id === 'scanner_mk2' && state.gamePhase < 2) || (nextUpgradeItem.id === 'scanner_mk3' && state.gamePhase < 3)}
                                                 className="w-full bg-purple-600 hover:bg-purple-500 disabled:bg-slate-700 text-white font-bold py-2 rounded-lg text-xs transition-all shadow-md border-b-4 border-purple-900 action-btn"
                                             >
                                                 INITIATE UPGRADE
@@ -3554,6 +3585,12 @@ export default function App() {
                  <StatusDial value={Math.round(state.shipHealth)} max={150} icon={Heart} color="text-green-500" label="Hull" isPercent />
                  <StatusDial value={(state.cargo[FUEL_NAME]?.quantity||0)} max={200} icon={Fuel} color="text-blue-500" label="Fuel" />
                  <StatusDial value={hasLaser(state) ? Math.round(state.laserHealth || 0) : 0} max={100} icon={Crosshair} color={hasLaser(state)?'text-red-500':'text-gray-600'} label={hasLaser(state)?'Laser':'Off'} isPercent />
+                 <div className="flex flex-col items-center">
+                    <div className={`text-sm font-bold ${state.cargoWeight > state.cargoCapacity ? 'text-red-500' : 'text-green-500'}`}>
+                        {state.cargoWeight > state.cargoCapacity ? 'Overloaded' : 'Within Limits'}
+                    </div>
+                    <div className="text-xs">Cargo</div>
+                 </div>
               </div>
            </header>
 
@@ -3737,19 +3774,22 @@ export default function App() {
                                           const prices = state.markets.map(m => m[c.name].price);
                                           setState(prev => prev ? ({
                                               ...prev,
-                                              fixedCommodity: { name: c.name, venuePrices: prices },
+                                              fixedCommodity: { name: c.name, venuePrices: prices, daySet: prev.day },
                                               scannerLastUsedDay: prev.day,
                                               scannerConsecutiveDays: (prev.scannerLastUsedDay === prev.day - 1) ? (prev.scannerConsecutiveDays || 0) + 1 : 1
                                           }) : null);
                                           log(`SCANNER: Price of ${c.name} fixed for next day.`, 'info');
                                       } else {
+                                        const boost = 1.15 + Math.random() * 0.15;
+                                        const currentMin = state.commodityPriceOverrides?.[c.name]?.min || c.minPrice;
                                         const currentMax = state.commodityPriceOverrides?.[c.name]?.max || c.maxPrice;
-                                        const newMax = currentMax * (1.11 + Math.random() * 0.11);
+                                        const newMin = currentMin * boost;
+                                        const newMax = currentMax * boost;
                                           setState(prev => prev ? ({
                                               ...prev,
                                               commodityPriceOverrides: {
                                                 ...prev.commodityPriceOverrides,
-                                                [c.name]: { ...prev.commodityPriceOverrides?.[c.name], max: newMax }
+                                                [c.name]: { min: newMin, max: newMax }
                                               },
                                               boostedCommodity: { name: c.name, boostedDay: prev.day },
                                               scannerLastUsedDay: prev.day,
