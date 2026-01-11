@@ -74,7 +74,7 @@ export interface Contract {
 
 export interface LogEntry {
   id: number;
-  message: string; // May contain (C) marker for coin
+  message: string; // May contain $B marker for coin
   type: 'info' | 'buy' | 'sell' | 'danger' | 'jump' | 'repair' | 'contract' | 'mining' | 'investment' | 'profit' | 'maintenance' | 'phase' | 'critical' | 'breach' | 'debt' | 'overdraft' | 'surrender' | 'combat_win' | 'combat_loss' | 'defense_win' | 'defense_loss' | 'evasion';
 }
 
@@ -165,6 +165,35 @@ export interface GameState {
   isMutinyActive?: boolean; // Locks F.O.M.O. and Upgrades decks
   
   pendingTrade?: PendingTrade; // For tax confirmation
+
+  // Scanner enhancements
+  scannerLastUsedDay?: number;
+  scannerConsecutiveDays?: number;
+  fixedCommodity?: {
+    name: string;
+    venuePrices: number[];
+  };
+  boostedCommodity?: {
+    name: string;
+    boostedDay: number;
+  };
+
+  commodityPriceOverrides?: {
+    [key: string]: {
+      min?: number;
+      max?: number;
+    };
+  }
+  stocks?: Stock[];
+  jackpot?: number;
+  hasTradedStocksToday?: boolean;
+}
+
+export interface Stock {
+  name: string;
+  price: number;
+  quantity: number;
+  risk: 'low' | 'medium' | 'high';
 }
 
 // Fix: Updated Encounter type union to include 'fuel_breach' and 'cargo_tax' instead of 'fuel_leak' and 'tax'
