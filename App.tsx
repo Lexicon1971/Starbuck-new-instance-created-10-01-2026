@@ -334,23 +334,59 @@ class SoundEngine {
 const SFX = new SoundEngine();
 
 // -- RETRO SYNTH VOICE ENGINE --
+class SpeechSynthesisQueue {
+    private queue: SpeechSynthesisUtterance[] = [];
+    private speaking: boolean = false;
+
+    constructor() {
+        // Ensure voices are loaded
+        window.speechSynthesis.getVoices();
+    }
+
+    add(utterance: SpeechSynthesisUtterance) {
+        this.queue.push(utterance);
+        this.processQueue();
+    }
+
+    private processQueue() {
+        if (this.speaking || this.queue.length === 0) {
+            return;
+        }
+
+        this.speaking = true;
+        const utterance = this.queue.shift()!;
+
+        utterance.onend = () => {
+            this.speaking = false;
+            this.processQueue();
+        };
+
+        window.speechSynthesis.speak(utterance);
+    }
+
+    cancel() {
+        window.speechSynthesis.cancel();
+        this.queue = [];
+        this.speaking = false;
+    }
+}
+
+const speechQueue = new SpeechSynthesisQueue();
+
 const speakRetro = (text: string) => {
     if (SFX.isMuted) return;
-    window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.pitch = 0.5;
     utterance.rate = 0.9;
     utterance.volume = 0.8;
-    // Attempt to pick a robotic sounding voice if available
     const voices = window.speechSynthesis.getVoices();
     const roboticVoice = voices.find(v => v.name.toLowerCase().includes('google uk english male') || v.name.toLowerCase().includes('robot'));
     if (roboticVoice) utterance.voice = roboticVoice;
-    window.speechSynthesis.speak(utterance);
+    speechQueue.add(utterance);
 };
 
 const speakPanicked = (text: string) => {
     if (SFX.isMuted) return;
-    window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.pitch = 1.5;
     utterance.rate = 1.2;
@@ -358,7 +394,7 @@ const speakPanicked = (text: string) => {
     const voices = window.speechSynthesis.getVoices();
     const roboticVoice = voices.find(v => v.name.toLowerCase().includes('google uk english male') || v.name.toLowerCase().includes('robot'));
     if (roboticVoice) utterance.voice = roboticVoice;
-    window.speechSynthesis.speak(utterance);
+    speechQueue.add(utterance);
 };
 
 // --- BLOCK 2: UTILITIES & FORMATTERS -----------------------------------------
@@ -1594,8 +1630,9 @@ export default function App() {
                      item.quantity -= c.quantity;
                      s.cash += c.reward;
                      s.stats.largestSingleWin = Math.max(s.stats.largestSingleWin, c.reward);
-                     report.events.push(`CONTRACT FULFILLED: ${c.firm} received shipment at ${VENUES[c.destinationIndex]}. Reward: ${formatCurrencyLog(c.reward)}`);
-                      speakRetro("Contract Fulfilled Master");
+                     const fulfillmentMsg = `CONTRACT FULFILLED: ${c.firm} received shipment at ${VENUES[c.destinationIndex]}. Reward: ${formatCurrencyLog(c.reward)}`;
+                     report.events.push(fulfillmentMsg);
+                     speakRetro("Contract Fulfilled Master");
                      c.status = 'completed';
                      c.dayCompleted = s.day;
                      if (item.quantity <= 0) consumed = true;
@@ -1792,8 +1829,9 @@ export default function App() {
               activeContracts: newActive,
               stats: { ...prev.stats, largestSingleWin: Math.max(prev.stats.largestSingleWin, c.reward) }
           }) : null);
-          log(`CONTRACT: Manual fulfillment of ${c.firm} contract. Reward: ${formatCurrencyLog(c.reward)}`, 'profit');
-           speakRetro("Contract Fulfilled Master");
+          const fulfillmentMsg = `CONTRACT: Manual fulfillment of ${c.firm} contract. Reward: ${formatCurrencyLog(c.reward)}`;
+          log(fulfillmentMsg, 'profit');
+          speakRetro("Contract Fulfilled Master");
       }
   };
 
@@ -2042,7 +2080,7 @@ export default function App() {
                          ))}
                      </div>
                  </div>
-                 <button onClick={() => { setModal({type:'none', data:null}); SFX.play('click'); window.speechSynthesis.cancel(); }} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-5 rounded-2xl text-2xl shadow-xl action-btn uppercase">Proceed to Operations</button>
+                 <button onClick={() => { setModal({type:'none', data:null}); SFX.play('click'); }} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-5 rounded-2xl text-2xl shadow-xl action-btn uppercase">Proceed to Operations</button>
             </div>
         );
       }
