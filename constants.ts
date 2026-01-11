@@ -9,7 +9,7 @@ export const CARGO_UPGRADE_COST = 2000;
 
 export const TONS_UNIT = 'T';
 export const CURRENCY_UNIT = '$B'; // Internal logic ref
-export const COIN_MARKER = '(C)'; // Marker for replacing with Icon
+export const COIN_MARKER = '$B'; // Marker for replacing with Icon
 export const FUEL_NAME = 'Spice Fuel';
 export const NUTRI_PASTE_NAME = 'Nutri-Paste';
 export const H2O_NAME = 'H2O';
@@ -205,6 +205,8 @@ export const SHOP_ITEMS: EquipmentItem[] = [
   { id: 'laser_mk2', name: 'Mining Laser Mk II', type: 'laser', level: 2, cost: 50000, description: 'Mines Ore + Antimatter. High yield extraction.', owned: false },
   { id: 'laser_mk3', name: 'Mining Laser Mk III', type: 'laser', level: 3, cost: 500000, description: 'Mines Ore, Anti, Dark Matter. Galactic standard.', owned: false },
   { id: 'scanner', name: 'Market Scanner Mk I', type: 'scanner', level: 1, cost: 10000, description: 'Auto-detect volatility on market boards.', owned: false },
+  { id: 'scanner_mk2', name: 'Market Scanner Mk II', type: 'scanner', level: 2, cost: 1000000, description: 'Allows fixing one commodity\'s price for the next day.', owned: false },
+  { id: 'scanner_mk3', name: 'Market Scanner Mk III', type: 'scanner', level: 3, cost: 10000000, description: 'Allows forcing a 10% increase in one commodity\'s max price range.', owned: false },
   { id: 'plasma_cannon_mk1', name: 'Plasma Cannons Mk I', type: 'defense', level: 1, cost: 15000, description: 'Basic pirate deterrent.', owned: false },
   { id: 'plasma_cannon_mk2', name: 'Plasma Cannons Mk II', type: 'defense', level: 2, cost: 75000, description: 'Advanced magnetic acceleration for higher deterrence.', owned: false },
   { id: 'plasma_cannon_mk3', name: 'Plasma Cannons Mk III', type: 'defense', level: 3, cost: 250000, description: 'Heavy bombardment capability. Pirates beware.', owned: false },
