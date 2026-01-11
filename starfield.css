@@ -11,7 +11,7 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  z-index: -50;
+  z-index: -1;
   pointer-events: none;
 }
 
@@ -22,4 +22,17 @@
   animation-name: twinkle;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
+}
+
+.retro-terminal-background {
+    background-color: #0d2812; /* Darker, slightly more saturated green */
+    background-image: repeating-linear-gradient(
+        to bottom,
+        rgba(6, 78, 28, 0.3), /* Darker scanline */
+        rgba(6, 78, 28, 0.3) 1px,
+        transparent 1px,
+        transparent 3px /* Wider spacing */
+    );
+    box-shadow: inset 0 0 120px rgba(16, 185, 129, 0.4); /* Brighter, more emerald glow */
+    border: 1px solid rgba(16, 185, 129, 0.2); /* Faint border to help define it */
 }

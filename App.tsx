@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS TRADE EMPIRE 5
- * VERSION: v10.2.3 Jules
+ * VERSION: v10.2.5 Jules
  * ============================================================================
  * 
  * FEATURE MANIFEST / INTEGRITY CHECKLIST:
@@ -42,6 +42,7 @@ import {
   MINING_OVERLOAD_YIELD_MULT, MINING_OVERLOAD_RISK_MULT
 } from './constants';
 import { GameState, Market, LoanOffer, LogEntry, DailyReport, Commodity, HighScore, CargoItem, EquipmentItem, Encounter, ActiveLoan, Contract, WarehouseItem, PendingTrade, Warehouse, MarketItem } from './types';
+import Starfield from './Starfield';
 import { Building2, Rocket, XCircle, Trophy, Zap, Truck, Shield, Wrench, Fuel, Crosshair, Heart, Swords, Skull, Box, AlertTriangle, Radar, ClipboardList, Radio, HelpCircle, Warehouse as WarehouseIcon, RefreshCw, Factory, Map as MapIcon, BarChart3, PowerOff, Droplets, Pill, Save, Volume2, VolumeX, Menu, Anchor, Cpu, Hourglass, ToggleLeft, ToggleRight, Info, LineChart, ChevronUp, ChevronDown, Circle, CheckCircle2, BookOpen } from 'lucide-react';
 
 // --- BLOCK 1: EXTERNAL SERVICES (FIREBASE & AUDIO) --------------------------
@@ -535,6 +536,30 @@ export default function App() {
 
   // -- LOGIC: HELPERS ---------------------------------------------------------
 
+  const getHighestPayingVenue = (commodityName: string, markets: Market[], currentVenueIndex: number): number => {
+    let bestPrice = -1;
+    let bestVenues: number[] = [];
+
+    markets.forEach((market, index) => {
+        if (index === currentVenueIndex) return;
+
+        const price = market[commodityName]?.price || 0;
+        if (price > bestPrice) {
+            bestPrice = price;
+            bestVenues = [index];
+        } else if (price === bestPrice) {
+            bestVenues.push(index);
+        }
+    });
+
+    if (bestVenues.length === 0) {
+        const fallbackVenues = VENUES.map((_, i) => i).filter(i => i !== currentVenueIndex);
+        return fallbackVenues[Math.floor(Math.random() * fallbackVenues.length)];
+    }
+
+    return bestVenues[Math.floor(Math.random() * bestVenues.length)];
+  };
+
   const loadHighScores = async () => {
     let scores: HighScore[] = [];
     if (db) {
@@ -583,7 +608,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v10.2.3 Jules ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v10.2.5 Jules ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -654,6 +679,16 @@ export default function App() {
     setState(baseState);
     setModal({ type: 'welcome', data: null });
   };
+  useEffect(() => {
+    if (state) {
+        const newShippingDestinations: Record<string, string> = {};
+        Object.keys(state.cargo).forEach(commodityName => {
+            const bestVenue = getHighestPayingVenue(commodityName, state.markets, state.currentVenueIndex);
+            newShippingDestinations[commodityName] = bestVenue.toString();
+        });
+        setShippingDestinations(newShippingDestinations);
+    }
+  }, [state?.day, state?.markets, state?.cargo]);
   
   useEffect(() => { runTutorialCheck(); }, [state?.day, modal.type]);
 
@@ -1952,7 +1987,7 @@ export default function App() {
 
   // --- BLOCK 5: UI RENDER ----------------------------------------------------
 
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.2.3</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.2.5</span>...</div>;
 
   const currentMarketLocal = state.markets[state.currentVenueIndex];
   const phaseMultiplier = 1 + ((state.gamePhase - 1) * 0.25);
@@ -2143,7 +2178,7 @@ export default function App() {
         return (
             <div className="flex flex-col h-full bg-slate-900/40 p-4 md:p-8 animate-in fade-in duration-300">
                 <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.2.3</h2>
+                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.2.5</h2>
                     <div className="text-[10px] text-gray-500 font-mono text-right uppercase leading-tight">Neural Reference System <br/>Database: UNRESTRICTED</div>
                 </div>
                 <div className="flex-grow overflow-y-auto custom-scrollbar pr-4 space-y-6">
@@ -2583,7 +2618,7 @@ export default function App() {
 
                    <div className="flex-grow flex flex-col overflow-y-auto custom-scrollbar relative pt-10">
                         <div className="absolute top-0 right-0 w-72 text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                            SYSTEM LOG: FABRICATION MATRIX v10.2.3 ACTIVE
+                            SYSTEM LOG: FABRICATION MATRIX v10.2.5 ACTIVE
                         </div>
 
                         <div className="text-center space-y-2 mb-10">
@@ -3100,7 +3135,7 @@ export default function App() {
         return (
             <div className="flex flex-col h-full bg-slate-900/40 p-4 md:p-8 animate-in fade-in duration-300">
                 <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.2.2</h2>
+                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.2.5</h2>
                     <div className="text-[10px] text-gray-500 font-mono text-right uppercase leading-tight">Neural Reference System <br/>Database: UNRESTRICTED</div>
                 </div>
                 <div className="flex-grow overflow-y-auto custom-scrollbar pr-4 space-y-6">
@@ -3156,14 +3191,14 @@ export default function App() {
 
   return (
     <div className="app-viewport flex flex-col p-2 md:p-4 space-y-4 no-scrollbar custom-scrollbar overflow-y-auto bg-transparent">
-       
+       <Starfield />
        {modal.type !== 'welcome' && (
          <>
            <header className="flex flex-col md:flex-row justify-between items-center px-4 py-2 gap-4 border-b border-gray-800 bg-gray-900/50 backdrop-blur-md sticky top-0 z-30 sci-fi-box">
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.2.3</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.2.5</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -3245,7 +3280,7 @@ export default function App() {
            </div>
 
            <div className={`card sci-fi-box rounded-b-xl rounded-t-none p-0 flex-grow flex flex-col bg-transparent overflow-hidden min-h-0 border-t-2 border-t-blue-500/30 ${
-               modal.type === 'none' ? 'retro-terminal-background' : ''
+               modal.type === 'none' || modal.type === 'comms' || modal.type === 'shipping' || modal.type === 'fomo' || modal.type === 'shop' || modal.type === 'banking' ? 'retro-terminal-background' : ''
              }`}>
               {renderTerminalContent()}
            </div>
@@ -3340,7 +3375,7 @@ export default function App() {
                   <div className="flex justify-center gap-8 px-4 w-full max-w-4xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.2.3</p>
+                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.2.5</p>
                </div>
            </div>
        )}
