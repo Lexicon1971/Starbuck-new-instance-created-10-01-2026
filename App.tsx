@@ -337,9 +337,22 @@ const SFX = new SoundEngine();
 class SpeechSynthesisQueue {
     private queue: SpeechSynthesisUtterance[] = [];
     private speaking: boolean = false;
+    private voices: SpeechSynthesisVoice[] = [];
+    private watchdogTimer: number | null = null;
 
     constructor() {
-        window.speechSynthesis.getVoices();
+        this.loadVoices();
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+            window.speechSynthesis.onvoiceschanged = this.loadVoices;
+        }
+    }
+
+    private loadVoices = () => {
+        this.voices = window.speechSynthesis.getVoices();
+    }
+
+    public getVoice(): SpeechSynthesisVoice | null {
+        return this.voices.find(v => v.name.toLowerCase().includes('google uk english male') || v.name.toLowerCase().includes('robot')) || null;
     }
 
     add(utterance: SpeechSynthesisUtterance) {
@@ -349,38 +362,48 @@ class SpeechSynthesisQueue {
         }
     }
 
-    private processQueue() {
+    private processQueue = () => {
         if (this.queue.length === 0) {
-            if (this.speaking) {
-                this.setSpeaking(false);
-            }
+            this.setSpeaking(false);
             return;
         }
 
-        if (!this.speaking) {
-            this.setSpeaking(true);
-        }
-
+        this.setSpeaking(true);
         const utterance = this.queue.shift()!;
 
         utterance.onend = () => {
+            if (this.watchdogTimer) clearTimeout(this.watchdogTimer);
+            this.processQueue();
+        };
+
+        utterance.onerror = (event) => {
+            console.error("SpeechSynthesisUtterance.onerror", event);
+            if (this.watchdogTimer) clearTimeout(this.watchdogTimer);
             this.processQueue();
         };
 
         window.speechSynthesis.speak(utterance);
+
+        // Watchdog to handle cases where onend doesn't fire
+        this.watchdogTimer = window.setTimeout(() => {
+            this.processQueue();
+        }, (utterance.text.length * 100) + 5000); // Estimate duration and add a buffer
     }
 
     private setSpeaking(isSpeaking: boolean) {
+        if (this.speaking === isSpeaking) return;
         this.speaking = isSpeaking;
         window.dispatchEvent(new CustomEvent('speech-state-change', { detail: { speaking: isSpeaking } }));
+        if (!isSpeaking && this.watchdogTimer) {
+            clearTimeout(this.watchdogTimer);
+            this.watchdogTimer = null;
+        }
     }
 
     cancel() {
         window.speechSynthesis.cancel();
         this.queue = [];
-        if (this.speaking) {
-            this.setSpeaking(false);
-        }
+        this.setSpeaking(false);
     }
 }
 
@@ -395,8 +418,7 @@ const speakRetro = (text: string) => {
     utterance.pitch = 0.5;
     utterance.rate = 0.9;
     utterance.volume = 0.8;
-    const voices = window.speechSynthesis.getVoices();
-    const roboticVoice = voices.find(v => v.name.toLowerCase().includes('google uk english male') || v.name.toLowerCase().includes('robot'));
+    const roboticVoice = speechQueue.getVoice();
     if (roboticVoice) utterance.voice = roboticVoice;
     speechQueue.add(utterance);
 };
@@ -410,8 +432,7 @@ const speakPanicked = (text: string) => {
     utterance.pitch = 1.5;
     utterance.rate = 1.2;
     utterance.volume = 1.0;
-    const voices = window.speechSynthesis.getVoices();
-    const roboticVoice = voices.find(v => v.name.toLowerCase().includes('google uk english male') || v.name.toLowerCase().includes('robot'));
+    const roboticVoice = speechQueue.getVoice();
     if (roboticVoice) utterance.voice = roboticVoice;
     speechQueue.add(utterance);
 };
@@ -821,6 +842,13 @@ export default function App() {
   useEffect(() => { runTutorialCheck(); }, [state?.day, modal.type]);
 
   useEffect(() => {
+    // This initializes the speech synthesis engine and loads voices.
+    if (window.speechSynthesis.getVoices().length === 0) {
+        window.speechSynthesis.onvoiceschanged = () => {
+            console.log("Voices loaded.");
+        };
+    }
+    //
     if (state && !state.tutorialFlags['welcome_message']) {
         speakRetro("Welcome Captain.");
         setState(prev => prev ? ({...prev, tutorialFlags: {...prev.tutorialFlags, welcome_message: true}}) : null);
