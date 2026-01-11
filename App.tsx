@@ -397,6 +397,25 @@ const speakPanicked = (text: string) => {
     speechQueue.add(utterance);
 };
 
+const PET_NAMES = ["Star-Lord", "Hotshot", "Maverick", "Ace", "Boss", "Skipper", "Captain, oh my Captain", "Rocket Man", "Solo", "Skywalker"];
+
+const speakDailyStatusAlerts = (s: GameState) => {
+    if (s.activeLoans.length > 0 || s.cash < 0) {
+        speakRetro("Captain, a reminder that we have outstanding debts requiring your attention.");
+    }
+    if (s.shipHealth < 100 || s.laserHealth < 100) {
+        speakRetro("Warning, the ship has sustained damage. Repairs are recommended at your earliest convenience.");
+    }
+    const hasItemsInStorage = Object.values(s.warehouse).some(venue =>
+        Object.values(venue).some(item => item.arrivalDay <= s.day)
+    );
+    if (hasItemsInStorage) {
+        speakRetro("Logistics alert: You have items in storage requiring management.");
+    }
+    const randomPetName = PET_NAMES[Math.floor(Math.random() * PET_NAMES.length)];
+    speakRetro(`That is all, ${randomPetName}.`);
+};
+
 // --- BLOCK 2: UTILITIES & FORMATTERS -----------------------------------------
 
 const formatCurrencyLog = (amount: number) => {
@@ -1139,6 +1158,7 @@ export default function App() {
          } else if (!s.gameOver) {
             setModal({ type: 'report', data: { events: report.events, day: s.day, tips: getMarketTips(s), quirky: report.quirkyMessage } });
             if (report.quirkyMessage) speakRetro(report.quirkyMessage.text);
+            speakDailyStatusAlerts(s);
             setState(s);
          }
          return;
@@ -1509,13 +1529,15 @@ export default function App() {
      if (nw >= curGoal && s.gamePhase < 3) {
          const daysCurrent = s.gamePhase === 1 ? GOAL_PHASE_1_DAYS : GOAL_PHASE_2_DAYS;
          const daysNext = s.gamePhase === 1 ? GOAL_PHASE_2_DAYS : GOAL_PHASE_3_DAYS;
-         const daysExt = daysNext - daysCurrent; 
+         const daysExt = daysNext - daysCurrent;
+         speakRetro(`Congratulations, you have completed the Net worth required in time to proceed to Phase ${s.gamePhase + 1} and have been granted ${daysExt} additional days to trade by Galactic Overlord Decree.`);
          setModal({ type: 'goal_achieved', data: { phase: s.gamePhase, nextPhase: s.gamePhase + 1, state: s, report, daysExtended: daysExt } });
          SFX.play('success');
          return; 
      }
      if (nw >= curGoal && s.gamePhase === 3) {
          const daysExt = GOAL_OVERTIME_DAYS - GOAL_PHASE_3_DAYS;
+         speakRetro(`Congratulations, you have completed the Net worth required in time to proceed to Phase 4 and have been granted ${daysExt} additional days to trade by Galactic Overlord Decree.`);
          setModal({ type: 'goal_achieved', data: { phase: 3, nextPhase: 4, state: s, report, daysExtended: daysExt } });
          SFX.play('success');
          return;
@@ -1536,6 +1558,7 @@ export default function App() {
         }
         setModal({ type: 'report', data: { events: report.events, day: s.day, tips: getMarketTips(s), quirky: report.quirkyMessage } });
         if (report.quirkyMessage) speakRetro(report.quirkyMessage.text);
+        speakDailyStatusAlerts(s);
         setState(s);
      } else {
         const isHS = s.highScores.length < 10 || nw > s.highScores[s.highScores.length - 1].score;
@@ -1632,7 +1655,7 @@ export default function App() {
                      s.stats.largestSingleWin = Math.max(s.stats.largestSingleWin, c.reward);
                      const fulfillmentMsg = `CONTRACT FULFILLED: ${c.firm} received shipment at ${VENUES[c.destinationIndex]}. Reward: ${formatCurrencyLog(c.reward)}`;
                      report.events.push(fulfillmentMsg);
-                     speakRetro("Contract Fulfilled Master");
+                     speakRetro(`The contract for ${c.firm} consignment of ${c.commodity} has been shipped to ${VENUES[c.destinationIndex]} for fulfilment, expect to be paid any day now.`);
                      c.status = 'completed';
                      c.dayCompleted = s.day;
                      if (item.quantity <= 0) consumed = true;
@@ -1831,7 +1854,7 @@ export default function App() {
           }) : null);
           const fulfillmentMsg = `CONTRACT: Manual fulfillment of ${c.firm} contract. Reward: ${formatCurrencyLog(c.reward)}`;
           log(fulfillmentMsg, 'profit');
-          speakRetro("Contract Fulfilled Master");
+          speakRetro(`The contract for ${c.firm} consignment of ${c.commodity} has been shipped to ${VENUES[c.destinationIndex]} for fulfilment, expect to be paid any day now.`);
       }
   };
 
@@ -2080,7 +2103,7 @@ export default function App() {
                          ))}
                      </div>
                  </div>
-                 <button onClick={() => { setModal({type:'none', data:null}); SFX.play('click'); }} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-5 rounded-2xl text-2xl shadow-xl action-btn uppercase">Proceed to Operations</button>
+                 <button onClick={() => { setModal({type:'none', data:null}); SFX.play('click'); window.speechSynthesis.cancel(); }} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-5 rounded-2xl text-2xl shadow-xl action-btn uppercase">Proceed to Operations</button>
             </div>
         );
       }
