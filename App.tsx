@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v10.3.0 Brandy
+ * VERSION: v10.3.1 Andy
  * ============================================================================
  * 
  * FEATURE MANIFEST / INTEGRITY CHECKLIST:
@@ -338,11 +338,20 @@ class SpeechSynthesisQueue {
     private speaking: boolean = false;
     private voices: SpeechSynthesisVoice[] = [];
     private watchdogTimer: number | null = null;
+    private voicesLoaded: boolean = false;
 
     constructor() {
-        this.loadVoices();
-        if (window.speechSynthesis.onvoiceschanged !== undefined) {
-            window.speechSynthesis.onvoiceschanged = this.loadVoices;
+        this.voices = window.speechSynthesis.getVoices();
+        if (this.voices.length > 0) {
+            this.voicesLoaded = true;
+        } else {
+            window.speechSynthesis.onvoiceschanged = () => {
+                this.voices = window.speechSynthesis.getVoices();
+                this.voicesLoaded = true;
+                if (!this.speaking) {
+                    this.processQueue();
+                }
+            };
         }
     }
 
@@ -356,7 +365,7 @@ class SpeechSynthesisQueue {
 
     add(utterance: SpeechSynthesisUtterance) {
         this.queue.push(utterance);
-        if (!this.speaking) {
+        if (this.voicesLoaded && !this.speaking) {
             this.processQueue();
         }
     }
@@ -415,6 +424,10 @@ const processTextForSpeech = (text: string): string => {
     processedText = processedText.replace(/G\.I\.R\.L \(Lite\) Matter/g, "light matter");
     processedText = processedText.replace(/Z@onflex Weave Mesh/g, "Zay on flex Weave Mesh");
     processedText = processedText.replace(/Antimatter Rod/g, "Anti matter Rods");
+    processedText = processedText.replace(/I\.B\.A\.N\.K\./g, "Banking Hub");
+    processedText = processedText.replace(/C\.A\.T\./g, "Travel Bridge");
+    processedText = processedText.replace(/F\.O\.M\.O\./g, "Fabrication Deck");
+    processedText = processedText.replace(/G\.I\.G\.O\./g, "Comms console");
     return processedText;
 };
 
@@ -731,7 +744,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v10.3.0 Brandy ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v10.3.1 Andy ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -855,14 +868,11 @@ export default function App() {
   useEffect(() => { runTutorialCheck(); }, [state?.day, modal.type]);
 
   useEffect(() => {
-    let timer: number | undefined;
-    if ((modal.type === 'fabrication_success' || modal.type === 'banking_transaction_success') && countdown > 0) {
-      timer = window.setTimeout(() => setCountdown(countdown - 1), 1000);
-    } else if ((modal.type === 'fabrication_success' || modal.type === 'banking_transaction_success') && countdown === 0) {
-      setModal({ type: 'none', data: null });
+    if (modal.type === 'fabrication_success' || modal.type === 'banking_transaction_success') {
+      const timer = setTimeout(() => setModal({ type: 'none', data: null }), 1500); // Auto-close after 1.5s
+      return () => clearTimeout(timer);
     }
-    return () => clearTimeout(timer);
-  }, [countdown, modal.type]);
+  }, [modal.type]);
 
   useEffect(() => {
     const scrollableDiv = consoleScrollRef.current;
@@ -888,6 +898,37 @@ export default function App() {
       return () => clearTimeout(timer);
     }
   }, [justShipped]);
+
+  useEffect(() => {
+    if ((modal.type === 'comms' || (modal.type === 'shipping' && logisticsTab === 'shipping')) && commsContainerRef.current) {
+      commsContainerRef.current.scrollTop = 0;
+    }
+  }, [modal.type, logisticsTab]);
+
+  useEffect(() => {
+    if (modal.type === 'none' && state) {
+      const newBuyQuantities: Record<string, string> = {};
+      const newSellQuantities: Record<string, string> = {};
+      const currentMarket = state.markets[state.currentVenueIndex];
+
+      COMMODITIES.forEach(c => {
+        const marketItem = currentMarket[c.name];
+        if (marketItem) {
+          const cashMax = Math.floor(state.cash / marketItem.price);
+          const maxBuy = Math.max(0, Math.min(cashMax, marketItem.quantity));
+          newBuyQuantities[c.name] = maxBuy.toString();
+        }
+
+        const cargoItem = state.cargo[c.name];
+        if (cargoItem) {
+          newSellQuantities[c.name] = cargoItem.quantity.toString();
+        }
+      });
+
+      setBuyQuantities(newBuyQuantities);
+      setSellQuantities(newSellQuantities);
+    }
+  }, [modal.type, state?.cash, state?.cargo, state?.markets, state?.currentVenueIndex]);
 
   const openingMessage = `Welcome, Captain. Your former business partner has passed, leaving his debts... and his dreams... to you. We have secured a 30,000 Star Bucks loan to buy out his Widow and reinstate our trading license, but your ship has been stripped down by mutiny. Prepare to board the RR Firefox 22 RustyRedeemer: She’s 60% oxidation and 40% hope, but she’ll get your cargo across the sector if you treat her right.`;
 
@@ -1373,6 +1414,7 @@ export default function App() {
      let encounterChance = 0.35;
      if (s.warrantLevel > 0) encounterChance *= 2;
      if (s.sectorPasses.includes(VENUES[destIdx])) encounterChance -= 0.20;
+     if (s.fixedCommodity || s.boostedCommodity) encounterChance += 0.25;
 
      if (Math.random() < encounterChance) {
         const types: Encounter['type'][] = ['visa_audit', 'scam_customs', 'god_license', 'cargo_tax', 'pirate', 'fuel_breach', 'accident', 'structural', 'rust_rats', 'derelict', 'mutiny'];
@@ -2306,7 +2348,6 @@ export default function App() {
     }) : null);
 
     setModal({ type: 'fabrication_success', data: { quantity: q, name: MESH_NAME } });
-    setCountdown(5);
     setFomoQty('');
     SFX.play('success');
   };
@@ -2351,7 +2392,6 @@ export default function App() {
     }) : null);
 
     setModal({ type: 'fabrication_success', data: { quantity: q, name: 'Stim-Packs' } });
-    setCountdown(5);
     setFomoStimQty('');
     SFX.play('success');
   };
@@ -2453,7 +2493,7 @@ export default function App() {
 
   // --- BLOCK 5: UI RENDER ----------------------------------------------------
 
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.3.0</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.3.1</span>...</div>;
 
   const currentMarketLocal = state.markets[state.currentVenueIndex];
   const phaseMultiplier = 1 + ((state.gamePhase - 1) * 0.25);
@@ -2508,7 +2548,7 @@ export default function App() {
                          ))}
                      </div>
                  </div>
-                 <button onClick={() => { setModal({type:'none', data:null}); SFX.play('click'); window.speechSynthesis.cancel(); }} className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-5 rounded-2xl shadow-xl action-btn uppercase ${isSpeaking ? 'opacity-50 cursor-not-allowed text-lg' : 'text-2xl'}`} disabled={isSpeaking}>{isSpeaking ? "Standby while important messages are being relayed" : "Proceed to Operations"}</button>
+                 <button onClick={() => { setModal({type:'none', data:null}); SFX.play('click'); }} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-5 rounded-2xl shadow-xl action-btn uppercase text-2xl">Proceed to Operations</button>
             </div>
         );
       }
@@ -2532,7 +2572,12 @@ export default function App() {
                                 return (
                                     <tr key={c.name} className="hover:bg-slate-800/30 transition-colors">
                                         <td className="p-4 font-bold text-white flex items-center gap-3"><span className="text-2xl">{c.icon === 'metal-lump' ? '🌑' : c.icon}</span>{c.name}</td>
-                                        <td className="p-4 text-right"><PriceDisplay value={item.price} size="text-lg" compact /></td>
+                                        <td className="p-4 text-right">
+                                          <PriceDisplay value={item.price} size="text-lg" compact />
+                                          {state.fixedCommodity?.name === c.name && (
+                                            <div className="text-cyan-400 text-xs font-bold">FROZEN</div>
+                                          )}
+                                        </td>
                                         <td className="p-4 text-right font-mono text-gray-400">{item.quantity}</td>
                                     </tr>
                                 );
@@ -2644,6 +2689,11 @@ export default function App() {
                                         )}
                                         <span className="text-xs text-gray-500 font-mono">Stock: <span className="text-white">{stock}</span></span>
                                         <div className={priceColorClass}><PriceDisplay value={price} size="text-md" compact /></div>
+                                        {source === 'storage' && (
+                                            <div className="text-xs">
+                                                <PriceDisplay value={price - (state.warehouse[venueIndex!]?.[name]?.originalAvgCost || 0)} colored size="text-xs" compact />
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             );
@@ -2666,7 +2716,7 @@ export default function App() {
         return (
             <div className="flex flex-col h-full bg-slate-900/40 p-4 md:p-8 animate-in fade-in duration-300">
                 <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.3.0</h2>
+                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.3.1</h2>
                     <div className="text-[10px] text-gray-500 font-mono text-right uppercase leading-tight">Neural Reference System <br/>Database: UNRESTRICTED</div>
                 </div>
                 <div className="flex-grow overflow-y-auto custom-scrollbar pr-4 space-y-6">
@@ -3139,7 +3189,7 @@ export default function App() {
 
                    <div className="flex-grow flex flex-col overflow-y-auto custom-scrollbar relative pt-10">
                         <div className="absolute top-0 right-0 w-72 text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                            SYSTEM LOG: FABRICATION MATRIX v10.3.0 ACTIVE
+                            SYSTEM LOG: FABRICATION MATRIX v10.3.1 ACTIVE
                         </div>
 
                         <div className="text-center space-y-2 mb-10">
@@ -3250,7 +3300,7 @@ export default function App() {
                                <div className="space-y-3">
                                    {state.activeLoans.length >= 3 ? <div className="p-4 bg-red-900/20 rounded-xl text-red-400 italic text-center">Regulatory credit block: Maximum loan limit (3) reached.</div> : state.loanOffers.map((o,i)=>{ const alreadyOwe = state.activeLoans.some(l=>l.firmName===o.firmName); const dailyLimitHit = state.loanTakenToday; return (<div key={i} className={`bg-slate-800/50 p-4 rounded-xl flex justify-between items-center border border-transparent transition-all ${(alreadyOwe || dailyLimitHit) ? 'opacity-30' : 'hover:border-blue-500/50'}`}><div><div className="text-white font-bold text-lg">{o.firmName}</div><div className="text-gray-400 text-xs flex items-center"><PriceDisplay value={o.amount} size="text-xs mr-2"/> @ {o.interestRate.toFixed(1)}% APR</div></div><button onClick={()=>{ if(state.activeLoans.length>=3 || alreadyOwe || state.loanTakenToday) return; 
                                    // Fix: Corrected assignment of o.firmName (string) to loanEntry.firmName instead of o.amount (number)
-                                   const loanEntry = {id:Date.now(), firmName:o.firmName, principal:o.amount, currentDebt:o.amount, interestRate:o.interestRate, daysRemaining:5, originalDay:state.day}; setState(prev=>prev?({...prev, cash:prev.cash+o.amount, activeLoans:[...prev.activeLoans, loanEntry], loanTakenToday:true}):null); SFX.play('coin'); log(`LOAN: Secured ${formatCurrencyLog(o.amount)} from ${o.firmName}`, 'buy'); setModal({ type: 'banking_transaction_success', data: { message: `Successfully secured loan of ${formatCurrencyLog(o.amount)}` } }); setCountdown(3); }} disabled={alreadyOwe || dailyLimitHit} className="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 text-white px-6 py-2 rounded-xl font-black uppercase text-xs transition-all">DRAW FUNDS</button></div>);})}
+                                   const loanEntry = {id:Date.now(), firmName:o.firmName, principal:o.amount, currentDebt:o.amount, interestRate:o.interestRate, daysRemaining:5, originalDay:state.day}; setState(prev=>prev?({...prev, cash:prev.cash+o.amount, activeLoans:[...prev.activeLoans, loanEntry], loanTakenToday:true}):null); SFX.play('coin'); log(`LOAN: Secured ${formatCurrencyLog(o.amount)} from ${o.firmName}`, 'buy'); setModal({ type: 'banking_transaction_success', data: { message: `Successfully secured loan of ${formatCurrencyLog(o.amount)}` } }); }} disabled={alreadyOwe || dailyLimitHit} className="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 text-white px-6 py-2 rounded-xl font-black uppercase text-xs transition-all">DRAW FUNDS</button></div>);})}
                                </div>
                            </div>
                        </div>
@@ -3276,7 +3326,7 @@ export default function App() {
                                        </select>
                                    </div>
                                </div>
-                               <button onClick={()=>{ if(state.activeLoans.length > 0) { SFX.play('error'); return setModal({type:'message', data:"Regulatory Block: Capital deposits are prohibited while holding active liabilities."}); } const amtVal = parseInt(bankInvestAmount); const termVal = parseInt(bankInvestTerm); if(isNaN(amtVal) || amtVal<=0 || state.cash<amtVal) { SFX.play('error'); return; } const ratesDict: any = {1:0.05, 2:0.20, 3:0.50}; const rateVal = ratesDict[termVal]; const matVal = Math.floor(amtVal * (1 + rateVal)); const invEntry = {id:Date.now(), amount:amtVal, daysRemaining:termVal, maturityValue:matVal, interestRate:rateVal}; setState(prev=>prev?({...prev, cash:prev.cash-amtVal, investments:[...prev.investments, invEntry]}):null); setBankInvestAmount(''); SFX.play('coin'); log(`INVESTMENT: Locked ${formatCurrencyLog(amtVal)} for ${termVal} days.`, 'investment'); setModal({ type: 'banking_transaction_success', data: { message: `Successfully deposited ${formatCurrencyLog(amtVal)}` } }); setCountdown(3); }} className="w-full bg-green-600 hover:bg-green-500 text-white font-black py-5 rounded-2xl text-2xl transition-all shadow-lg shadow-green-900/20 action-btn uppercase">INITIATE LOCKUP</button>
+                               <button onClick={()=>{ if(state.activeLoans.length > 0) { SFX.play('error'); return setModal({type:'message', data:"Regulatory Block: Capital deposits are prohibited while holding active liabilities."}); } const amtVal = parseInt(bankInvestAmount); const termVal = parseInt(bankInvestTerm); if(isNaN(amtVal) || amtVal<=0 || state.cash<amtVal) { SFX.play('error'); return; } const ratesDict: any = {1:0.05, 2:0.20, 3:0.50}; const rateVal = ratesDict[termVal]; const matVal = Math.floor(amtVal * (1 + rateVal)); const invEntry = {id:Date.now(), amount:amtVal, daysRemaining:termVal, maturityValue:matVal, interestRate:rateVal}; setState(prev=>prev?({...prev, cash:prev.cash-amtVal, investments:[...prev.investments, invEntry]}):null); setBankInvestAmount(''); SFX.play('coin'); log(`INVESTMENT: Locked ${formatCurrencyLog(amtVal)} for ${termVal} days.`, 'investment'); setModal({ type: 'banking_transaction_success', data: { message: `Successfully deposited ${formatCurrencyLog(amtVal)}` } }); }} className="w-full bg-green-600 hover:bg-green-500 text-white font-black py-5 rounded-2xl text-2xl transition-all shadow-lg shadow-green-900/20 action-btn uppercase">INITIATE LOCKUP</button>
                                <p className="text-[9px] text-gray-500 text-center mt-4 italic uppercase tracking-widest opacity-60">All fixed-term investments are non-liquid until settlement day.</p>
                            </div>
                             {state.isMutinyActive && (
@@ -3323,6 +3373,28 @@ export default function App() {
                                 <button onClick={() => handleSellStock(stock.name)} className="w-auto px-4 bg-green-700 hover:bg-green-600 text-white text-sm rounded font-bold py-1 action-btn">SELL</button>
                               </div>
                             </div>
+                             <div className="grid grid-cols-2 gap-2 mt-2">
+                                <button
+                                    onClick={() => {
+                                        setModal({ type: 'shipping', data: null });
+                                        setLogisticsTab('shipping');
+                                        setHighlightShippingItem(c.name);
+                                    }}
+                                    className="flex items-center justify-center gap-2 bg-purple-700/80 hover:bg-purple-600/80 text-white font-bold py-2 rounded-lg text-xs transition-all shadow-md disabled:bg-gray-800 disabled:opacity-50"
+                                    disabled={!cargoItem || cargoItem.quantity === 0}
+                                >
+                                    <Truck size={14} /> SHIP
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setModal({ type: 'shipping', data: null });
+                                        setLogisticsTab('warehouse');
+                                    }}
+                                    className="flex items-center justify-center gap-2 bg-cyan-700/80 hover:bg-cyan-600/80 text-white font-bold py-2 rounded-lg text-xs transition-all shadow-md"
+                                >
+                                    <WarehouseIcon size={14} /> STORAGE
+                                </button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -3357,7 +3429,7 @@ export default function App() {
                        </div>
                    </div>
 
-                   <div className="flex-grow overflow-y-auto custom-scrollbar pr-2">
+                   <div className="flex-grow overflow-y-auto custom-scrollbar pr-2" ref={logisticsTab === 'shipping' ? commsContainerRef : undefined}>
                        {logisticsTab === 'contracts' && (
                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                <div>
@@ -3445,32 +3517,34 @@ export default function App() {
                                                            <option value="slow">FREIGHT (3 Days, 20/T)</option>
                                                        </select>
                                                    </div>
-                                                   <button onClick={() => {
-                                                       const qtyInt = parseInt(qtyValStr);
-                                                       const destInt = parseInt(destValStr);
-                                                       if (isNaN(qtyInt) || qtyInt <= 0 || isNaN(destInt)) return;
-                                                       const unitCostAmt = methodValStr === 'fast' ? 100 : (methodValStr === 'standard' ? 50 : 20);
-                                                       const durationDays = methodValStr === 'fast' ? 1 : (methodValStr === 'standard' ? 2 : 3);
-                                                       const cData = COMMODITIES.find(x=>x.name===name)!;
-                                                       const totalWeightVal = qtyInt * cData.unitWeight;
-                                                       const costVal = Math.ceil(totalWeightVal * unitCostAmt);
-                                                       if (item.quantity < qtyInt) return;
-                                                       if (state.cash < costVal) { SFX.play('error'); return setModal({type:'message', data: "Insufficient funds for logistics."}); }
-                                                       const newCargoDict = {...state.cargo};
-                                                       newCargoDict[name].quantity -= qtyInt;
-                                                       if(newCargoDict[name].quantity<=0) delete newCargoDict[name];
-                                                       const newWarehouseDict: Warehouse = {...state.warehouse};
-                                                       if(!newWarehouseDict[destInt]) newWarehouseDict[destInt] = {};
-                                                       const existingWare = newWarehouseDict[destInt][name];
-                                                       let newArrivalDay = state.day + durationDays;
-                                                       let newAvgCostVal = item.averageCost;
-                                                       let newQtyVal = qtyInt;
-                                                       if (existingWare) { newArrivalDay = Math.max(existingWare.arrivalDay, newArrivalDay); newAvgCostVal = ((existingWare.quantity * existingWare.originalAvgCost) + (qtyInt * item.averageCost)) / (existingWare.quantity + qtyInt); newQtyVal += existingWare.quantity; }
-                                                       newWarehouseDict[destInt][name] = { quantity: newQtyVal, originalAvgCost: newAvgCostVal, arrivalDay: newArrivalDay };
-                                                       setState(prev => prev ? ({ ...prev, cash: prev.cash - costVal, cargo: newCargoDict, cargoWeight: prev.cargoWeight - totalWeightVal, warehouse: newWarehouseDict }) : null);
-                                                       setShippingQuantities({...shippingQuantities, [name]: ''}); setHighlightShippingItem(null); SFX.play('warp');
-                                                       setJustShipped(true);
-                                                   }} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl shadow-lg action-btn uppercase font-scifi">SHIP</button>
+                                                   <button
+                                                        disabled={!qtyValStr || parseInt(qtyValStr) <= 0 || !destValStr}
+                                                        onClick={() => {
+                                                        const qtyInt = parseInt(qtyValStr);
+                                                        const destInt = parseInt(destValStr);
+                                                        if (isNaN(qtyInt) || qtyInt <= 0 || isNaN(destInt)) return;
+                                                        const unitCostAmt = methodValStr === 'fast' ? 100 : (methodValStr === 'standard' ? 50 : 20);
+                                                        const durationDays = methodValStr === 'fast' ? 1 : (methodValStr === 'standard' ? 2 : 3);
+                                                        const cData = COMMODITIES.find(x=>x.name===name)!;
+                                                        const totalWeightVal = qtyInt * cData.unitWeight;
+                                                        const costVal = Math.ceil(totalWeightVal * unitCostAmt);
+                                                        if (item.quantity < qtyInt) return;
+                                                        if (state.cash < costVal) { SFX.play('error'); return setModal({type:'message', data: "Insufficient funds for logistics."}); }
+                                                        const newCargoDict = {...state.cargo};
+                                                        newCargoDict[name].quantity -= qtyInt;
+                                                        if(newCargoDict[name].quantity<=0) delete newCargoDict[name];
+                                                        const newWarehouseDict: Warehouse = {...state.warehouse};
+                                                        if(!newWarehouseDict[destInt]) newWarehouseDict[destInt] = {};
+                                                        const existingWare = newWarehouseDict[destInt][name];
+                                                        let newArrivalDay = state.day + durationDays;
+                                                        let newAvgCostVal = item.averageCost;
+                                                        let newQtyVal = qtyInt;
+                                                        if (existingWare) { newArrivalDay = Math.max(existingWare.arrivalDay, newArrivalDay); newAvgCostVal = ((existingWare.quantity * existingWare.originalAvgCost) + (qtyInt * item.averageCost)) / (existingWare.quantity + qtyInt); newQtyVal += existingWare.quantity; }
+                                                        newWarehouseDict[destInt][name] = { quantity: newQtyVal, originalAvgCost: newAvgCostVal, arrivalDay: newArrivalDay };
+                                                        setState(prev => prev ? ({ ...prev, cash: prev.cash - costVal, cargo: newCargoDict, cargoWeight: prev.cargoWeight - totalWeightVal, warehouse: newWarehouseDict }) : null);
+                                                        setShippingQuantities({...shippingQuantities, [name]: ''}); setHighlightShippingItem(null); SFX.play('warp');
+                                                        setJustShipped(true);
+                                                    }} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl shadow-lg action-btn uppercase font-scifi disabled:bg-gray-700 disabled:opacity-50">SHIP</button>
                                                </div>
                                            );
                                        })}
@@ -3671,8 +3745,8 @@ export default function App() {
                                                                </div>
                                                                <div className="flex flex-col gap-2">
                                                                    {arrived && isHere && !item.isContractReserved && (<div className="flex gap-2"><input type="number" placeholder="Qty" className="w-16 bg-gray-900 text-white text-center text-xs rounded-lg border border-gray-700 font-bold" value={claimQuantities[name]||''} onChange={e=>setClaimQuantities({...claimQuantities, [name]:e.target.value})} /><button onClick={()=>{ const qVal = parseInt(claimQuantities[name]); if(!isNaN(qVal) && qVal>0) claimWarehouseItem(vIdxInt, name, qVal); }} className="bg-green-700 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-xs font-black uppercase transition-all shadow-md">CLAIM</button></div>)}
-                                                                    {arrived && !isHere && !item.isContractReserved && (<button onClick={()=>forwardWarehouseItem(vIdxInt, name)} className="bg-purple-700 hover:bg-purple-600 text-white px-6 py-3 rounded-xl text-sm font-black uppercase transition-all shadow-lg">MANAGE</button>)}
-                                                                    {arrived && isHere && !item.isContractReserved && (<button onClick={()=>forwardWarehouseItem(vIdxInt, name)} className="bg-purple-700/50 hover:bg-purple-600 text-white px-6 py-2 rounded-xl text-xs font-black uppercase transition-all">MANAGE</button>)}
+                                                                    {arrived && !isHere && !item.isContractReserved && (<button onClick={()=>{setHighlightShippingItem(name); setLogisticsTab('shipping'); setShippingSource({ [name]: { type: 'warehouse', venueIdx: vIdxInt } }); setModal({type:'shipping', data:null});}} className="bg-purple-700 hover:bg-purple-600 text-white px-6 py-3 rounded-xl text-sm font-black uppercase transition-all shadow-lg">MANAGE</button>)}
+                                                                    {arrived && isHere && !item.isContractReserved && (<button onClick={()=>{setHighlightShippingItem(name); setLogisticsTab('shipping'); setShippingSource({ [name]: { type: 'warehouse', venueIdx: vIdxInt } }); setModal({type:'shipping', data:null});}} className="bg-purple-700/50 hover:bg-purple-600 text-white px-6 py-2 rounded-xl text-xs font-black uppercase transition-all">MANAGE</button>)}
                                                                     {item.isContractReserved && <div className="text-purple-400 font-bold flex items-center"><Lock size={14} className="mr-1"/> CONTRACT</div>}
                                                                </div>
                                                            </div>
@@ -3702,7 +3776,7 @@ export default function App() {
         return (
             <div className="flex flex-col h-full bg-slate-900/40 p-4 md:p-8 animate-in fade-in duration-300">
                 <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.3.0</h2>
+                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.3.1</h2>
                     <div className="text-[10px] text-gray-500 font-mono text-right uppercase leading-tight">Neural Reference System <br/>Database: UNRESTRICTED</div>
                 </div>
                 <div className="flex-grow overflow-y-auto custom-scrollbar pr-4 space-y-6">
@@ -3765,7 +3839,7 @@ export default function App() {
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.3.0</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.3.1</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -3815,7 +3889,7 @@ export default function App() {
            </header>
 
            <div className="flex flex-col items-stretch">
-              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-1 px-1">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-8 gap-1 px-1">
                  <button onClick={()=>handleFeatureClick('shop', ()=>setModal({type:'shop', data:null}))} 
                          className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-purple-600/50 ${modal.type==='shop'?'bg-purple-900/60 text-white shadow-[0_-5px_15px_rgba(147,51,234,0.3)]':'bg-purple-900/20 text-purple-300 hover:bg-purple-900/40'} font-scifi text-[10px] md:text-xs transition-all`}>
                     <Zap className="mb-1" size={14}/> Upgrades
@@ -3838,7 +3912,7 @@ export default function App() {
                     <Rocket className="mb-1" size={14}/> Travel
                  </button>
                  <button onClick={()=>handleFeatureClick('shipping', ()=>setModal({type:'shipping', data:null}))} 
-                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-blue-600/50 ${modal.type==='shipping'?'bg-blue-800/60 text-white shadow-[0_-5px_15px_rgba(37,99,235,0.3)]':'bg-blue-900/20 text-blue-300 hover:bg-blue-900/40'} font-scifi text-[10px] md:text-xs transition-all`}>
+                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-blue-600/50 ${modal.type==='shipping' ?'bg-blue-800/60 text-white shadow-[0_-5px_15px_rgba(37,99,235,0.3)]':'bg-blue-900/20 text-blue-300 hover:bg-blue-900/40'} font-scifi text-[10px] md:text-xs transition-all`}>
                     <Truck className="mb-1" size={14}/> Logistics
                  </button>
                  <button onClick={()=>handleFeatureClick('comms', ()=>setModal({type:'comms', data:null}))} 
@@ -3948,7 +4022,7 @@ export default function App() {
                   <div className="flex justify-center gap-8 px-4 w-full max-w-4xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.3.0</p>
+                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.3.1</p>
                </div>
            </div>
        )}
@@ -3971,14 +4045,14 @@ export default function App() {
 
       {modal.type === 'fabrication_success' && (
         <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-            <div className="bg-slate-900 border border-green-500 p-8 rounded-2xl max-w-lg w-full sci-fi-box text-center relative shadow-2xl">
+            <div className="bg-slate-900 border border-green-500 p-8 rounded-2xl max-w-lg w-full sci-fi-box text-center relative shadow-2xl animate-in fade-in zoom-in-95 duration-300">
                 <p className="text-xl font-black mb-4 text-white">FABRICATION SUCCESSFUL</p>
                 <p className="text-lg mb-8 text-gray-300">Successfully created {modal.data.quantity} unit(s) of {modal.data.name}.</p>
-                <button
+                 <button
                     onClick={() => { setModal({ type: 'none', data: null }); SFX.play('click'); }}
                     className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl text-xl shadow-lg action-btn uppercase"
                 >
-                    Return to Console ({countdown})
+                    Return to Console
                 </button>
             </div>
         </div>
@@ -3986,14 +4060,14 @@ export default function App() {
 
       {modal.type === 'banking_transaction_success' && (
         <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-            <div className="bg-slate-900 border border-green-500 p-8 rounded-2xl max-w-lg w-full sci-fi-box text-center relative shadow-2xl">
+            <div className="bg-slate-900 border border-green-500 p-8 rounded-2xl max-w-lg w-full sci-fi-box text-center relative shadow-2xl animate-in fade-in zoom-in-95 duration-300">
                 <p className="text-xl font-black mb-4 text-white">TRANSACTION SUCCESSFUL</p>
                 <p className="text-lg mb-8 text-gray-300">{renderLogMessage(modal.data.message)}</p>
                 <button
                     onClick={() => { setModal({ type: 'none', data: null }); SFX.play('click'); }}
                     className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl text-xl shadow-lg action-btn uppercase"
                 >
-                    Return to Console ({countdown})
+                    Return to Console
                 </button>
             </div>
         </div>
