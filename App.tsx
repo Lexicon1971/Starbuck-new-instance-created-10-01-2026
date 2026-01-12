@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v10.2.9 Candy
+ * VERSION: v10.3.0 Brandy
  * ============================================================================
  * 
  * FEATURE MANIFEST / INTEGRITY CHECKLIST:
@@ -17,8 +17,7 @@
  * [✓] UI: Terminal-Integrated Windows (v5.6.2 Fixes)
  * [✓] v5.7.0: OVERHAULED Chance Encounters. FIXED Hull/Cargo Integrity logic.
  *             FIXED Insurance Payout (95% via E.X.C.E.S.S.). ADDED Warrants & Passes.
- * [✓] v5.8.0: FIXED Intel Exit button. ADDED Intel Stock/Storage info. 
- *             FIXED $B logo markers. LOCKED contract shipments in storage.
+ * [✓] v5.8.0: FIXED Intel Exit button. ADDED Intel Stock/Storage info. LOCKED contract shipments in storage.
  * [✓] v5.9.0: MOVED Legends to Header (Gold Trophy). ADDED Wiki Tab (Sector Codex).
  * [✓] v5.9.3: REWORKED Mining (3x cost, health-based yield). ADDED Voice Synth.
  *             FIXED 'boolean is not defined' error in state initialization.
@@ -409,11 +408,19 @@ class SpeechSynthesisQueue {
 
 const speechQueue = new SpeechSynthesisQueue();
 
-const speakRetro = (text: string) => {
-    if (SFX.isMuted) return;
-    const processedText = text.replace(/\$B\s*([\d,]+)/g, (match, number) => {
+const processTextForSpeech = (text: string): string => {
+    let processedText = text.replace(/\$B\s*([\d,]+)/g, (match, number) => {
         return `${number} Star bucks`;
     });
+    processedText = processedText.replace(/G\.I\.R\.L \(Lite\) Matter/g, "light matter");
+    processedText = processedText.replace(/Z@onflex Weave Mesh/g, "Zay on flex Weave Mesh");
+    processedText = processedText.replace(/Antimatter Rod/g, "Anti matter Rods");
+    return processedText;
+};
+
+const speakRetro = (text: string) => {
+    if (SFX.isMuted) return;
+    const processedText = processTextForSpeech(text);
     const utterance = new SpeechSynthesisUtterance(processedText);
     utterance.pitch = 0.5;
     utterance.rate = 0.9;
@@ -425,9 +432,7 @@ const speakRetro = (text: string) => {
 
 const speakPanicked = (text: string) => {
     if (SFX.isMuted) return;
-    const processedText = text.replace(/\$B\s*([\d,]+)/g, (match, number) => {
-        return `${number} Star bucks`;
-    });
+    const processedText = processTextForSpeech(text);
     const utterance = new SpeechSynthesisUtterance(processedText);
     utterance.pitch = 1.5;
     utterance.rate = 1.2;
@@ -437,7 +442,7 @@ const speakPanicked = (text: string) => {
     speechQueue.add(utterance);
 };
 
-const PET_NAMES = ["Star-Lord", "Hotshot", "Maverick", "Ace", "Boss", "Skipper", "Captain, oh my Captain", "Rocket Man", "Solo", "Skywalker", "Driller"];
+const PET_NAMES = ["Star-Lord", "Hotshot", "Maverick", "Ace", "Boss", "Skipper", "Captain, oh my Captain", "Rocket Man", "Solo", "Skywalker", "Driller", "Counsellor", "My lord", "Our Commander and Chief", " My liege", "My Brother from another Mother", "Cuz", "My Presidentte", "My peeps", "Master", "Bee deee bee dee Beep"];
 
 const speakDailyStatusAlerts = (s: GameState) => {
     if (s.activeLoans.length > 0 || s.cash < 0) {
@@ -635,12 +640,14 @@ export default function App() {
   const [bankingTab, setBankingTab] = useState<'loans' | 'stocks'>('loans');
   const [stockBuyQuantities, setStockBuyQuantities] = useState<Record<string, string>>({});
   const [stockSellQuantities, setStockSellQuantities] = useState<Record<string, string>>({});
+  const [countdown, setCountdown] = useState(0);
   
   const consoleScrollRef = useRef<HTMLDivElement>(null);
   const [consoleScrollPosition, setConsoleScrollPosition] = useState(0);
 
   // -- STATE: v5.1 UI Toggles
   const [priorityAcknowledged, setPriorityAcknowledged] = useState(false);
+  const [justShipped, setJustShipped] = useState(false);
 
   // -- STATE: TRAVEL CONFIG ---------------------------------------------------
   const [travelConfig, setTravelConfig] = useState({
@@ -724,7 +731,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v10.2.9 Candy ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v10.3.0 Brandy ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -798,7 +805,7 @@ export default function App() {
     const initialLoan = { id: Date.now(), firmName: randomBank.name, principal: 30000, currentDebt: 30000, interestRate: randomBank.baseRate, daysRemaining: LOAN_REPAYMENT_DAYS, originalDay: 1 };
     
     const baseState = getInitialState(startingCash, startIdx, markets, initialLoan, initialCargo, cargoWeight);
-    baseState.loanOffers = generateLoanOffers(baseState.gamePhase);
+    baseState.loanOffers = generateLoanOffers(baseState.gamePhase, baseState.day);
     baseState.availableContracts = generateContracts(baseState.currentVenueIndex, baseState.day, baseState.gamePhase, {}, [], []);
 
     baseState.tutorialActive = true;
@@ -848,18 +855,14 @@ export default function App() {
   useEffect(() => { runTutorialCheck(); }, [state?.day, modal.type]);
 
   useEffect(() => {
-    // This initializes the speech synthesis engine and loads voices.
-    if (window.speechSynthesis.getVoices().length === 0) {
-        window.speechSynthesis.onvoiceschanged = () => {
-            console.log("Voices loaded.");
-        };
+    let timer: number | undefined;
+    if ((modal.type === 'fabrication_success' || modal.type === 'banking_transaction_success') && countdown > 0) {
+      timer = window.setTimeout(() => setCountdown(countdown - 1), 1000);
+    } else if ((modal.type === 'fabrication_success' || modal.type === 'banking_transaction_success') && countdown === 0) {
+      setModal({ type: 'none', data: null });
     }
-    //
-    if (state && !state.tutorialFlags['welcome_message']) {
-        speakRetro("Welcome Captain.");
-        setState(prev => prev ? ({...prev, tutorialFlags: {...prev.tutorialFlags, welcome_message: true}}) : null);
-    }
-  }, [state]);
+    return () => clearTimeout(timer);
+  }, [countdown, modal.type]);
 
   useEffect(() => {
     const scrollableDiv = consoleScrollRef.current;
@@ -875,12 +878,23 @@ export default function App() {
     }
   }, [modal.type]);
 
+  useEffect(() => {
+    if (justShipped) {
+      setLogisticsTab('warehouse');
+      const timer = setTimeout(() => {
+        setModal({ type: 'none', data: null });
+        setJustShipped(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [justShipped]);
+
   const openingMessage = `Welcome, Captain. Your former business partner has passed, leaving his debts... and his dreams... to you. We have secured a 30,000 Star Bucks loan to buy out his Widow and reinstate our trading license, but your ship has been stripped down by mutiny. Prepare to board the RR Firefox 22 RustyRedeemer: She’s 60% oxidation and 40% hope, but she’ll get your cargo across the sector if you treat her right.`;
 
   useEffect(() => {
-      if (modal.type === 'welcome') {
-          speakRetro(openingMessage);
-      }
+    if (modal.type === 'welcome') {
+      speakRetro(openingMessage);
+    }
   }, [modal.type]);
   // -- LOGIC: PERSISTENCE & TUTORIAL ------------------------------------------
 
@@ -1071,20 +1085,51 @@ export default function App() {
     return contracts;
   };
 
-  const generateLoanOffers = (phase: number): LoanOffer[] => {
+  const generateLoanOffers = (phase: number, day: number): LoanOffer[] => {
     const goalAmt = phase === 1 ? GOAL_PHASE_1_AMOUNT : (phase === 2 ? GOAL_PHASE_2_AMOUNT : GOAL_PHASE_3_AMOUNT);
     const maxLoan = goalAmt * 0.10; 
-    const offers = [];
-    for(let i=0; i<5; i++) {
-        const firm = LOAN_FIRMS[i % LOAN_FIRMS.length];
-        const minAmt = Math.max(5000, maxLoan * 0.05); 
-        offers.push({
-            firmName: firm.name,
-            amount: Math.ceil((Math.random() * (maxLoan - minAmt) + minAmt) / 1000) * 1000,
-            interestRate: Math.max(1, Math.min(15, firm.baseRate + Math.random() * 5))
-        });
+
+    const createOffers = (): LoanOffer[] => {
+        const offers = [];
+        for(let i=0; i<5; i++) {
+            const firm = LOAN_FIRMS[i % LOAN_FIRMS.length];
+            const minAmt = Math.max(5000, maxLoan * 0.05);
+            offers.push({
+                firmName: firm.name,
+                amount: Math.ceil((Math.random() * (maxLoan - minAmt) + minAmt) / 1000) * 1000,
+                interestRate: Math.max(1, Math.min(15, firm.baseRate + Math.random() * 5))
+            });
+        }
+        return offers;
+    };
+
+    if (day === 1) {
+      let offers: LoanOffer[] = [];
+      for (let attempt = 0; attempt < 3; attempt++) {
+        offers = createOffers();
+        const highOffersCount = offers.filter(o => o.amount > 900000).length;
+        if (highOffersCount >= 2) {
+          return offers;
+        }
+      }
+
+      offers.sort((a, b) => a.amount - b.amount);
+      let highOffersCount = offers.filter(o => o.amount > 900000).length;
+      let adjustmentsNeeded = Math.max(0, 2 - highOffersCount);
+
+      if (adjustmentsNeeded > 0) offers[0].amount = 911000;
+      if (adjustmentsNeeded > 1) offers[1].amount = 952000;
+
+      // Shuffle offers
+      for (let i = offers.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [offers[i], offers[j]] = [offers[j], offers[i]];
+      }
+
+      return offers;
     }
-    return offers;
+
+    return createOffers();
   };
 
   // -- LOGIC: TRADING ---------------------------------------------------------
@@ -1879,7 +1924,7 @@ export default function App() {
         }
     });
 
-    if (s.fixedCommodity) {
+    if (s.fixedCommodity && s.day > s.fixedCommodity.daySet + 1) {
       s.fixedCommodity = undefined;
     }
 
@@ -1922,7 +1967,7 @@ export default function App() {
     s.hasTradedStocksToday = false;
 
     s.markets = evolveMarkets(s);
-    s.loanOffers = generateLoanOffers(s.gamePhase);
+    s.loanOffers = generateLoanOffers(s.gamePhase, s.day);
     s.availableContracts = generateContracts(s.currentVenueIndex, s.day, s.gamePhase, s.venueTradeBans, s.availableContracts, s.activeContracts);
     s.loanTakenToday = false;
   };
@@ -2260,7 +2305,8 @@ export default function App() {
       fomoDailyUse: { ...prev.fomoDailyUse, mesh: true }
     }) : null);
 
-    log(`FABRICATION: Created ${q} ${MESH_NAME}`, 'mining');
+    setModal({ type: 'fabrication_success', data: { quantity: q, name: MESH_NAME } });
+    setCountdown(5);
     setFomoQty('');
     SFX.play('success');
   };
@@ -2304,7 +2350,8 @@ export default function App() {
       fomoDailyUse: { ...prev.fomoDailyUse, stims: true }
     }) : null);
 
-    log(`FABRICATION: Synthesized ${q} Stim-Packs`, 'mining');
+    setModal({ type: 'fabrication_success', data: { quantity: q, name: 'Stim-Packs' } });
+    setCountdown(5);
     setFomoStimQty('');
     SFX.play('success');
   };
@@ -2406,7 +2453,7 @@ export default function App() {
 
   // --- BLOCK 5: UI RENDER ----------------------------------------------------
 
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.2.9</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.3.0</span>...</div>;
 
   const currentMarketLocal = state.markets[state.currentVenueIndex];
   const phaseMultiplier = 1 + ((state.gamePhase - 1) * 0.25);
@@ -2461,7 +2508,7 @@ export default function App() {
                          ))}
                      </div>
                  </div>
-                 <button onClick={() => { setModal({type:'none', data:null}); SFX.play('click'); window.speechSynthesis.cancel(); }} className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-5 rounded-2xl text-2xl shadow-xl action-btn uppercase ${isSpeaking ? 'opacity-50 cursor-not-allowed' : ''}`} disabled={isSpeaking}>Proceed to Operations</button>
+                 <button onClick={() => { setModal({type:'none', data:null}); SFX.play('click'); window.speechSynthesis.cancel(); }} className={`w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-5 rounded-2xl shadow-xl action-btn uppercase ${isSpeaking ? 'opacity-50 cursor-not-allowed text-lg' : 'text-2xl'}`} disabled={isSpeaking}>{isSpeaking ? "Standby while important messages are being relayed" : "Proceed to Operations"}</button>
             </div>
         );
       }
@@ -2556,6 +2603,7 @@ export default function App() {
 
                             const isBestBuy = price === minPrice;
                             const isBestSell = price === maxPrice;
+                            const isFrozen = state.fixedCommodity?.name === name;
 
                             return (
                                 <div key={i} className="flex justify-between items-center bg-black/30 p-4 rounded-xl border border-gray-800 hover:border-cyan-500/20 transition-all">
@@ -2564,6 +2612,7 @@ export default function App() {
                                         {isStored && <span className="bg-blue-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded animate-pulse">STORED</span>}
                                         {isBestBuy && stock > 0 && <span className="bg-green-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded">BEST BUY</span>}
                                         {isBestSell && <span className="bg-red-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded">BEST SELL</span>}
+                                        {isFrozen && <span className="bg-cyan-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded">FROZEN</span>}
                                     </div>
                                     <div className="flex items-center gap-3">
                                         {source === 'storage' && venueIndex === i ? (
@@ -2617,7 +2666,7 @@ export default function App() {
         return (
             <div className="flex flex-col h-full bg-slate-900/40 p-4 md:p-8 animate-in fade-in duration-300">
                 <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.2.9</h2>
+                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.3.0</h2>
                     <div className="text-[10px] text-gray-500 font-mono text-right uppercase leading-tight">Neural Reference System <br/>Database: UNRESTRICTED</div>
                 </div>
                 <div className="flex-grow overflow-y-auto custom-scrollbar pr-4 space-y-6">
@@ -2751,7 +2800,7 @@ export default function App() {
                                         <td className="p-2 align-middle">
                                             <div className="flex flex-col space-y-2">
                                                 <div className="flex space-x-1 items-center bg-gray-900/50 p-1 rounded"><input type="number" min="0" placeholder="Qty" className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={buyQuantities[c.name]||''} onChange={e=>setBuyQuantities({...buyQuantities, [c.name]: e.target.value})} /><button onClick={()=>setMaxBuy(c, mItem)} className="w-auto px-4 bg-gray-700 hover:bg-gray-600 text-sm text-white rounded py-1 action-btn">MAX</button><button onClick={()=>handleTrade('buy', c, mItem, owned)} className="w-auto px-4 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded font-bold py-1 action-btn">BUY</button>{availableContract && (<button onClick={() => acceptContract(availableContract)} className="w-auto px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-sm rounded font-bold py-1 action-btn">ACCEPT</button>)}</div>
-                                                <div className="flex space-x-1 items-center bg-gray-900/50 p-1 rounded"><input type="number" min="0" placeholder="Qty" className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={sellQuantities[c.name]||''} onChange={e=>setSellQuantities({...sellQuantities, [c.name]: e.target.value})} /><button onClick={()=>setSellQuantities({...sellQuantities, [c.name]: owned.quantity.toString()})} disabled={owned.quantity===0} className="w-auto px-4 bg-gray-700 hover:bg-gray-600 disabled:opacity-30 text-sm text-white rounded py-1 action-btn">ALL</button><button onClick={()=>handleTrade('sell', c, mItem, owned)} disabled={owned.quantity===0} className="w-auto px-4 bg-green-700 hover:bg-green-600 disabled:opacity-30 text-white text-sm rounded font-bold py-1 action-btn">SELL</button>{activeContract && !isCovered && (<button onClick={() => handleFulfill(activeContract)} disabled={owned.quantity < activeContract.quantity || pulsingContractId !== null} className={`w-auto px-4 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 disabled:opacity-50 text-white text-sm rounded font-bold py-1 action-btn ${pulsingContractId === activeContract.id ? 'animate-pulse' : ''}`}>FULFILL</button>)}</div>
+                                                <div className="flex space-x-1 items-center bg-gray-900/50 p-1 rounded"><input type="number" min="0" placeholder="Qty" className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={sellQuantities[c.name]||''} onChange={e=>setSellQuantities({...sellQuantities, [c.name]: e.target.value})} /><button onClick={()=>setSellQuantities({...sellQuantities, [c.name]: owned.quantity.toString()})} disabled={owned.quantity===0} className="w-auto px-4 bg-gray-700 hover:bg-gray-600 disabled:opacity-30 text-sm text-white rounded py-1 action-btn">ALL</button><button onClick={()=>handleTrade('sell', c, mItem, owned)} disabled={owned.quantity===0} className="w-auto px-4 bg-green-700 hover:bg-green-600 disabled:opacity-30 text-white text-sm rounded font-bold py-1 action-btn">SELL</button>{activeContract && !isCovered && (<button onClick={() => handleFulfill(activeContract)} disabled={owned.quantity < activeContract.quantity || pulsingContractId !== null} className={`w-auto px-4 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 disabled:opacity-50 text-white text-sm rounded font-bold py-1 action-btn ${pulsingContractId === activeContract.id ? 'animate-pulse' : ''}`}>FULFILL</button>)}{!activeContract && (<button onClick={() => { setModal({ type: 'shipping', data: null }); setLogisticsTab('shipping'); setHighlightShippingItem(c.name); }} className="w-auto px-4 bg-cyan-600 hover:bg-cyan-500 text-white text-sm rounded font-bold py-1 action-btn">SHIP</button>)}</div>
                                             </div>
                                         </td>
                                     </tr>
@@ -3090,7 +3139,7 @@ export default function App() {
 
                    <div className="flex-grow flex flex-col overflow-y-auto custom-scrollbar relative pt-10">
                         <div className="absolute top-0 right-0 w-72 text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                            SYSTEM LOG: FABRICATION MATRIX v10.2.9 ACTIVE
+                            SYSTEM LOG: FABRICATION MATRIX v10.3.0 ACTIVE
                         </div>
 
                         <div className="text-center space-y-2 mb-10">
@@ -3201,7 +3250,7 @@ export default function App() {
                                <div className="space-y-3">
                                    {state.activeLoans.length >= 3 ? <div className="p-4 bg-red-900/20 rounded-xl text-red-400 italic text-center">Regulatory credit block: Maximum loan limit (3) reached.</div> : state.loanOffers.map((o,i)=>{ const alreadyOwe = state.activeLoans.some(l=>l.firmName===o.firmName); const dailyLimitHit = state.loanTakenToday; return (<div key={i} className={`bg-slate-800/50 p-4 rounded-xl flex justify-between items-center border border-transparent transition-all ${(alreadyOwe || dailyLimitHit) ? 'opacity-30' : 'hover:border-blue-500/50'}`}><div><div className="text-white font-bold text-lg">{o.firmName}</div><div className="text-gray-400 text-xs flex items-center"><PriceDisplay value={o.amount} size="text-xs mr-2"/> @ {o.interestRate.toFixed(1)}% APR</div></div><button onClick={()=>{ if(state.activeLoans.length>=3 || alreadyOwe || state.loanTakenToday) return; 
                                    // Fix: Corrected assignment of o.firmName (string) to loanEntry.firmName instead of o.amount (number)
-                                   const loanEntry = {id:Date.now(), firmName:o.firmName, principal:o.amount, currentDebt:o.amount, interestRate:o.interestRate, daysRemaining:5, originalDay:state.day}; setState(prev=>prev?({...prev, cash:prev.cash+o.amount, activeLoans:[...prev.activeLoans, loanEntry], loanTakenToday:true}):null); SFX.play('coin'); log(`LOAN: Secured ${formatCurrencyLog(o.amount)} from ${o.firmName}`, 'buy'); }} disabled={alreadyOwe || dailyLimitHit} className="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 text-white px-6 py-2 rounded-xl font-black uppercase text-xs transition-all">DRAW FUNDS</button></div>);})}
+                                   const loanEntry = {id:Date.now(), firmName:o.firmName, principal:o.amount, currentDebt:o.amount, interestRate:o.interestRate, daysRemaining:5, originalDay:state.day}; setState(prev=>prev?({...prev, cash:prev.cash+o.amount, activeLoans:[...prev.activeLoans, loanEntry], loanTakenToday:true}):null); SFX.play('coin'); log(`LOAN: Secured ${formatCurrencyLog(o.amount)} from ${o.firmName}`, 'buy'); setModal({ type: 'banking_transaction_success', data: { message: `Successfully secured loan of ${formatCurrencyLog(o.amount)}` } }); setCountdown(3); }} disabled={alreadyOwe || dailyLimitHit} className="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 text-white px-6 py-2 rounded-xl font-black uppercase text-xs transition-all">DRAW FUNDS</button></div>);})}
                                </div>
                            </div>
                        </div>
@@ -3227,7 +3276,7 @@ export default function App() {
                                        </select>
                                    </div>
                                </div>
-                               <button onClick={()=>{ if(state.activeLoans.length > 0) { SFX.play('error'); return setModal({type:'message', data:"Regulatory Block: Capital deposits are prohibited while holding active liabilities."}); } const amtVal = parseInt(bankInvestAmount); const termVal = parseInt(bankInvestTerm); if(isNaN(amtVal) || amtVal<=0 || state.cash<amtVal) { SFX.play('error'); return; } const ratesDict: any = {1:0.05, 2:0.20, 3:0.50}; const rateVal = ratesDict[termVal]; const matVal = Math.floor(amtVal * (1 + rateVal)); const invEntry = {id:Date.now(), amount:amtVal, daysRemaining:termVal, maturityValue:matVal, interestRate:rateVal}; setState(prev=>prev?({...prev, cash:prev.cash-amtVal, investments:[...prev.investments, invEntry]}):null); setBankInvestAmount(''); SFX.play('coin'); log(`INVESTMENT: Locked ${formatCurrencyLog(amtVal)} for ${termVal} days.`, 'investment'); }} className="w-full bg-green-600 hover:bg-green-500 text-white font-black py-5 rounded-2xl text-2xl transition-all shadow-lg shadow-green-900/20 action-btn uppercase">INITIATE LOCKUP</button>
+                               <button onClick={()=>{ if(state.activeLoans.length > 0) { SFX.play('error'); return setModal({type:'message', data:"Regulatory Block: Capital deposits are prohibited while holding active liabilities."}); } const amtVal = parseInt(bankInvestAmount); const termVal = parseInt(bankInvestTerm); if(isNaN(amtVal) || amtVal<=0 || state.cash<amtVal) { SFX.play('error'); return; } const ratesDict: any = {1:0.05, 2:0.20, 3:0.50}; const rateVal = ratesDict[termVal]; const matVal = Math.floor(amtVal * (1 + rateVal)); const invEntry = {id:Date.now(), amount:amtVal, daysRemaining:termVal, maturityValue:matVal, interestRate:rateVal}; setState(prev=>prev?({...prev, cash:prev.cash-amtVal, investments:[...prev.investments, invEntry]}):null); setBankInvestAmount(''); SFX.play('coin'); log(`INVESTMENT: Locked ${formatCurrencyLog(amtVal)} for ${termVal} days.`, 'investment'); setModal({ type: 'banking_transaction_success', data: { message: `Successfully deposited ${formatCurrencyLog(amtVal)}` } }); setCountdown(3); }} className="w-full bg-green-600 hover:bg-green-500 text-white font-black py-5 rounded-2xl text-2xl transition-all shadow-lg shadow-green-900/20 action-btn uppercase">INITIATE LOCKUP</button>
                                <p className="text-[9px] text-gray-500 text-center mt-4 italic uppercase tracking-widest opacity-60">All fixed-term investments are non-liquid until settlement day.</p>
                            </div>
                             {state.isMutinyActive && (
@@ -3420,6 +3469,7 @@ export default function App() {
                                                        newWarehouseDict[destInt][name] = { quantity: newQtyVal, originalAvgCost: newAvgCostVal, arrivalDay: newArrivalDay };
                                                        setState(prev => prev ? ({ ...prev, cash: prev.cash - costVal, cargo: newCargoDict, cargoWeight: prev.cargoWeight - totalWeightVal, warehouse: newWarehouseDict }) : null);
                                                        setShippingQuantities({...shippingQuantities, [name]: ''}); setHighlightShippingItem(null); SFX.play('warp');
+                                                       setJustShipped(true);
                                                    }} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl shadow-lg action-btn uppercase font-scifi">SHIP</button>
                                                </div>
                                            );
@@ -3652,7 +3702,7 @@ export default function App() {
         return (
             <div className="flex flex-col h-full bg-slate-900/40 p-4 md:p-8 animate-in fade-in duration-300">
                 <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.2.9</h2>
+                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.3.0</h2>
                     <div className="text-[10px] text-gray-500 font-mono text-right uppercase leading-tight">Neural Reference System <br/>Database: UNRESTRICTED</div>
                 </div>
                 <div className="flex-grow overflow-y-auto custom-scrollbar pr-4 space-y-6">
@@ -3715,7 +3765,7 @@ export default function App() {
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.2.9</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.3.0</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -3898,7 +3948,7 @@ export default function App() {
                   <div className="flex justify-center gap-8 px-4 w-full max-w-4xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.2.9</p>
+                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.3.0</p>
                </div>
            </div>
        )}
@@ -3908,7 +3958,7 @@ export default function App() {
        )}
 
        {modal.type === 'message' && (
-           <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 p-4"><div className="bg-slate-900 border border-gray-500 p-8 rounded-2xl max-w-lg w-full sci-fi-box text-center relative shadow-2xl"><p className={`text-xl font-black mb-8 whitespace-pre-wrap leading-tight uppercase ${modal.color || 'text-white'}`}>{modal.data}</p><button onClick={()=>{setModal({type:'none', data:null}); SFX.play('click');}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl text-xl shadow-lg action-btn uppercase">Acknowledge</button></div></div>
+           <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 p-4"><div className="bg-slate-900 border border-gray-500 p-8 rounded-2xl max-w-lg w-full sci-fi-box text-center relative shadow-2xl"><p className={`text-xl font-black mb-8 whitespace-pre-wrap leading-tight uppercase ${modal.color || 'text-white'}`}>{renderLogMessage(modal.data)}</p><button onClick={()=>{setModal({type:'none', data:null}); SFX.play('click');}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl text-xl shadow-lg action-btn uppercase">Acknowledge</button></div></div>
        )}
 
        {modal.type === 'stock_limit_confirm' && (
@@ -3918,6 +3968,36 @@ export default function App() {
        {modal.type === 'tax_confirm' && (
            <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 p-4"><div className="bg-slate-900 border border-red-500 p-6 rounded-xl max-sm w-full sci-fi-box relative shadow-2xl"><h3 className="text-red-400 font-bold mb-2 uppercase tracking-widest">Trade Tax</h3><p className="text-gray-300 mb-4 text-sm font-bold uppercase leading-relaxed">Multiple transactions on this commodity today. A 5% tax (<PriceDisplay value={modal.data.tax} size="text-sm"/>) applied.</p><div className="flex gap-2"><button onClick={()=>{ executeTrade(modal.data); }} className="flex-1 bg-red-600 hover:bg-red-500 text-white py-2 rounded-xl font-black shadow-md uppercase">Trade</button><button onClick={()=>{setModal({type:'none', data:null}); SFX.play('click');}} className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-xl uppercase">Cancel</button></div></div></div>
        )}
+
+      {modal.type === 'fabrication_success' && (
+        <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+            <div className="bg-slate-900 border border-green-500 p-8 rounded-2xl max-w-lg w-full sci-fi-box text-center relative shadow-2xl">
+                <p className="text-xl font-black mb-4 text-white">FABRICATION SUCCESSFUL</p>
+                <p className="text-lg mb-8 text-gray-300">Successfully created {modal.data.quantity} unit(s) of {modal.data.name}.</p>
+                <button
+                    onClick={() => { setModal({ type: 'none', data: null }); SFX.play('click'); }}
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl text-xl shadow-lg action-btn uppercase"
+                >
+                    Return to Console ({countdown})
+                </button>
+            </div>
+        </div>
+      )}
+
+      {modal.type === 'banking_transaction_success' && (
+        <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+            <div className="bg-slate-900 border border-green-500 p-8 rounded-2xl max-w-lg w-full sci-fi-box text-center relative shadow-2xl">
+                <p className="text-xl font-black mb-4 text-white">TRANSACTION SUCCESSFUL</p>
+                <p className="text-lg mb-8 text-gray-300">{renderLogMessage(modal.data.message)}</p>
+                <button
+                    onClick={() => { setModal({ type: 'none', data: null }); SFX.play('click'); }}
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl text-xl shadow-lg action-btn uppercase"
+                >
+                    Return to Console ({countdown})
+                </button>
+            </div>
+        </div>
+      )}
 
       {modal.type === 'scanner_actions' && (
         (() => {
