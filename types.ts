@@ -187,6 +187,8 @@ export interface GameState {
   stocks?: Stock[];
   jackpot?: number;
   hasTradedStocksToday?: boolean;
+  optimalVenueToday: number;
+  hasSpokenOptimalVenue: boolean;
 }
 
 export interface Stock {

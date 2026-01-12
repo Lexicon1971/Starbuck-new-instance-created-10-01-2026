@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v10.2.8 SPEAKRETRO
+ * VERSION: v10.2.9 Candy
  * ============================================================================
  * 
  * FEATURE MANIFEST / INTEGRITY CHECKLIST:
@@ -437,7 +437,7 @@ const speakPanicked = (text: string) => {
     speechQueue.add(utterance);
 };
 
-const PET_NAMES = ["Star-Lord", "Hotshot", "Maverick", "Ace", "Boss", "Skipper", "Captain, oh my Captain", "Rocket Man", "Solo", "Skywalker"];
+const PET_NAMES = ["Star-Lord", "Hotshot", "Maverick", "Ace", "Boss", "Skipper", "Captain, oh my Captain", "Rocket Man", "Solo", "Skywalker", "Driller"];
 
 const speakDailyStatusAlerts = (s: GameState) => {
     if (s.activeLoans.length > 0 || s.cash < 0) {
@@ -623,6 +623,7 @@ export default function App() {
   const [highScoreName, setHighScoreName] = useState('');
   const [highlightShippingItem, setHighlightShippingItem] = useState<string | null>(null);
   const [stagedContract, setStagedContract] = useState<Contract | null>(null);
+  const [pulsingContractId, setPulsingContractId] = useState<number | null>(null);
   const [shippingSuccessMessage, setShippingSuccessMessage] = useState<string | null>(null);
   const [cargoUpgradeQty, setCargoUpgradeQty] = useState<string>('1');
   const [fomoQty, setFomoQty] = useState<string>(''); 
@@ -635,6 +636,9 @@ export default function App() {
   const [stockBuyQuantities, setStockBuyQuantities] = useState<Record<string, string>>({});
   const [stockSellQuantities, setStockSellQuantities] = useState<Record<string, string>>({});
   
+  const consoleScrollRef = useRef<HTMLDivElement>(null);
+  const [consoleScrollPosition, setConsoleScrollPosition] = useState(0);
+
   // -- STATE: v5.1 UI Toggles
   const [priorityAcknowledged, setPriorityAcknowledged] = useState(false);
 
@@ -720,7 +724,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v10.2.8 SpeakRetro ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v10.2.9 Candy ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -741,7 +745,9 @@ export default function App() {
         boostedCommodity: undefined,
         stocks: [],
         jackpot: 1000000,
-        hasTradedStocksToday: false
+        hasTradedStocksToday: false,
+        optimalVenueToday: -1,
+        hasSpokenOptimalVenue: false,
     } as GameState;
   };
 
@@ -855,6 +861,27 @@ export default function App() {
     }
   }, [state]);
 
+  useEffect(() => {
+    const scrollableDiv = consoleScrollRef.current;
+    if (scrollableDiv) {
+      // This effect runs when the component mounts (i.e., when modal.type becomes 'none')
+      // Restore scroll position
+      scrollableDiv.scrollTop = consoleScrollPosition;
+
+      // Return a cleanup function that runs when the component unmounts
+      return () => {
+        setConsoleScrollPosition(scrollableDiv.scrollTop);
+      };
+    }
+  }, [modal.type]);
+
+  const openingMessage = `Welcome, Captain. Your former business partner has passed, leaving his debts... and his dreams... to you. We have secured a 30,000 Star Bucks loan to buy out his Widow and reinstate our trading license, but your ship has been stripped down by mutiny. Prepare to board the RR Firefox 22 RustyRedeemer: She’s 60% oxidation and 40% hope, but she’ll get your cargo across the sector if you treat her right.`;
+
+  useEffect(() => {
+      if (modal.type === 'welcome') {
+          speakRetro(openingMessage);
+      }
+  }, [modal.type]);
   // -- LOGIC: PERSISTENCE & TUTORIAL ------------------------------------------
 
   const saveAndExit = (e?: React.MouseEvent) => {
@@ -898,7 +925,7 @@ export default function App() {
      if (!state.tutorialActive) return;
      if (state.day === 2 && !state.tutorialFlags['day2_mining'] && modal.type === 'none') {
         setState(prev => prev ? ({...prev, tutorialFlags: {...prev.tutorialFlags, day2_mining: true}}) : null);
-        speakRetro(`Reminder: Free resources are floating in space! Buy a Mining Laser (Upgrades Deck) and enable 'Mining Run' in C.A.T. Station. Mine, mine, mine!`);
+        speakRetro(`Reminder: Free resources are floating in space! Buy a Mining Laser (Upgrades Deck) and enable 'Mining Run' in C.A.T. Station. Drill Baby, Drill!`);
      }
   };
 
@@ -1679,9 +1706,47 @@ export default function App() {
 
   // -- LOGIC: DAILY CYCLING & CORE SYSTEMS ------------------------------------
 
+  useEffect(() => {
+    if (modal.type === 'travel' && state?.optimalVenueToday && state.optimalVenueToday !== -1 && !state.hasSpokenOptimalVenue) {
+        speakRetro(`According to all calculation available, I would suggest ${VENUES[state.optimalVenueToday]} as the optimal venue to Buy, Fabricate and Sell commodities tomorrow.`);
+        setState(prev => prev ? { ...prev, hasSpokenOptimalVenue: true } : null);
+    }
+  }, [modal.type, state?.optimalVenueToday, state?.hasSpokenOptimalVenue]);
+
   const processDay = (s: GameState, report: DailyReport) => {
     s.dailyTransactions = {};
     s.fomoDailyUse = { mesh: false, stims: false };
+    s.hasSpokenOptimalVenue = false;
+
+    // Calculate optimal venue for the next day
+    let bestVenueIndex = -1;
+    let bestScore = -Infinity;
+
+    s.markets.forEach((market, index) => {
+        let score = 0;
+        // Fabrication score (lower cost of raw materials)
+        const h2oPrice = market[H2O_NAME]?.price || Infinity;
+        const orePrice = market['Titanium Ore']?.price || Infinity;
+        const clothPrice = market['Synthetic Cloth']?.price || Infinity;
+        score -= (h2oPrice + orePrice + clothPrice);
+
+        // Buy score (lower prices on high-value goods)
+        COMMODITIES.forEach(c => {
+            if (c.rarity > 0.5) { // Prioritize rare/expensive items
+                score -= market[c.name]?.price || Infinity;
+            }
+        });
+
+        // Sell score (higher prices on fabricated goods)
+        score += market[MESH_NAME]?.price || 0;
+        score += market['Stim-Packs']?.price || 0;
+
+        if (score > bestScore) {
+            bestScore = score;
+            bestVenueIndex = index;
+        }
+    });
+    s.optimalVenueToday = bestVenueIndex;
     
     s.activeContracts = s.activeContracts.filter(c => c.status === 'active' || c.dayCompleted === s.day);
 
@@ -1765,7 +1830,7 @@ export default function App() {
                      s.stats.largestSingleWin = Math.max(s.stats.largestSingleWin, c.reward);
                      const fulfillmentMsg = `CONTRACT FULFILLED: ${c.firm} received shipment at ${VENUES[c.destinationIndex]}. Reward: ${formatCurrencyLog(c.reward)}`;
                      report.events.push(fulfillmentMsg);
-                     speakRetro(`The contract for ${c.firm} consignment of ${c.commodity} has arrived at ${VENUES[c.destinationIndex]} the contact has been successfully completed.`);
+                     speakRetro(`The contract for ${c.firm} consignment of ${c.commodity} has arrived at ${VENUES[c.destinationIndex]} the contract has been successfully completed.`);
                      c.status = 'completed';
                      c.dayCompleted = s.day;
                      if (item.quantity <= 0) consumed = true;
@@ -2048,13 +2113,80 @@ export default function App() {
   };
 
   const handleFulfill = (c: Contract) => {
-      setModal({type:'shipping', data:null});
-      setLogisticsTab('shipping');
-      setShippingQuantities({ [c.commodity]: c.quantity.toString() });
-      setShippingDestinations({ [c.commodity]: c.destinationIndex.toString() });
-      setHighlightShippingItem(c.commodity);
-      setStagedContract(c);
-      SFX.play('click');
+    if (!state) return;
+    const itemOwned = state.cargo[c.commodity];
+    if (!itemOwned || itemOwned.quantity < c.quantity) {
+        SFX.play('error');
+        setModal({ type: 'message', data: `Insufficient ${c.commodity} to fulfill contract.` });
+        return;
+    }
+    setPulsingContractId(c.id);
+    autoFulfillContract(c);
+    setTimeout(() => {
+        setPulsingContractId(null);
+        setModal({type: 'none', data: null});
+    }, 2000);
+  };
+
+  const autoFulfillContract = (c: Contract) => {
+    if (!state) return;
+
+    const nameVal = c.commodity;
+    const qtyInt = c.quantity;
+    const destInt = c.destinationIndex;
+    const itemOwned = state.cargo[nameVal];
+
+    if (!itemOwned || itemOwned.quantity < qtyInt) {
+        SFX.play('error');
+        setModal({type:'message', data: `Insufficient ${nameVal} to fulfill contract.`});
+        return;
+    }
+
+    const cData = COMMODITIES.find(x => x.name === nameVal)!;
+    const totalWeightVal = qtyInt * cData.unitWeight;
+    const costVal = Math.ceil(totalWeightVal * 100); // Express shipping cost
+
+    if (state.cash < costVal) {
+        SFX.play('error');
+        setModal({type:'message', data: `Insufficient funds for express shipping: ${formatCurrencyLog(costVal)}`});
+        return;
+    }
+
+    const newCargoDict = { ...state.cargo };
+    newCargoDict[nameVal].quantity -= qtyInt;
+    if (newCargoDict[nameVal].quantity <= 0) delete newCargoDict[nameVal];
+
+    const newWarehouseDict: Warehouse = { ...state.warehouse };
+    if (!newWarehouseDict[destInt]) newWarehouseDict[destInt] = {};
+    const existingWare = newWarehouseDict[destInt][nameVal];
+
+    let newArrivalDay = state.day + 1; // 1-day express shipping
+    let newAvgCostVal = itemOwned.averageCost;
+    let newQtyVal = qtyInt;
+
+    if (existingWare) {
+        newArrivalDay = Math.max(existingWare.arrivalDay, newArrivalDay);
+        newAvgCostVal = ((existingWare.quantity * existingWare.originalAvgCost) + (qtyInt * itemOwned.averageCost)) / (existingWare.quantity + qtyInt);
+        newQtyVal += existingWare.quantity;
+    }
+
+    newWarehouseDict[destInt][nameVal] = {
+        quantity: newQtyVal,
+        originalAvgCost: newAvgCostVal,
+        arrivalDay: newArrivalDay,
+        isContractReserved: true
+    };
+
+    setState(prev => prev ? ({
+        ...prev,
+        cash: prev.cash - costVal,
+        cargo: newCargoDict,
+        cargoWeight: prev.cargoWeight - totalWeightVal,
+        warehouse: newWarehouseDict
+    }) : null);
+
+    SFX.play('warp');
+    log(`LOGISTICS: Express shipment for ${c.firm} contract sent to ${VENUES[destInt]}.`, 'contract');
   };
 
   const settleContract = (c: Contract) => {
@@ -2178,28 +2310,35 @@ export default function App() {
   };
 
   const sellWarehouseItem = (vIdx: number, name: string, q: number) => {
-      if (!state) return;
-      const whItem = state.warehouse[vIdx]?.[name];
-      if (!whItem || whItem.quantity < q) return;
+    if (!state) return;
+    const whItem = state.warehouse[vIdx]?.[name];
+    if (!whItem || whItem.quantity < q) return;
 
-      const price = state.markets[vIdx][name].price;
-      const revenue = q * price;
-      const profit = revenue - (q * whItem.originalAvgCost);
+    const price = state.markets[vIdx][name].price;
+    const revenue = q * price;
+    const profit = revenue - (q * whItem.originalAvgCost);
 
-      const newW = { ...state.warehouse };
-      newW[vIdx][name].quantity -= q;
-      if (newW[vIdx][name].quantity <= 0) delete newW[vIdx][name];
-      if (Object.keys(newW[vIdx]).length === 0) delete newW[vIdx];
+    const newW = { ...state.warehouse };
+    newW[vIdx][name].quantity -= q;
+    if (newW[vIdx][name].quantity <= 0) delete newW[vIdx][name];
+    if (Object.keys(newW[vIdx]).length === 0) delete newW[vIdx];
 
-      setState(prev => prev ? ({
-          ...prev,
-          cash: prev.cash + revenue,
-          warehouse: newW,
-          stats: { ...prev.stats, largestSingleWin: Math.max(prev.stats.largestSingleWin, revenue) }
-      }) : null);
+    setState(prev => prev ? ({
+        ...prev,
+        cash: prev.cash + revenue,
+        warehouse: newW,
+        stats: { ...prev.stats, largestSingleWin: Math.max(prev.stats.largestSingleWin, revenue) }
+    }) : null);
 
-      log(`REMOTE SELL: Sold ${q} ${name} at ${VENUES[vIdx]} for ${formatCurrencyLog(revenue)}.`, profit > 0 ? 'profit' : 'danger');
-      SFX.play('coin');
+    log(`REMOTE SELL: Sold ${q} ${name} at ${VENUES[vIdx]} for ${formatCurrencyLog(revenue)}.`, profit > 0 ? 'profit' : 'danger');
+    SFX.play('coin');
+
+    setTimeout(() => {
+        setModal({ type: 'comms', data: null });
+        setTimeout(() => {
+            setModal({ type: 'none', data: null });
+        }, 5000);
+    }, 2000);
   };
 
   const claimWarehouseItem = (vIdx: number, name: string, q: number) => {
@@ -2267,7 +2406,7 @@ export default function App() {
 
   // --- BLOCK 5: UI RENDER ----------------------------------------------------
 
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.2.8</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.2.9</span>...</div>;
 
   const currentMarketLocal = state.markets[state.currentVenueIndex];
   const phaseMultiplier = 1 + ((state.gamePhase - 1) * 0.25);
@@ -2478,7 +2617,7 @@ export default function App() {
         return (
             <div className="flex flex-col h-full bg-slate-900/40 p-4 md:p-8 animate-in fade-in duration-300">
                 <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.2.8</h2>
+                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.2.9</h2>
                     <div className="text-[10px] text-gray-500 font-mono text-right uppercase leading-tight">Neural Reference System <br/>Database: UNRESTRICTED</div>
                 </div>
                 <div className="flex-grow overflow-y-auto custom-scrollbar pr-4 space-y-6">
@@ -2537,7 +2676,7 @@ export default function App() {
                     <span className={`${isOverfilled ? 'text-red-500' : 'text-yellow-400'} text-sm md:text-xl font-bold font-mono w-1/3 text-right`}>{Math.round(state.cargoWeight)}/{state.cargoCapacity}T</span>
                 </div>
                 
-                <div className="overflow-y-auto custom-scrollbar flex-grow p-2">
+                <div className="overflow-y-auto custom-scrollbar flex-grow p-2" ref={consoleScrollRef}>
                     <table className="w-full border-collapse hidden md:table">
                         <thead className="bg-gray-800/90 text-gray-400 sticky top-0 z-10 text-base">
                             <tr>
@@ -2612,7 +2751,7 @@ export default function App() {
                                         <td className="p-2 align-middle">
                                             <div className="flex flex-col space-y-2">
                                                 <div className="flex space-x-1 items-center bg-gray-900/50 p-1 rounded"><input type="number" min="0" placeholder="Qty" className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={buyQuantities[c.name]||''} onChange={e=>setBuyQuantities({...buyQuantities, [c.name]: e.target.value})} /><button onClick={()=>setMaxBuy(c, mItem)} className="w-auto px-4 bg-gray-700 hover:bg-gray-600 text-sm text-white rounded py-1 action-btn">MAX</button><button onClick={()=>handleTrade('buy', c, mItem, owned)} className="w-auto px-4 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded font-bold py-1 action-btn">BUY</button>{availableContract && (<button onClick={() => acceptContract(availableContract)} className="w-auto px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-sm rounded font-bold py-1 action-btn">ACCEPT</button>)}</div>
-                                                <div className="flex space-x-1 items-center bg-gray-900/50 p-1 rounded"><input type="number" min="0" placeholder="Qty" className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={sellQuantities[c.name]||''} onChange={e=>setSellQuantities({...sellQuantities, [c.name]: e.target.value})} /><button onClick={()=>setSellQuantities({...sellQuantities, [c.name]: owned.quantity.toString()})} disabled={owned.quantity===0} className="w-auto px-4 bg-gray-700 hover:bg-gray-600 disabled:opacity-30 text-sm text-white rounded py-1 action-btn">ALL</button><button onClick={()=>handleTrade('sell', c, mItem, owned)} disabled={owned.quantity===0} className="w-auto px-4 bg-green-700 hover:bg-green-600 disabled:opacity-30 text-white text-sm rounded font-bold py-1 action-btn">SELL</button>{activeContract && !isCovered && (<button onClick={() => handleFulfill(activeContract)} disabled={owned.quantity < activeContract.quantity} className="w-auto px-4 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 disabled:opacity-50 text-white text-sm rounded font-bold py-1 action-btn">FULFILL</button>)}</div>
+                                                <div className="flex space-x-1 items-center bg-gray-900/50 p-1 rounded"><input type="number" min="0" placeholder="Qty" className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={sellQuantities[c.name]||''} onChange={e=>setSellQuantities({...sellQuantities, [c.name]: e.target.value})} /><button onClick={()=>setSellQuantities({...sellQuantities, [c.name]: owned.quantity.toString()})} disabled={owned.quantity===0} className="w-auto px-4 bg-gray-700 hover:bg-gray-600 disabled:opacity-30 text-sm text-white rounded py-1 action-btn">ALL</button><button onClick={()=>handleTrade('sell', c, mItem, owned)} disabled={owned.quantity===0} className="w-auto px-4 bg-green-700 hover:bg-green-600 disabled:opacity-30 text-white text-sm rounded font-bold py-1 action-btn">SELL</button>{activeContract && !isCovered && (<button onClick={() => handleFulfill(activeContract)} disabled={owned.quantity < activeContract.quantity || pulsingContractId !== null} className={`w-auto px-4 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 disabled:opacity-50 text-white text-sm rounded font-bold py-1 action-btn ${pulsingContractId === activeContract.id ? 'animate-pulse' : ''}`}>FULFILL</button>)}</div>
                                             </div>
                                         </td>
                                     </tr>
@@ -2650,6 +2789,9 @@ export default function App() {
                              <span className="text-red-500 font-black text-[10px] uppercase animate-[shake_0.5s_infinite]">Warning !!! Laser at {state.laserHealth}% repair</span>
                              <button onClick={() => performRepair('laser')} className="bg-red-600 hover:bg-red-500 text-white text-[9px] font-black px-3 py-1 rounded shadow-lg border-b-2 border-red-900 transition-all uppercase whitespace-nowrap">Repair Laser (<PriceDisplay value={laserRepairCostVal} size="text-[9px]" compact/>)</button>
                            </div>
+                        )}
+                        {state.optimalVenueToday !== -1 && (
+                            <span className="text-cyan-400 font-bold text-[10px] uppercase ml-4">Optimal Venue: {VENUES[state.optimalVenueToday]}</span>
                         )}
                       </div>
 
@@ -2948,7 +3090,7 @@ export default function App() {
 
                    <div className="flex-grow flex flex-col overflow-y-auto custom-scrollbar relative pt-10">
                         <div className="absolute top-0 right-0 w-72 text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                            SYSTEM LOG: FABRICATION MATRIX v10.2.8 ACTIVE
+                            SYSTEM LOG: FABRICATION MATRIX v10.2.9 ACTIVE
                         </div>
 
                         <div className="text-center space-y-2 mb-10">
@@ -3510,7 +3652,7 @@ export default function App() {
         return (
             <div className="flex flex-col h-full bg-slate-900/40 p-4 md:p-8 animate-in fade-in duration-300">
                 <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.2.8</h2>
+                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.2.9</h2>
                     <div className="text-[10px] text-gray-500 font-mono text-right uppercase leading-tight">Neural Reference System <br/>Database: UNRESTRICTED</div>
                 </div>
                 <div className="flex-grow overflow-y-auto custom-scrollbar pr-4 space-y-6">
@@ -3573,7 +3715,7 @@ export default function App() {
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.2.8</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.2.9</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -3756,7 +3898,7 @@ export default function App() {
                   <div className="flex justify-center gap-8 px-4 w-full max-w-4xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.2.8</p>
+                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.2.9</p>
                </div>
            </div>
        )}
