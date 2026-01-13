@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v10.3.1 Andy
+ * VERSION: v10.3.2 Fancy
  * ============================================================================
  * 
  * FEATURE MANIFEST / INTEGRITY CHECKLIST:
@@ -65,7 +65,6 @@ try {
     db = getFirestore(app);
   }
 } catch (e) {
-  console.log("Firebase fallback.");
 }
 
 class SoundEngine {
@@ -747,7 +746,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v10.3.1 Andy ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v10.3.2 Fancy ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -798,6 +797,8 @@ export default function App() {
           price,
           quantity: 0,
           risk,
+          averageCost: 0,
+          history: [price],
         };
       });
       setState(prev => prev ? ({ ...prev, stocks: initialStocks }) : null);
@@ -1346,9 +1347,10 @@ export default function App() {
       return results;
   };
 
-  const handleTravel = (destIdx: number, fuelCost: number, ins: boolean, mine: boolean, overload: boolean, invest95: boolean) => {
-     if (!state) return;
-     const s = { ...state };
+  const handleTravel = (destIdx: number, fuelCost: number, ins: boolean, mine: boolean, overload: boolean, invest95: boolean, stateOverride?: GameState) => {
+     const sourceState = stateOverride || state;
+     if (!sourceState) return;
+     const s = { ...sourceState };
      const report: DailyReport = { events: [], totalHullDamage: 0, totalLaserDamage: 0, fuelUsed: fuelCost, lostItems: {}, gainedItems: {}, insuranceBought: ins };
      
      if (destIdx === s.currentVenueIndex) {
@@ -1984,7 +1986,7 @@ export default function App() {
     }
 
     if (s.stocks) {
-      const updatedStocks = s.stocks.map(stock => {
+      let updatedStocks = s.stocks.map(stock => {
         let priceChange = 0;
         if (stock.risk === 'low') {
           priceChange = stock.price * (Math.random() * 0.1 - 0.03);
@@ -1993,9 +1995,34 @@ export default function App() {
         } else {
           priceChange = stock.price * (Math.random() * 0.72 - 0.22);
         }
-        return { ...stock, price: Math.max(1, stock.price + priceChange) };
+        const newPrice = Math.max(1, stock.price + priceChange);
+        const availableQuantity = 1000 + Math.floor(Math.random() * 99001);
+        return { ...stock, price: newPrice, availableQuantity };
       });
-      s.stocks = updatedStocks;
+
+      updatedStocks.sort((a, b) => (b.availableQuantity || 0) - (a.availableQuantity || 0));
+
+      const top3 = updatedStocks.slice(0, 3);
+      const bottom3 = updatedStocks.slice(-3);
+      const middle4 = updatedStocks.slice(3, -3);
+
+      const applyChanges = (stocks: Stock[], changeFn: (stock: Stock) => number) => {
+        return stocks.map(stock => {
+          const priceChange = changeFn(stock);
+          const newPrice = Math.max(1, stock.price + priceChange);
+          const newHistory = [...(stock.history || []), newPrice].slice(-5);
+          return { ...stock, price: newPrice, history: newHistory };
+        });
+      };
+
+      const changedTop3 = applyChanges(top3, stock => stock.price * -(0.25 + Math.random() * 0.25));
+      const changedBottom3 = applyChanges(bottom3, stock => stock.price * (0.11 + Math.random() * 0.11));
+      const changedMiddle4 = applyChanges(middle4, stock => {
+        const direction = Math.random() < 0.5 ? 1 : -1;
+        return stock.price * (0.01 + Math.random() * 0.06) * direction;
+      });
+
+      s.stocks = [...changedTop3, ...changedMiddle4, ...changedBottom3].sort((a, b) => a.name.localeCompare(b.name));
 
       if (Math.random() < 0.22) {
         if (s.hasTradedStocksToday) {
@@ -2035,7 +2062,11 @@ export default function App() {
 
     const newStocks = state.stocks.map(s => {
       if (s.name === stockName) {
-        return { ...s, quantity: s.quantity + qty };
+        const currentTotalValue = (s.averageCost || 0) * s.quantity;
+        const newTotalValue = currentTotalValue + (qty * stock.price);
+        const newTotalQuantity = s.quantity + qty;
+        const newAverageCost = newTotalValue / newTotalQuantity;
+        return { ...s, quantity: newTotalQuantity, averageCost: newAverageCost };
       }
       return s;
     });
@@ -2496,7 +2527,7 @@ export default function App() {
 
   // --- BLOCK 5: UI RENDER ----------------------------------------------------
 
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.3.1</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.3.2</span>...</div>;
 
   const currentMarketLocal = state.markets[state.currentVenueIndex];
   const phaseMultiplier = 1 + ((state.gamePhase - 1) * 0.25);
@@ -2719,7 +2750,7 @@ export default function App() {
         return (
             <div className="flex flex-col h-full bg-slate-900/40 p-4 md:p-8 animate-in fade-in duration-300">
                 <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.3.1</h2>
+                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.3.2</h2>
                     <div className="text-[10px] text-gray-500 font-mono text-right uppercase leading-tight">Neural Reference System <br/>Database: UNRESTRICTED</div>
                 </div>
                 <div className="flex-grow overflow-y-auto custom-scrollbar pr-4 space-y-6">
@@ -2966,19 +2997,30 @@ export default function App() {
                                       <button onClick={()=>{
                                           if (isBanned) return;
                                           if (missingFuel > 0 || missingCells > 0) {
-                                              const currentM = state.markets[state.currentVenueIndex];
-                                              const fuelPrice = currentM[FUEL_NAME]?.price||0;
-                                              const cellPrice = currentM[POWER_CELL_NAME]?.price||0;
+                                              const fuelPrice = COMMODITIES.find(c => c.name === FUEL_NAME)!.maxPrice;
+                                              const cellPrice = COMMODITIES.find(c => c.name === POWER_CELL_NAME)!.maxPrice;
                                               const cost = (missingFuel * fuelPrice) + (missingCells * cellPrice);
-                                              if (state.cash < cost) { SFX.play('error'); return setModal({type:'message', data:"Insufficient funds for resources."}); }
-                                              const newCargo = {...state.cargo};
+                                              const overdraftFee = state.cash < cost ? cost * 0.10 : 0;
+                                              const totalCost = cost + overdraftFee;
+
+                                              const newState = JSON.parse(JSON.stringify(state));
+                                              newState.cash -= totalCost;
+
+                                              const newCargo = newState.cargo;
                                               if(missingFuel > 0) { const curF = newCargo[FUEL_NAME] || {quantity:0, averageCost:0}; newCargo[FUEL_NAME] = { quantity: curF.quantity + missingFuel, averageCost: ((curF.quantity*curF.averageCost)+(missingFuel*fuelPrice))/(curF.quantity+missingFuel)}; }
                                               if(missingCells > 0) { const curC = newCargo[POWER_CELL_NAME] || {quantity:0, averageCost:0}; newCargo[POWER_CELL_NAME] = { quantity: curC.quantity + missingCells, averageCost: ((curC.quantity*curC.averageCost)+(missingCells*cellPrice))/(curC.quantity+missingCells)}; }
-                                              setState(prev => prev ? ({ ...prev, cash: prev.cash - cost, cargo: newCargo, cargoWeight: prev.cargoWeight + (missingFuel*COMMODITIES.find(c=>c.name===FUEL_NAME)!.unitWeight) + (missingCells*COMMODITIES.find(c=>c.name===POWER_CELL_NAME)!.unitWeight) }) : null); SFX.play('coin');
+
+                                              newState.cargoWeight += (missingFuel*COMMODITIES.find(c=>c.name===FUEL_NAME)!.unitWeight) + (missingCells*COMMODITIES.find(c=>c.name===POWER_CELL_NAME)!.unitWeight);
+
+                                              log(`EMERGENCY: Auto-bought ${missingFuel} Fuel and ${missingCells} Cells at max price.`, 'maintenance');
+                                              if(overdraftFee > 0) log(`OVERDRAFT FEE: Paid ${formatCurrencyLog(overdraftFee)} for emergency purchase.`, 'overdraft');
+                                              SFX.play('coin');
+
+                                              handleTravel(i, fuel, travelConfig.insurance, travelConfig.mining, travelConfig.overload, travelConfig.invest95, newState);
                                           } else { handleTravel(i, fuel, travelConfig.insurance, travelConfig.mining, travelConfig.overload, travelConfig.invest95); }
                                       }} disabled={isBanned} className={`w-full font-bold py-3 rounded-xl text-sm transition-all border-b-4 ${(missingFuel > 0 || missingCells > 0) ? 'bg-red-700 hover:bg-red-600 text-red-100 border-red-900' : 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-900 shadow-lg'}`}>
                                           {(missingFuel > 0 || missingCells > 0) ? (
-                                              <span className="flex items-center justify-center">BUY RESOURCES (<PriceDisplay value={autoBuyCost} size="text-[10px]" compact/>)</span>
+                                              <span className="flex items-center justify-center">BUY & JUMP (<PriceDisplay value={autoBuyCost} size="text-[10px]" compact/>)</span>
                                           ) : `JUMP TO ${v.toUpperCase()}`}
                                       </button>
                                   </div>
@@ -3358,7 +3400,9 @@ export default function App() {
                         <p className="text-xs text-gray-400 mb-2">2.2% of every transaction is added to the jackpot. You have a 22% chance to win 10x the pool each day you trade stocks.</p>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {state.stocks?.map(stock => (
+                        {state.stocks?.map(stock => {
+                          const profitLoss = stock.quantity > 0 && stock.averageCost ? (stock.price - stock.averageCost) * stock.quantity : 0;
+                          return (
                           <div key={stock.name} className="bg-slate-800/60 p-5 rounded-2xl border border-slate-700">
                             <div className="flex justify-between items-start mb-2">
                               <span className="text-white font-black text-lg">{stock.name}</span>
@@ -3366,40 +3410,56 @@ export default function App() {
                             </div>
                             <div className="text-sm text-gray-400 mb-4">Risk: <span className={`font-bold ${stock.risk === 'high' ? 'text-red-500' : stock.risk === 'medium' ? 'text-yellow-500' : 'text-green-500'}`}>{stock.risk}</span></div>
                             <div className="text-sm text-gray-400 mb-4">Owned: {stock.quantity}</div>
+                             {stock.quantity > 0 && (
+                                <div className="text-sm text-gray-400 mb-4">P/L: <PriceDisplay value={profitLoss} colored size="text-sm" /></div>
+                              )}
+                             <div className="h-16 bg-black/20 p-2 rounded mb-4 flex items-center justify-center">
+                                {stock.history && stock.history.length > 1 ? (
+                                  <svg viewBox="0 0 100 50" className="w-full h-full">
+                                    <polyline
+                                      fill="none"
+                                      stroke="#22c55e"
+                                      strokeWidth="2"
+                                      points={
+                                        stock.history.map((price, i) => {
+                                          const x = (i / (stock.history.length - 1)) * 100;
+                                          const max = Math.max(...stock.history);
+                                          const y = 50 - (price / max) * 50;
+                                          return `${x},${y}`;
+                                        }).join(' ')
+                                      }
+                                    />
+                                  </svg>
+                                ) : <span className="text-xs text-gray-600">No price history</span>}
+                              </div>
                             <div className="flex flex-col space-y-2">
                               <div className="flex space-x-1 items-center bg-gray-900/50 p-1 rounded">
                                 <input type="number" min="0" placeholder="Qty" className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={stockBuyQuantities[stock.name]||''} onChange={e=>setStockBuyQuantities({...stockBuyQuantities, [stock.name]: e.target.value})} />
+                                <button onClick={() => {
+                                  const maxBuy = Math.floor(state.cash / (stock.price * 1.022));
+                                  setStockBuyQuantities({...stockBuyQuantities, [stock.name]: maxBuy.toString()});
+                                }} className="w-auto px-4 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded font-bold py-1">MAX</button>
                                 <button onClick={() => handleBuyStock(stock.name)} className="w-auto px-4 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded font-bold py-1 action-btn">BUY</button>
                               </div>
                               <div className="flex space-x-1 items-center bg-gray-900/50 p-1 rounded">
                                 <input type="number" min="0" placeholder="Qty" className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={stockSellQuantities[stock.name]||''} onChange={e=>setStockSellQuantities({...stockSellQuantities, [stock.name]: e.target.value})} />
+                                <button onClick={() => setStockSellQuantities({...stockSellQuantities, [stock.name]: stock.quantity.toString()})} className="w-auto px-4 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded font-bold py-1">MAX</button>
                                 <button onClick={() => handleSellStock(stock.name)} className="w-auto px-4 bg-green-700 hover:bg-green-600 text-white text-sm rounded font-bold py-1 action-btn">SELL</button>
                               </div>
                             </div>
-                             <div className="grid grid-cols-2 gap-2 mt-2">
-                                <button
-                                    onClick={() => {
-                                        setModal({ type: 'shipping', data: null });
-                                        setLogisticsTab('shipping');
-                                        setHighlightShippingItem(c.name);
-                                    }}
-                                    className="flex items-center justify-center gap-2 bg-purple-700/80 hover:bg-purple-600/80 text-white font-bold py-2 rounded-lg text-xs transition-all shadow-md disabled:bg-gray-800 disabled:opacity-50"
-                                    disabled={!cargoItem || cargoItem.quantity === 0}
-                                >
-                                    <Truck size={14} /> SHIP
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        setModal({ type: 'shipping', data: null });
-                                        setLogisticsTab('warehouse');
-                                    }}
-                                    className="flex items-center justify-center gap-2 bg-cyan-700/80 hover:bg-cyan-600/80 text-white font-bold py-2 rounded-lg text-xs transition-all shadow-md"
-                                >
-                                    <WarehouseIcon size={14} /> STORAGE
-                                </button>
-                            </div>
                           </div>
-                        ))}
+                        )})}
+                      </div>
+                      <div className="mt-4">
+                        <button
+                          onClick={() => {
+                            setModal({ type: 'shipping', data: null });
+                            setLogisticsTab('warehouse');
+                          }}
+                          className="w-full flex items-center justify-center gap-2 bg-cyan-700/80 hover:bg-cyan-600/80 text-white font-bold py-3 rounded-lg text-sm transition-all shadow-md"
+                        >
+                          <WarehouseIcon size={16} /> VIEW STORAGE
+                        </button>
                       </div>
                     </div>
                   )}
@@ -3523,31 +3583,31 @@ export default function App() {
                                                    <button
                                                         disabled={!qtyValStr || parseInt(qtyValStr) <= 0 || !destValStr}
                                                         onClick={() => {
-                                                        const qtyInt = parseInt(qtyValStr);
-                                                        const destInt = parseInt(destValStr);
-                                                        if (isNaN(qtyInt) || qtyInt <= 0 || isNaN(destInt)) return;
-                                                        const unitCostAmt = methodValStr === 'fast' ? 100 : (methodValStr === 'standard' ? 50 : 20);
-                                                        const durationDays = methodValStr === 'fast' ? 1 : (methodValStr === 'standard' ? 2 : 3);
-                                                        const cData = COMMODITIES.find(x=>x.name===name)!;
-                                                        const totalWeightVal = qtyInt * cData.unitWeight;
-                                                        const costVal = Math.ceil(totalWeightVal * unitCostAmt);
-                                                        if (item.quantity < qtyInt) return;
-                                                        if (state.cash < costVal) { SFX.play('error'); return setModal({type:'message', data: "Insufficient funds for logistics."}); }
-                                                        const newCargoDict = {...state.cargo};
-                                                        newCargoDict[name].quantity -= qtyInt;
-                                                        if(newCargoDict[name].quantity<=0) delete newCargoDict[name];
-                                                        const newWarehouseDict: Warehouse = {...state.warehouse};
-                                                        if(!newWarehouseDict[destInt]) newWarehouseDict[destInt] = {};
-                                                        const existingWare = newWarehouseDict[destInt][name];
-                                                        let newArrivalDay = state.day + durationDays;
-                                                        let newAvgCostVal = item.averageCost;
-                                                        let newQtyVal = qtyInt;
-                                                        if (existingWare) { newArrivalDay = Math.max(existingWare.arrivalDay, newArrivalDay); newAvgCostVal = ((existingWare.quantity * existingWare.originalAvgCost) + (qtyInt * item.averageCost)) / (existingWare.quantity + qtyInt); newQtyVal += existingWare.quantity; }
-                                                        newWarehouseDict[destInt][name] = { quantity: newQtyVal, originalAvgCost: newAvgCostVal, arrivalDay: newArrivalDay };
-                                                        setState(prev => prev ? ({ ...prev, cash: prev.cash - costVal, cargo: newCargoDict, cargoWeight: prev.cargoWeight - totalWeightVal, warehouse: newWarehouseDict }) : null);
-                                                        setShippingQuantities({...shippingQuantities, [name]: ''}); setHighlightShippingItem(null); SFX.play('warp');
-                                                        setJustShipped(true);
-                                                    }} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl shadow-lg action-btn uppercase font-scifi disabled:bg-gray-700 disabled:opacity-50">SHIP</button>
+                                                                const qtyInt = parseInt(qtyValStr);
+                                                                const destInt = parseInt(destValStr);
+                                                                if (isNaN(qtyInt) || qtyInt <= 0 || isNaN(destInt)) return;
+                                                                const unitCostAmt = methodValStr === 'fast' ? 100 : (methodValStr === 'standard' ? 50 : 20);
+                                                                const durationDays = methodValStr === 'fast' ? 1 : (methodValStr === 'standard' ? 2 : 3);
+                                                                const cData = COMMODITIES.find(x => x.name === name)!;
+                                                                const totalWeightVal = qtyInt * cData.unitWeight;
+                                                                const costVal = Math.ceil(totalWeightVal * unitCostAmt);
+                                                                if (item.quantity < qtyInt) return;
+                                                                if (state.cash < costVal) { SFX.play('error'); return setModal({ type: 'message', data: "Insufficient funds for logistics." }); }
+                                                                const newCargoDict = { ...state.cargo };
+                                                                newCargoDict[name].quantity -= qtyInt;
+                                                                if (newCargoDict[name].quantity <= 0) delete newCargoDict[name];
+                                                                const newWarehouseDict: Warehouse = { ...state.warehouse };
+                                                                if (!newWarehouseDict[destInt]) newWarehouseDict[destInt] = {};
+                                                                const existingWare = newWarehouseDict[destInt][name];
+                                                                let newArrivalDay = state.day + durationDays;
+                                                                let newAvgCostVal = item.averageCost;
+                                                                let newQtyVal = qtyInt;
+                                                                if (existingWare) { newArrivalDay = Math.max(existingWare.arrivalDay, newArrivalDay); newAvgCostVal = ((existingWare.quantity * existingWare.originalAvgCost) + (qtyInt * item.averageCost)) / (existingWare.quantity + qtyInt); newQtyVal += existingWare.quantity; }
+                                                                newWarehouseDict[destInt][name] = { quantity: newQtyVal, originalAvgCost: newAvgCostVal, arrivalDay: newArrivalDay };
+                                                                setState(prev => prev ? ({ ...prev, cash: prev.cash - costVal, cargo: newCargoDict, cargoWeight: prev.cargoWeight - totalWeightVal, warehouse: newWarehouseDict }) : null);
+                                                                setShippingQuantities({ ...shippingQuantities, [name]: '' }); setHighlightShippingItem(null); SFX.play('warp');
+                                                                setJustShipped(true);
+                                                            }} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl shadow-lg action-btn uppercase font-scifi disabled:bg-gray-700 disabled:opacity-50">SHIP</button>
                                                </div>
                                            );
                                        })}
@@ -3738,7 +3798,7 @@ export default function App() {
                                                        const arrived = daysUntil <= 0;
                                                        const seizureDays = (item.arrivalDay + 3) - state.day;
                                                        return (
-                                                           <div key={name} className="flex justify-between items-center bg-black/40 p-5 rounded-2xl border border-white/5 group hover:border-white/10 transition-all">
+                                                           <div key={name} className={`flex justify-between items-center bg-black/40 p-5 rounded-2xl border group hover:border-white/10 transition-all ${highlightShippingItem === name ? 'border-purple-500 shadow-lg' : 'border-white/5'}`}>
                                                                <div className="space-y-1">
                                                                    <div className="text-white text-lg font-black">{name} <span className="text-blue-500">x{item.quantity}</span></div>
                                                                    <div className="text-xs font-mono uppercase tracking-tighter">
@@ -3842,7 +3902,7 @@ export default function App() {
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.3.1</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.3.2</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -3934,6 +3994,13 @@ export default function App() {
              }`}>
               {renderTerminalContent()}
            </div>
+            {modal.type === 'none' && (
+              <div className="absolute bottom-4 left-4 right-4 bg-black/50 backdrop-blur-sm p-3 rounded-xl text-xs font-mono z-20">
+                {state.messages.slice(-2).map(msg => (
+                  <div key={msg.id} className={`${getLogColorClass(msg.type)} p-1`}>{renderLogMessage(msg.message)}</div>
+                ))}
+              </div>
+            )}
          </>
        )}
        
@@ -4025,7 +4092,7 @@ export default function App() {
                   <div className="flex justify-center gap-8 px-4 w-full max-w-4xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.3.1</p>
+                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.3.2</p>
                </div>
            </div>
        )}
