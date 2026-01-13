@@ -337,47 +337,53 @@ class SpeechSynthesisQueue {
     private queue: SpeechSynthesisUtterance[] = [];
     private speaking: boolean = false;
     private voices: SpeechSynthesisVoice[] = [];
+    private voiceReady: boolean = false;
     private watchdogTimer: number | null = null;
-    private voicesLoaded: boolean = false;
 
     constructor() {
-        this.voices = window.speechSynthesis.getVoices();
-        if (this.voices.length > 0) {
-            this.voicesLoaded = true;
+        // Check if voices are already loaded
+        const currentVoices = window.speechSynthesis.getVoices();
+        if (currentVoices.length) {
+            this.loadVoices(currentVoices);
         } else {
-            window.speechSynthesis.onvoiceschanged = () => {
-                this.voices = window.speechSynthesis.getVoices();
-                this.voicesLoaded = true;
-                if (!this.speaking) {
-                    this.processQueue();
-                }
-            };
+            // Otherwise, wait for the event
+            window.speechSynthesis.onvoiceschanged = () => this.loadVoices(window.speechSynthesis.getVoices());
         }
     }
 
-    private loadVoices = () => {
-        this.voices = window.speechSynthesis.getVoices();
+    private loadVoices(voices: SpeechSynthesisVoice[]) {
+        this.voices = voices;
+        this.voiceReady = true;
+        // If there are items in the queue, start processing
+        this.processQueue();
     }
 
-    public getVoice(): SpeechSynthesisVoice | null {
-        return this.voices.find(v => v.name.toLowerCase().includes('google uk english male') || v.name.toLowerCase().includes('robot')) || null;
+    private getVoice(): SpeechSynthesisVoice | null {
+        return this.voices.find(v => v.name.toLowerCase().includes('google uk english male') || v.name.toLowerCase().includes('robot')) || this.voices[0] || null;
     }
 
-    add(utterance: SpeechSynthesisUtterance) {
+    public add(utterance: SpeechSynthesisUtterance) {
         this.queue.push(utterance);
-        if (this.voicesLoaded && !this.speaking) {
+        // Only start processing if not already speaking and voices are ready
+        if (!this.speaking && this.voiceReady) {
             this.processQueue();
         }
     }
 
     private processQueue = () => {
-        if (this.queue.length === 0) {
+        if (this.queue.length === 0 || !this.voiceReady) {
             this.setSpeaking(false);
             return;
         }
 
         this.setSpeaking(true);
         const utterance = this.queue.shift()!;
+
+        // Assign a voice if it doesn't have one yet
+        if (!utterance.voice) {
+             const roboticVoice = this.getVoice();
+             if (roboticVoice) utterance.voice = roboticVoice;
+        }
 
         utterance.onend = () => {
             if (this.watchdogTimer) clearTimeout(this.watchdogTimer);
@@ -387,15 +393,16 @@ class SpeechSynthesisQueue {
         utterance.onerror = (event) => {
             console.error("SpeechSynthesisUtterance.onerror", event);
             if (this.watchdogTimer) clearTimeout(this.watchdogTimer);
-            this.processQueue();
+            this.processQueue(); // Continue queue even if one fails
         };
 
         window.speechSynthesis.speak(utterance);
 
-        // Watchdog to handle cases where onend doesn't fire
+        // Watchdog to prevent queue from getting stuck
         this.watchdogTimer = window.setTimeout(() => {
+            console.warn("Speech synthesis watchdog triggered. Force-advancing queue.");
             this.processQueue();
-        }, (utterance.text.length * 100) + 5000); // Estimate duration and add a buffer
+        }, (utterance.text.length * 100) + 5000); // Generous timeout based on text length
     }
 
     private setSpeaking(isSpeaking: boolean) {
@@ -438,8 +445,6 @@ const speakRetro = (text: string) => {
     utterance.pitch = 0.5;
     utterance.rate = 0.9;
     utterance.volume = 0.8;
-    const roboticVoice = speechQueue.getVoice();
-    if (roboticVoice) utterance.voice = roboticVoice;
     speechQueue.add(utterance);
 };
 
@@ -450,8 +455,6 @@ const speakPanicked = (text: string) => {
     utterance.pitch = 1.5;
     utterance.rate = 1.2;
     utterance.volume = 1.0;
-    const roboticVoice = speechQueue.getVoice();
-    if (roboticVoice) utterance.voice = roboticVoice;
     speechQueue.add(utterance);
 };
 
@@ -3926,7 +3929,7 @@ export default function App() {
               </div>
            </div>
 
-           <div className={`card sci-fi-box rounded-b-xl rounded-t-none p-0 flex-grow flex flex-col bg-transparent overflow-hidden min-h-0 border-t-2 border-t-blue-500/30 ${
+           <div id="main-console" className={`card sci-fi-box rounded-b-xl rounded-t-none p-0 flex-grow flex flex-col bg-transparent overflow-hidden min-h-0 border-t-2 border-t-blue-500/30 ${
                modal.type === 'none' || modal.type === 'comms' || modal.type === 'shipping' || modal.type === 'fomo' || modal.type === 'shop' || modal.type === 'banking' ? 'retro-terminal-background' : ''
              }`}>
               {renderTerminalContent()}
