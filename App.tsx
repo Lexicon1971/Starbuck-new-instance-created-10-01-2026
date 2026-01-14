@@ -1,31 +1,33 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v10.3.2 Fancy
+ * VERSION: v10.3.3 Constancy
+ * ============================================================================
+ *
+ * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
+ * explaining the purpose and functionality of the code. This is to ensure
+ * maintainability and clarity for all developers.
+ *
  * ============================================================================
  * 
  * FEATURE MANIFEST / INTEGRITY CHECKLIST:
- * [✓] CORE: Market Evolution (Supply/Demand, Phase Multipliers)
- * [✓] CORE: Day/Phase Cycling (Goal Thresholds, Phase 4 Overtime)
- * [✓] BANKING: Multiple Loans (Limit 3), Term Deposits, Overdraft Interest (15%)
- * [✓] LOGISTICS: Private Shipping, Warehouse Storage (3-day Seizure), Auto-Claim
- * [✓] SHOP: Equipment Upgrades (Lasers, Shields, Cannons, Cargo Expansion)
- * [✓] TRAVEL: Integrated C.A.T. Station (Main Terminal), Vertical Toggles
- * [✓] FOMO: Daily Batch Fabrication (Mesh, Stim-Packs), 7-Digit Capacity
- * [✓] COMMS: G.I.G.O System Logging, Quirky News Updates
- * [✓] DATA: Firebase/Local Persistence, Legendary Hall of Fame
- * [✓] UI: Terminal-Integrated Windows (v5.6.2 Fixes)
- * [✓] v5.7.0: OVERHAULED Chance Encounters. FIXED Hull/Cargo Integrity logic.
- *             FIXED Insurance Payout (95% via E.X.C.E.S.S.). ADDED Warrants & Passes.
- * [✓] v5.8.0: FIXED Intel Exit button. ADDED Intel Stock/Storage info. LOCKED contract shipments in storage.
- * [✓] v5.9.0: MOVED Legends to Header (Gold Trophy). ADDED Wiki Tab (Sector Codex).
- * [✓] v5.9.3: REWORKED Mining (3x cost, health-based yield). ADDED Voice Synth.
- *             FIXED 'boolean is not defined' error in state initialization.
- * [✓] v5.9.4: REFINED HUD layout (shifted items closer). BALANCED Mining sweet-spot.
- *             FORCED Overload toggle off if laser disabled.
- * [✓] v10.0.0: REPLACED all string-based currency with <PriceDisplay /> component.
- * [✓] v10.1.0: ADDED Intel button to Shipping UI.
- * [✓] v10.2.0: ADDED Market Scanner button to Banking UI.
+ * [✓] External Services (Firebase & Audio)
+ * [✓] Utility & Formatting Functions
+ * [✓] Atomic UI Components (StarCoin, PriceDisplay, etc.)
+ * [✓] Core Game State Management
+ * [✓] Game Initialization & Persistence (Save/Load)
+ * [✓] Tutorial System
+ * [✓] Market Generation & Evolution
+ * [✓] Contract & Loan Generation
+ * [✓] Trading Logic (Buy/Sell)
+ * [✓] Ship Upgrades & Repairs
+ * [✓] Travel, Encounters & Mining Logic
+ * [✓] Daily Cycle Processing
+ * [✓] Stock Market System
+ * [✓] Phase Advancement
+ * [✓] Logistics (Contracts, Shipping, Warehouse)
+ * [✓] Fabrication System (F.O.M.O.)
+ * [✓] Main UI Rendering Engine
  * 
  * ============================================================================
  */
@@ -45,7 +47,12 @@ import Starfield from './Starfield';
 import { Building2, Rocket, XCircle, Trophy, Zap, Truck, Shield, Wrench, Fuel, Crosshair, Heart, Swords, Skull, Box, AlertTriangle, Radar, ClipboardList, Radio, HelpCircle, Warehouse as WarehouseIcon, RefreshCw, Factory, Map as MapIcon, BarChart3, PowerOff, Droplets, Pill, Save, Volume2, VolumeX, Menu, Anchor, Cpu, Hourglass, ToggleLeft, ToggleRight, Info, LineChart, ChevronUp, ChevronDown, Circle, CheckCircle2, BookOpen, Lock } from 'lucide-react';
 
 // --- BLOCK 1: EXTERNAL SERVICES (FIREBASE & AUDIO) --------------------------
+// This block handles the integration of external services, specifically Firebase for data persistence
+// and the Web Audio API for sound effects and speech synthesis.
 
+// A. FIREBASE INITIALIZATION
+// Initializes the Firebase app and Firestore database if the configuration is valid.
+// This allows the game to save high scores and other persistent data.
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs } from 'firebase/firestore';
 
@@ -67,7 +74,11 @@ try {
 } catch (e) {
 }
 
+// B. SOUND ENGINE
+// Manages all audio within the game, including sound effects and ambient noises.
+// It uses the Web Audio API to create and play sounds programmatically.
 class SoundEngine {
+    // Core AudioContext and master gain node for volume control.
     private ctx: AudioContext | null = null;
     private masterGain: GainNode | null = null;
     public isMuted: boolean = false;
@@ -331,8 +342,13 @@ class SoundEngine {
 
 const SFX = new SoundEngine();
 
-// -- RETRO SYNTH VOICE ENGINE --
+// C. SPEECH SYNTHESIS QUEUE
+// Manages the playback of speech synthesis, ensuring that utterances are spoken
+// one after another without interrupting each other. It includes a watchdog timer
+// to prevent the queue from getting stuck.
 class SpeechSynthesisQueue {
+    // `queue` holds the list of utterances to be spoken.
+    // `speaking` is a flag to prevent multiple utterances from playing at once.
     private queue: SpeechSynthesisUtterance[] = [];
     private speaking: boolean = false;
     private voices: SpeechSynthesisVoice[] = [];
@@ -423,6 +439,15 @@ class SpeechSynthesisQueue {
 
 const speechQueue = new SpeechSynthesisQueue();
 
+// D. SPEECH UTILITY FUNCTIONS
+// These functions prepare and queue text to be spoken by the speech synthesis engine.
+
+/**
+ * Processes text to make it more intelligible for the speech synthesis engine.
+ * Replaces currency markers and abbreviations with spoken words.
+ * @param text The raw text to process.
+ * @returns The processed text, ready for speech synthesis.
+ */
 const processTextForSpeech = (text: string): string => {
     let processedText = text.replace(/\$B\s*([\d,]+)/g, (match, number) => {
         return `${number} Star bucks`;
@@ -437,6 +462,12 @@ const processTextForSpeech = (text: string): string => {
     return processedText;
 };
 
+/**
+ * Queues text to be spoken with a retro, robotic voice.
+ * This is the standard voice for most in-game announcements.
+ * Calls processTextForSpeech.
+ * @param text The text to be spoken.
+ */
 const speakRetro = (text: string) => {
     if (SFX.isMuted) return;
     const processedText = processTextForSpeech(text);
@@ -447,6 +478,12 @@ const speakRetro = (text: string) => {
     speechQueue.add(utterance);
 };
 
+/**
+ * Queues text to be spoken with a high-pitched, panicked voice.
+ * Used for critical warnings and emergencies.
+ * Calls processTextForSpeech.
+ * @param text The text to be spoken.
+ */
 const speakPanicked = (text: string) => {
     if (SFX.isMuted) return;
     const processedText = processTextForSpeech(text);
@@ -459,6 +496,12 @@ const speakPanicked = (text: string) => {
 
 const PET_NAMES = ["Star-Lord", "Hotshot", "Maverick", "Ace", "Boss", "Skipper", "Captain, oh my Captain", "Rocket Man", "Solo", "Skywalker", "Driller", "Counsellor", "My lord", "Our Commander and Chief", " My liege", "My Brother from another Mother", "Cuz", "My Presidentte", "My peeps", "Master", "Bee deee bee dee Beep"];
 
+/**
+ * Provides a daily status update to the player via speech synthesis.
+ * Checks for outstanding debts, ship damage, and items in storage.
+ * Calls speakRetro.
+ * @param s The current game state.
+ */
 const speakDailyStatusAlerts = (s: GameState) => {
     if (s.activeLoans.length > 0 || s.cash < 0) {
         speakRetro("Captain, a reminder that we have outstanding debts requiring your attention.");
@@ -477,11 +520,24 @@ const speakDailyStatusAlerts = (s: GameState) => {
 };
 
 // --- BLOCK 2: UTILITIES & FORMATTERS -----------------------------------------
+// This block contains helper functions for formatting numbers and calculating game values.
 
+/**
+ * Formats a number as a currency string for use in the game log.
+ * Calls formatCompactNumber.
+ * @param amount The number to format.
+ * @returns A string representing the currency amount (e.g., "$ 1.2M").
+ */
 const formatCurrencyLog = (amount: number) => {
   return `${COIN_MARKER} ${formatCompactNumber(amount)}`;
 };
 
+/**
+ * Formats a number into a compact, human-readable string (e.g., 1200 => "1.2K").
+ * @param num The number to format.
+ * @param useMForMillions A flag to specify the suffix for millions.
+ * @returns The compact number string.
+ */
 const formatCompactNumber = (num: number, useMForMillions: boolean = false) => {
     if (Math.abs(num) >= 1000000000000) return (num / 1000000000000).toFixed(1).replace(/\.0$/, '') + 'T';
     if (Math.abs(num) >= 1000000000) return (num / 1000000000).toFixed(1).replace(/\.0$/, '') + 'B';
@@ -490,6 +546,15 @@ const formatCompactNumber = (num: number, useMForMillions: boolean = false) => {
     return num.toLocaleString();
 };
 
+/**
+ * Calculates the fuel cost for a trip between two venues.
+ * The cost is affected by distance, cargo weight, and the current game phase.
+ * @param from The starting venue index.
+ * @param to The destination venue index.
+ * @param weight The current cargo weight.
+ * @param phase The current game phase.
+ * @returns The calculated fuel cost.
+ */
 const getFuelCost = (from: number, to: number, weight: number, phase: number) => {
   const distance = BASE_DISTANCE_MATRIX[from][to];
   if (phase === 1) return distance * 2;
@@ -497,10 +562,21 @@ const getFuelCost = (from: number, to: number, weight: number, phase: number) =>
   return fuelPerDist * distance;
 };
 
+/**
+ * Calculates the total market value of the player's cargo.
+ * @param cargo The player's current cargo.
+ * @param currentMarket The market data for the current venue.
+ * @returns The total value of the cargo.
+ */
 const getCargoValue = (cargo: Record<string, CargoItem>, currentMarket: Market) => {
   return Object.entries(cargo).reduce((sum, [name, item]) => sum + (item.quantity * (currentMarket[name]?.price || 0)), 0);
 };
 
+/**
+ * Determines the CSS color class for a log entry based on its type.
+ * @param type The type of the log entry.
+ * @returns A string containing Tailwind CSS color classes.
+ */
 const getLogColorClass = (type: LogEntry['type']) => {
     switch (type) {
         case 'critical':
@@ -528,6 +604,11 @@ const getLogColorClass = (type: LogEntry['type']) => {
     }
 };
 
+/**
+ * Determines the CSS color class for a daily report event based on its content.
+ * @param e The event string from the daily report.
+ * @returns A string containing Tailwind CSS color classes.
+ */
 const getReportEventColorClass = (e: string) => {
     if (e.includes('WARNING') || e.includes('CRITICAL') || e.includes('DEFAULT') || e.includes('BREACH') || e.includes('LOSS') || e.includes('TRAP') || e.includes('OVERDRAFT') || e.includes('SURRENDER') || e.includes('Laser Overload') || e.includes('MATURITY') || e.includes('P.I.G.S') || e.includes('SEIZURE')) return 'text-red-400 font-bold';
     if (e.includes('MINING') || e.includes('FABRICATION')) return 'text-cyan-400';
@@ -539,7 +620,14 @@ const getReportEventColorClass = (e: string) => {
 };
 
 // --- BLOCK 3: ATOMIC UI COMPONENTS ------------------------------------------
+// This block contains small, reusable React components that are used throughout the UI.
 
+/**
+ * Renders the Star Bucks currency icon as an SVG.
+ * @param {object} props - Component props.
+ * @param {number} [props.size=18] - The size of the icon.
+ * @returns A React component rendering the StarCoin SVG.
+ */
 const StarCoin = ({ size = 18 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="inline-block align-middle mb-0.5 mx-0.5">
     <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="#fbbf24" stroke="#b45309" strokeWidth="1.5" />
@@ -547,12 +635,24 @@ const StarCoin = ({ size = 18 }: { size?: number }) => (
   </svg>
 );
 
+/**
+ * A component for displaying a price, including the StarCoin icon and formatted number.
+ * Can be colored for positive/negative values and can display in compact format.
+ * Calls StarCoin and formatCompactNumber.
+ * @param {object} props - Component props.
+ * @returns A React component for displaying the price.
+ */
 const PriceDisplay = ({ value, colored = false, size, compact = false }: { value: number, colored?: boolean, size?: string, compact?: boolean }) => (
   <span className={`font-mono font-bold whitespace-nowrap inline-flex items-center ${size || ''} ${colored ? (value >= 0 ? 'text-green-400' : 'text-red-400') : ''}`}>
     <StarCoin size={size && size.includes('text-xs') ? 14 : (size && size.includes('text-sm') ? 16 : 20)} /> {compact ? formatCompactNumber(Math.round(Math.abs(value))) : Math.round(Math.abs(value)).toLocaleString()} {value < 0 ? '(DR)' : ''}
   </span>
 );
 
+/**
+ * A vertical toggle switch component.
+ * @param {object} props - Component props.
+ * @returns A React component for the vertical toggle.
+ */
 const VerticalToggle = ({ checked, onChange, disabled, label, rightContent }: { checked: boolean, onChange: (e: any) => void, disabled?: boolean, label?: string, rightContent?: React.ReactNode }) => (
     <div className={`flex items-center space-x-2 ${disabled ? 'opacity-30 pointer-events-none' : ''}`}>
         {label && <span className="text-[9px] text-gray-400 uppercase font-black text-left leading-tight w-20">{label}</span>}
@@ -573,6 +673,11 @@ const VerticalToggle = ({ checked, onChange, disabled, label, rightContent }: { 
     </div>
 );
 
+/**
+ * Renders a log message, replacing currency markers with the StarCoin component.
+ * @param msg The log message string.
+ * @returns A React fragment with the formatted message.
+ */
 const renderLogMessage = (msg: string) => {
     const markerRegex = /\$B/g;
     const parts = msg.split(markerRegex);
@@ -590,6 +695,11 @@ const renderLogMessage = (msg: string) => {
     );
 };
 
+/**
+ * A circular status dial component, used for displaying ship health, fuel, etc.
+ * @param {object} props - Component props.
+ * @returns A React component for the status dial.
+ */
 const StatusDial = ({ value, max, icon: Icon, color, label, isPercent }: { value: number, max: number, icon: any, color: string, label: string, isPercent?: boolean }) => {
   const percentage = Math.min(Math.max(value / max, 0), 1) * 100;
   
@@ -608,10 +718,14 @@ const StatusDial = ({ value, max, icon: Icon, color, label, isPercent }: { value
 };
 
 // --- BLOCK 4: MAIN APP COMPONENT & ENGINE ------------------------------------
+// This is the main component that contains the entire game logic and UI.
 
 export default function App() {
   
-  // -- STATE: CORE GAME -------------------------------------------------------
+  // A. CORE GAME STATE
+  // These state variables manage the fundamental aspects of the game.
+  // `state` holds the entire game state object.
+  // `modal` controls which modal window is currently displayed.
   const [state, setState] = useState<GameState | null>(null);
   const [modal, setModal] = useState<{ type: string, data: any, color?: string }>({ type: 'none', data: null });
   const [isMuted, setIsMuted] = useState(false);
@@ -632,7 +746,8 @@ export default function App() {
   }, []);
   const [hasSave, setHasSave] = useState(false);
   
-  // -- STATE: INPUTS & UI -----------------------------------------------------
+  // B. UI & INPUT STATE
+  // These state variables manage the user interface and input fields.
   const [buyQuantities, setBuyQuantities] = useState<Record<string, string>>({});
   const [sellQuantities, setSellQuantities] = useState<Record<string, string>>({});
   const [shippingQuantities, setShippingQuantities] = useState<Record<string, string>>({});
@@ -660,7 +775,8 @@ export default function App() {
   const consoleScrollRef = useRef<HTMLDivElement>(null);
   const [consoleScrollPosition, setConsoleScrollPosition] = useState(0);
 
-  // -- STATE: v5.1 UI Toggles
+  // C. TRAVEL CONFIGURATION STATE
+  // Manages the player's choices for the next travel action.
   const [priorityAcknowledged, setPriorityAcknowledged] = useState(false);
   const [justShipped, setJustShipped] = useState(false);
 
@@ -672,8 +788,16 @@ export default function App() {
       invest95: false
   });
 
-  // -- LOGIC: HELPERS ---------------------------------------------------------
+  // D. HELPER FUNCTIONS
+  // These functions provide various calculations and data retrieval needed by the game logic.
 
+  /**
+   * Finds the venue with the highest price for a given commodity.
+   * @param commodityName The name of the commodity.
+   * @param markets The array of all venue markets.
+   * @param currentVenueIndex The index of the current venue.
+   * @returns The index of the venue with the highest price.
+   */
   const getHighestPayingVenue = (commodityName: string, markets: Market[], currentVenueIndex: number): number => {
     let bestPrice = -1;
     let bestVenues: number[] = [];
@@ -698,6 +822,10 @@ export default function App() {
     return bestVenues[Math.floor(Math.random() * bestVenues.length)];
   };
 
+  /**
+   * Loads the high scores from Firebase or local storage.
+   * @returns A promise that resolves to an array of high scores.
+   */
   const loadHighScores = async () => {
     let scores: HighScore[] = [];
     if (db) {
@@ -725,6 +853,16 @@ export default function App() {
     ];
   };
 
+  /**
+   * Creates the initial state object for a new game.
+   * @param startingCash The initial cash amount.
+   * @param startIdx The starting venue index.
+   * @param markets The initial market data.
+   * @param initialLoan The initial loan object.
+   * @param initialCargo The initial cargo object.
+   * @param cargoWeight The initial cargo weight.
+   * @returns The initial game state object.
+   */
   const getInitialState = (startingCash: number, startIdx: number, markets: Market[], initialLoan: any, initialCargo: any, cargoWeight: number) => {
     return {
         day: 1,
@@ -746,7 +884,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v10.3.2 Fancy ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v10.3.3 Constancy ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -773,6 +911,11 @@ export default function App() {
     } as GameState;
   };
 
+  // E. GAME INITIALIZATION & LIFECYCLE
+  // These useEffect hooks manage the game's startup, save/load functionality,
+  // and other lifecycle events.
+
+  // Initializes the stock market on the first day of a new game.
   useEffect(() => {
     if (state && state.day === 1 && !state.stocks?.length) {
       const initialStocks = [...LOAN_FIRMS, ...CONTRACT_FIRMS].map(firm => {
@@ -805,10 +948,17 @@ export default function App() {
     }
   }, [state?.day]);
 
+  // Main game initialization effect. Runs once on component mount.
+  // Calls initGame.
   useEffect(() => {
       initGame(true);
   }, []);
 
+  /**
+   * Initializes a new game or loads a saved game.
+   * Calls generateMarket, getInitialState, generateLoanOffers, generateContracts, and loadHighScores.
+   * @param checkSave If true, checks for a saved game in local storage.
+   */
   const initGame = async (checkSave: boolean = true) => {
     const markets: Market[] = VENUES.map((_, idx) => generateMarket(true, idx === 0));
     const startIdx = Math.floor(Math.random() * VENUES.length);
@@ -858,6 +1008,9 @@ export default function App() {
     setState(baseState);
     setModal({ type: 'welcome', data: null });
   };
+
+  // This effect updates the recommended shipping destinations when the game state changes.
+  // Calls getHighestPayingVenue.
   useEffect(() => {
     if (state) {
         const newShippingDestinations: Record<string, string> = {};
@@ -869,8 +1022,11 @@ export default function App() {
     }
   }, [state?.day, state?.markets, state?.cargo]);
   
+  // Runs the tutorial check when the day changes or a modal is closed.
+  // Calls runTutorialCheck.
   useEffect(() => { runTutorialCheck(); }, [state?.day, modal.type]);
 
+  // Auto-closes certain success modals after a short delay.
   useEffect(() => {
     if (modal.type === 'fabrication_success' || modal.type === 'banking_transaction_success') {
       const timer = setTimeout(() => setModal({ type: 'none', data: null }), 1500); // Auto-close after 1.5s
@@ -878,6 +1034,7 @@ export default function App() {
     }
   }, [modal.type]);
 
+  // Restores the scroll position of the main console when it is displayed.
   useEffect(() => {
     const scrollableDiv = consoleScrollRef.current;
     if (scrollableDiv) {
@@ -892,6 +1049,7 @@ export default function App() {
     }
   }, [modal.type]);
 
+  // Automatically switches to the warehouse tab after a shipment is made.
   useEffect(() => {
     if (justShipped) {
       setLogisticsTab('warehouse');
@@ -903,12 +1061,14 @@ export default function App() {
     }
   }, [justShipped]);
 
+  // Scrolls the comms/shipping log to the top when the modal is opened.
   useEffect(() => {
     if ((modal.type === 'comms' || (modal.type === 'shipping' && logisticsTab === 'shipping')) && commsContainerRef.current) {
       commsContainerRef.current.scrollTop = 0;
     }
   }, [modal.type, logisticsTab]);
 
+  // Updates the default buy/sell quantities when the main console is displayed.
   useEffect(() => {
     if (modal.type === 'none' && state) {
       const newBuyQuantities: Record<string, string> = {};
@@ -936,13 +1096,21 @@ export default function App() {
 
   const openingMessage = `Welcome, Captain. Your former business partner has passed, leaving his debts... and his dreams... to you. We have secured a 30,000 Star Bucks loan to buy out his Widow and reinstate our trading license, but your ship has been stripped down by mutiny. Prepare to board the RR Firefox 22 RustyRedeemer: She’s 60% oxidation and 40% hope, but she’ll get your cargo across the sector if you treat her right.`;
 
+  // Plays the opening message when the welcome modal is displayed.
+  // Calls speakRetro.
   useEffect(() => {
     if (modal.type === 'welcome') {
       speakRetro(openingMessage);
     }
   }, [modal.type]);
-  // -- LOGIC: PERSISTENCE & TUTORIAL ------------------------------------------
+  // F. PERSISTENCE & TUTORIAL LOGIC
+  // These functions handle saving/loading the game and managing the tutorial system.
 
+  /**
+   * Saves the current game state to local storage.
+   * Calls SFX.play.
+   * @param e Optional mouse event to prevent default behavior.
+   */
   const saveAndExit = (e?: React.MouseEvent) => {
       if (e) {
           e.preventDefault();
@@ -962,6 +1130,10 @@ export default function App() {
       }
   };
 
+  /**
+   * Loads a saved game from local storage.
+   * Calls SFX.init and SFX.play.
+   */
   const loadSavedGame = () => {
       SFX.init(); 
       setModal({ type: 'none', data: null });
@@ -969,11 +1141,19 @@ export default function App() {
       SFX.play('success');
   };
 
+  /**
+   * Initializes the audio context for a new game.
+   * Calls SFX.init.
+   */
   const startNewGame = () => {
       setPriorityAcknowledged(false);
       SFX.init();
   };
 
+  /**
+   * Checks for and triggers time-based tutorial events.
+   * Calls speakRetro.
+   */
   const runTutorialCheck = () => {
      if (!state) return;
      
@@ -988,6 +1168,13 @@ export default function App() {
      }
   };
 
+  /**
+   * Handles clicks on the main feature tabs.
+   * Displays a tutorial popup if the feature hasn't been seen before.
+   * Calls SFX.play.
+   * @param feature The name of the feature being clicked.
+   * @param callback The function to execute after the tutorial (or immediately if seen).
+   */
   const handleFeatureClick = (feature: string, callback: () => void) => {
       SFX.play('click');
       if (state?.isMutinyActive && (feature === 'shop' || feature === 'fomo')) {
@@ -1013,8 +1200,15 @@ export default function App() {
       }
   };
 
-  // -- LOGIC: MARKETS & GENERATION --------------------------------------------
+  // G. MARKET & GENERATION LOGIC
+  // These functions handle the creation and evolution of the in-game markets.
 
+  /**
+   * Generates a new market for a single venue.
+   * @param isInitial Whether this is the initial market generation.
+   * @param isLocal Whether this is the player's starting location.
+   * @returns A market object with prices and quantities for all commodities.
+   */
   const generateMarket = (isInitial: boolean, isLocal: boolean): Market => {
     const market: Market = {};
     COMMODITIES.forEach(c => {
@@ -1031,6 +1225,12 @@ export default function App() {
     return market;
   };
 
+  /**
+   * Evolves all markets for a new day.
+   * Adjusts prices and quantities based on supply, demand, and game phase.
+   * @param s The current game state.
+   * @returns An array of updated market objects.
+   */
   const evolveMarkets = (s: GameState): Market[] => {
     const phaseMult = 1 + ((s.gamePhase - 1) * 0.25); 
     const stockMult = s.gamePhase === 1 ? 1 : (s.gamePhase === 2 ? 5 : (s.gamePhase === 3 ? 10 : 20));
@@ -1097,8 +1297,19 @@ export default function App() {
     });
   };
 
-  // -- LOGIC: CONTRACTS & LOANS -----------------------------------------------
+  // H. CONTRACT & LOAN LOGIC
+  // These functions handle the generation of new contracts and loan offers.
 
+  /**
+   * Generates new contracts for the player.
+   * @param currentVenue The player's current location.
+   * @param day The current game day.
+   * @param phase The current game phase.
+   * @param bans A record of any trade bans the player has.
+   * @param existingAvailable The list of currently available contracts.
+   * @param active The list of currently active contracts.
+   * @returns An array of new and existing available contracts.
+   */
   const generateContracts = (currentVenue: number, day: number, phase: number, bans: Record<number, number>, existingAvailable: Contract[], active: Contract[]): Contract[] => {
     const kept = existingAvailable.filter(c => c.daysRemaining > 0);
     kept.forEach(c => { if(c.daysRemaining > 0) c.daysRemaining--; }); 
@@ -1130,6 +1341,12 @@ export default function App() {
     return contracts;
   };
 
+  /**
+   * Generates new loan offers for the player.
+   * @param phase The current game phase.
+   * @param day The current game day.
+   * @returns An array of new loan offers.
+   */
   const generateLoanOffers = (phase: number, day: number): LoanOffer[] => {
     const goalAmt = phase === 1 ? GOAL_PHASE_1_AMOUNT : (phase === 2 ? GOAL_PHASE_2_AMOUNT : GOAL_PHASE_3_AMOUNT);
     const maxLoan = goalAmt * 0.10; 
@@ -1177,8 +1394,14 @@ export default function App() {
     return createOffers();
   };
 
-  // -- LOGIC: TRADING ---------------------------------------------------------
+  // I. TRADING LOGIC
+  // These functions handle the buying and selling of commodities.
 
+  /**
+   * Executes a trade (buy or sell) and updates the game state.
+   * Calls log and SFX.play.
+   * @param pt A PendingTrade object containing the details of the trade.
+   */
   const executeTrade = (pt: PendingTrade) => {
       if (!state) return;
       const { action, commodity: c, marketItem: mItem, ownedItem: owned, quantity: qty, tax } = pt;
@@ -1239,6 +1462,14 @@ export default function App() {
       setModal({type:'none', data:null});
   };
 
+  /**
+   * Handles the initial click on a buy or sell button.
+   * Checks for trade limits and taxes before calling executeTrade.
+   * @param action Whether the trade is a 'buy' or 'sell'.
+   * @param c The commodity being traded.
+   * @param mItem The market data for the commodity.
+   * @param owned The player's current holdings of the commodity.
+   */
   const handleTrade = (action: 'buy' | 'sell', c: Commodity, mItem: any, owned: any) => {
     if (!state) return;
     const rawQ = action === 'buy' ? buyQuantities[c.name] : sellQuantities[c.name];
@@ -1263,8 +1494,14 @@ export default function App() {
     executeTrade(pending);
   };
 
-  // -- LOGIC: UPGRADES & REPAIRS ----------------------------------------------
+  // J. UPGRADE & REPAIR LOGIC
+  // These functions handle the purchasing of equipment and repairing the ship.
 
+  /**
+   * Buys a new piece of equipment for the ship.
+   * Calls log and SFX.play.
+   * @param item The equipment item to be purchased.
+   */
   const buyEquipment = (item: EquipmentItem) => {
      if (!state) return;
      const scaledCost = (item.type === 'defense') ? item.cost * state.gamePhase : item.cost;
@@ -1276,6 +1513,11 @@ export default function App() {
      SFX.play('success');
   };
   
+  /**
+   * Repairs the ship's hull or laser.
+   * Calls log and SFX.play.
+   * @param type The type of repair to perform.
+   */
   const performRepair = (type: 'hull' | 'laser' | 'full_hull' | 'full_laser') => {
       if (!state) return;
       const MAX_LASER_HEALTH = 100;
@@ -1302,8 +1544,16 @@ export default function App() {
       }
   };
 
-  // -- LOGIC: TRAVEL & ENCOUNTERS ---------------------------------------------
+  // K. TRAVEL & ENCOUNTER LOGIC
+  // These functions handle player travel between venues and random encounters.
 
+  /**
+   * Calculates the amount of cargo lost due to hull damage.
+   * @param s The current game state.
+   * @param hullHealth The ship's hull health.
+   * @param hasInsurance Whether the player has insurance.
+   * @returns An object containing the lost items and any insurance payout.
+   */
   const calculateCargoLoss = (s: GameState, hullHealth: number, hasInsurance: boolean): { lostItems: Record<string, number>, payout: number } => {
       const results = { lostItems: {} as Record<string, number>, payout: 0 };
       if (hullHealth >= 100) return results;
@@ -1347,6 +1597,18 @@ export default function App() {
       return results;
   };
 
+  /**
+   * Handles the player's travel to a new venue.
+   * This is a major function that triggers encounters, processes the day, and checks for game over conditions.
+   * Calls processDay, getNetWorth, getMarketTips, speakRetro, speakDailyStatusAlerts, and SFX.play.
+   * @param destIdx The index of the destination venue.
+   * @param fuelCost The cost of fuel for the trip.
+   * @param ins Whether the player has insurance.
+   * @param mine Whether the player is mining during travel.
+   * @param overload Whether the mining laser is overloaded.
+   * @param invest95 Whether the player is investing 95% of their cash.
+   * @param stateOverride An optional game state to use instead of the current state.
+   */
   const handleTravel = (destIdx: number, fuelCost: number, ins: boolean, mine: boolean, overload: boolean, invest95: boolean, stateOverride?: GameState) => {
      const sourceState = stateOverride || state;
      if (!sourceState) return;
@@ -1493,6 +1755,11 @@ export default function App() {
      finalizeJump(s, report, destIdx, mine, overload);
   };
 
+  /**
+   * Resolves the outcome of a random encounter based on the player's decision.
+   * Calls speakPanicked.
+   * @param decision The player's choice in the encounter.
+   */
   const resolveEncounterOutcome = (decision: 'check' | 'leave' | 'pay' | 'fight' | 'evade' | 'ignore') => {
       if (!modal.data) return;
       const { state: stateData, report: reportData, encounter, destIdx, mine, overload } = modal.data;
@@ -1645,6 +1912,16 @@ export default function App() {
       setModal({ type: 'encounter_resolution', data: { state: s, report: r, outcomeMsg, outcomeType, destIdx, mine, overload } });
   };
 
+  /**
+   * Finalizes the travel action after any encounters have been resolved.
+   * Handles cargo loss, mining, and arrival at the destination.
+   * Calls calculateCargoLoss, processDay, getNetWorth, and other game logic functions.
+   * @param s The current game state.
+   * @param report The daily report object.
+   * @param destIdx The destination venue index.
+   * @param mine Whether the player is mining.
+   * @param overload Whether the mining laser is overloaded.
+   */
   const finalizeJump = (s: GameState, report: DailyReport, destIdx: number, mine: boolean, overload: boolean) => {
      if (s.shipHealth < 100) {
         const lossResults = calculateCargoLoss(s, s.shipHealth, report.insuranceBought);
@@ -1796,8 +2073,11 @@ export default function App() {
      }
   };
 
-  // -- LOGIC: DAILY CYCLING & CORE SYSTEMS ------------------------------------
+  // L. DAILY CYCLE & CORE SYSTEMS LOGIC
+  // These functions handle the end-of-day processing and other core game systems.
 
+  // This effect provides a spoken tip about the optimal venue for the next day.
+  // Calls speakRetro.
   useEffect(() => {
     if (modal.type === 'travel' && state?.optimalVenueToday && state.optimalVenueToday !== -1 && !state.hasSpokenOptimalVenue) {
         speakRetro(`According to all calculation available, I would suggest ${VENUES[state.optimalVenueToday]} as the optimal venue to Buy, Fabricate and Sell commodities tomorrow.`);
@@ -1805,6 +2085,12 @@ export default function App() {
     }
   }, [modal.type, state?.optimalVenueToday, state?.hasSpokenOptimalVenue]);
 
+  /**
+   * Processes the end of a day, updating loans, investments, contracts, and other daily events.
+   * Calls speakRetro, evolveMarkets, generateLoanOffers, and generateContracts.
+   * @param s The current game state.
+   * @param report The daily report object.
+   */
   const processDay = (s: GameState, report: DailyReport) => {
     s.dailyTransactions = {};
     s.fomoDailyUse = { mesh: false, stims: false };
@@ -2044,6 +2330,11 @@ export default function App() {
     s.loanTakenToday = false;
   };
 
+  /**
+   * Handles the buying of stocks.
+   * Calls log and SFX.play.
+   * @param stockName The name of the stock to buy.
+   */
   const handleBuyStock = (stockName: string) => {
     if (!state || !state.stocks) return;
     const qty = parseInt(stockBuyQuantities[stockName] || '0');
@@ -2084,6 +2375,11 @@ export default function App() {
     SFX.play('coin');
   };
 
+  /**
+   * Handles the selling of stocks.
+   * Calls log and SFX.play.
+   * @param stockName The name of the stock to sell.
+   */
   const handleSellStock = (stockName: string) => {
     if (!state || !state.stocks) return;
     const qty = parseInt(stockSellQuantities[stockName] || '0');
@@ -2118,6 +2414,13 @@ export default function App() {
     SFX.play('coin');
   };
 
+  /**
+   * Advances the game to the next phase.
+   * This function is called when the player reaches a net worth goal.
+   * @param s The current game state.
+   * @param nextPhase The next game phase.
+   * @param report The daily report object.
+   */
   const advancePhase = (s: GameState, nextPhase: 1|2|3|4, report: DailyReport) => {
     s.gamePhase = nextPhase;
     const multiplier = nextPhase === 1 ? 1 : (nextPhase === 2 ? 5 : (nextPhase === 3 ? 10 : 20));
@@ -2137,6 +2440,11 @@ export default function App() {
     setState(s);
   };
 
+  /**
+   * Generates market tips based on the current market data.
+   * @param s The current game state.
+   * @returns An array of market tip objects.
+   */
   const getMarketTips = (s: GameState) => {
     if (!s) return [];
     const tips: any[] = [];
@@ -2155,6 +2463,11 @@ export default function App() {
     return tips.sort((a,b) => b.score - a.score).slice(0, 3);
   };
 
+  /**
+   * Adds a new entry to the game log.
+   * @param msg The message to log.
+   * @param type The type of the log entry (e.g., 'info', 'profit', 'danger').
+   */
   const log = (msg: string, type: LogEntry['type']) => {
     setState(prev => {
         if (!prev) return null;
@@ -2164,6 +2477,11 @@ export default function App() {
     });
   };
 
+  /**
+   * Calculates the player's current net worth.
+   * @param s The current game state.
+   * @returns The player's net worth.
+   */
   const getNetWorth = (s: GameState) => {
     const debt = s.activeLoans.reduce((a,b) => a + b.currentDebt, 0);
     const cargoVal = Object.entries(s.cargo).reduce((sum, [name, item]) => sum + (item.quantity * (s.markets[s.currentVenueIndex][name]?.price || 0)), 0);
@@ -2171,6 +2489,14 @@ export default function App() {
     return s.cash + cargoVal + invVal - debt;
   };
 
+  /**
+   * Saves a new high score.
+   * Calls loadHighScores.
+   * @param name The player's name.
+   * @param score The player's score.
+   * @param days The number of days survived.
+   * @returns The updated list of high scores.
+   */
   const saveHighScore = async (name: string, score: number, days: number) => {
     const newScore = { name, score, days, date: new Date().toLocaleDateString() };
     const currentScores = await loadHighScores();
@@ -2184,6 +2510,11 @@ export default function App() {
     return updated;
   };
 
+  /**
+   * Gets the maximum cargo capacity for the current game phase.
+   * @param phase The current game phase.
+   * @returns The maximum cargo capacity.
+   */
   const getMaxCargo = (phase: number) => {
     if (phase === 1) return BASE_MAX_CARGO_CAPACITY; 
     if (phase === 2) return BASE_MAX_CARGO_CAPACITY * 10; 
@@ -2191,6 +2522,10 @@ export default function App() {
     return 500000; 
   };
   
+  /**
+   * Allows the player to voluntarily end the game.
+   * Calls getNetWorth.
+   */
   const attemptVoluntaryRestart = async () => {
       if (!state) return;
       const currentNetWorth = getNetWorth(state);
@@ -2204,10 +2539,17 @@ export default function App() {
       }
   };
 
+  /**
+   * Toggles the game's sound on and off.
+   * Calls SFX.toggleMute.
+   */
   const toggleSound = () => {
       const muted = SFX.toggleMute();
       setIsMuted(muted);
   };
+
+  // M. HELPER FUNCTIONS & SHORTCUTS
+  // A series of small helper functions for quick checks.
 
   const hasLaser = (s: GameState) => s.equipment['laser_mk1'] || s.equipment['laser_mk2'] || s.equipment['laser_mk3'];
   const hasScanner = (s: GameState) => s.equipment['scanner'];
@@ -2219,6 +2561,11 @@ export default function App() {
       return false;
   };
 
+  /**
+   * Accepts a new contract.
+   * Calls log and SFX.play.
+   * @param c The contract to accept.
+   */
   const acceptContract = (c: Contract) => {
     if (!state) return;
     const activeOnly = state.activeContracts.filter(ac => ac.status === 'active');
@@ -2233,6 +2580,11 @@ export default function App() {
     SFX.play('click');
   };
 
+  /**
+   * Handles the fulfillment of a contract from the player's cargo.
+   * Calls autoFulfillContract and SFX.play.
+   * @param c The contract to fulfill.
+   */
   const handleFulfill = (c: Contract) => {
     if (!state) return;
     const itemOwned = state.cargo[c.commodity];
@@ -2249,6 +2601,11 @@ export default function App() {
     }, 2000);
   };
 
+  /**
+   * Automatically fulfills a contract by shipping the required goods.
+   * Calls log and SFX.play.
+   * @param c The contract to fulfill.
+   */
   const autoFulfillContract = (c: Contract) => {
     if (!state) return;
 
@@ -2310,6 +2667,11 @@ export default function App() {
     log(`LOGISTICS: Express shipment for ${c.firm} contract sent to ${VENUES[destInt]}.`, 'contract');
   };
 
+  /**
+   * Settles a contract that has been fulfilled.
+   * Calls log and speakRetro.
+   * @param c The contract to settle.
+   */
   const settleContract = (c: Contract) => {
       if (!state) return;
       const wh = state.warehouse[c.destinationIndex];
@@ -2337,12 +2699,24 @@ export default function App() {
       }
   };
 
+  /**
+   * Shows the commodity intelligence modal.
+   * Calls SFX.play.
+   * @param name The name of the commodity.
+   * @param source The source of the request ('market' or 'storage').
+   * @param venueIndex The index of the venue if the source is 'storage'.
+   */
   const showCommodityIntel = (name: string, source: 'market' | 'storage' = 'market', venueIndex?: number) => {
       if (!state) return;
       setModal({ type: 'commodity_intel', data: { name, source, venueIndex } });
       SFX.play('click');
   };
 
+  /**
+   * Fabricates Z@onflex Weave Mesh.
+   * Calls SFX.play.
+   * @param q The quantity to fabricate.
+   */
   const fabricateItem = (q: number) => {
     if (!state) return;
     const meshCost = 2000;
@@ -2386,6 +2760,11 @@ export default function App() {
     SFX.play('success');
   };
 
+  /**
+   * Fabricates Stim-Packs.
+   * Calls SFX.play.
+   * @param q The quantity to fabricate.
+   */
   const fabricateStimPacks = (q: number) => {
     if (!state) return;
     const processFee = 200;
@@ -2430,6 +2809,13 @@ export default function App() {
     SFX.play('success');
   };
 
+  /**
+   * Sells an item directly from a remote warehouse.
+   * Calls log and SFX.play.
+   * @param vIdx The index of the venue where the item is stored.
+   * @param name The name of the item to sell.
+   * @param q The quantity to sell.
+   */
   const sellWarehouseItem = (vIdx: number, name: string, q: number) => {
     if (!state) return;
     const whItem = state.warehouse[vIdx]?.[name];
@@ -2462,6 +2848,13 @@ export default function App() {
     }, 2000);
   };
 
+  /**
+   * Claims an item from a local warehouse and moves it to the ship's cargo.
+   * Calls log and SFX.play.
+   * @param vIdx The index of the venue.
+   * @param name The name of the item.
+   * @param q The quantity to claim.
+   */
   const claimWarehouseItem = (vIdx: number, name: string, q: number) => {
       if (!state) return;
       const whItem = state.warehouse[vIdx]?.[name];
@@ -2498,11 +2891,23 @@ export default function App() {
       SFX.play('success');
   };
 
+  /**
+   * Forwards a warehouse item to the commodity intel screen.
+   * Calls showCommodityIntel.
+   * @param vIdx The index of the venue.
+   * @param name The name of the item.
+   */
   const forwardWarehouseItem = (vIdx: number, name: string) => {
       if (!state) return;
       showCommodityIntel(name, 'storage', vIdx);
   };
 
+  /**
+   * Sets the buy quantity for a commodity to the maximum affordable amount.
+   * Calls SFX.play.
+   * @param c The commodity.
+   * @param mItem The market data for the commodity.
+   */
   const setMaxBuy = (c: Commodity, mItem: any) => {
     SFX.play('click');
     if (!state) return;
@@ -2511,6 +2916,10 @@ export default function App() {
     setBuyQuantities(prev => ({...prev, [c.name]: val.toString()}));
   };
 
+  /**
+   * Calculates the cost to fully repair the ship's hull.
+   * @returns The total repair cost.
+   */
   const calculateFullRepairCost = () => {
     if (!state) return 0;
     if (state.shipHealth >= MAX_REPAIR_HEALTH) return 0;
@@ -2518,6 +2927,10 @@ export default function App() {
     return needed * REPAIR_COST;
   };
 
+  /**
+   * Calculates the cost to fully repair the mining laser.
+   * @returns The total repair cost.
+   */
   const calculateFullLaserRepairCost = () => {
     if (!state) return 0;
     if (state.laserHealth >= 100) return 0;
@@ -2526,9 +2939,12 @@ export default function App() {
   };
 
   // --- BLOCK 5: UI RENDER ----------------------------------------------------
+  // This block contains the main JSX for rendering the game's UI.
 
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.3.2</span>...</div>;
+  // Display a loading message if the game state has not yet been initialized.
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.3.3</span>...</div>;
 
+  // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
   const phaseMultiplier = 1 + ((state.gamePhase - 1) * 0.25);
   const netWorth = getNetWorth(state);
@@ -3902,7 +4318,7 @@ export default function App() {
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.3.2</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.3.3</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -4092,7 +4508,7 @@ export default function App() {
                   <div className="flex justify-center gap-8 px-4 w-full max-w-4xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.3.2</p>
+                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.3.3</p>
                </div>
            </div>
        )}
