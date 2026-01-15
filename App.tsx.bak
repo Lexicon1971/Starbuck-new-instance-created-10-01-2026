@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
+ * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE
  * VERSION: v10.3.3 Constancy
  * ============================================================================
  *
@@ -9,7 +9,7 @@
  * maintainability and clarity for all developers.
  *
  * ============================================================================
- * 
+ *
  * FEATURE MANIFEST / INTEGRITY CHECKLIST:
  * [✓] External Services (Firebase & Audio)
  * [✓] Utility & Formatting Functions
@@ -28,12 +28,12 @@
  * [✓] Logistics (Contracts, Shipping, Warehouse)
  * [✓] Fabrication System (F.O.M.O.)
  * [✓] Main UI Rendering Engine
- * 
+ *
  * ============================================================================
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { 
+import {
   COMMODITIES, VENUES, BASE_DISTANCE_MATRIX, LOAN_FIRMS, SHOP_ITEMS, CONTRACT_FIRMS,
   INITIAL_CARGO_CAPACITY, BASE_MAX_CARGO_CAPACITY, CARGO_UPGRADE_AMOUNT, CARGO_UPGRADE_COST,
   TONS_UNIT, CURRENCY_UNIT, COIN_MARKER, FUEL_NAME, NUTRI_PASTE_NAME, H2O_NAME, POWER_CELL_NAME, MESH_NAME,
@@ -89,7 +89,7 @@ class SoundEngine {
             this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
             this.masterGain = this.ctx.createGain();
             this.masterGain.connect(this.ctx.destination);
-            this.masterGain.gain.value = 0.6; 
+            this.masterGain.gain.value = 0.6;
             this.startAmbience();
         } else if (this.ctx.state === 'suspended') {
             this.ctx.resume();
@@ -162,7 +162,7 @@ class SoundEngine {
         switch (type) {
             case 'click':
                 osc.type = 'square';
-                osc.frequency.setValueAtTime(880, t); 
+                osc.frequency.setValueAtTime(880, t);
                 gain.gain.setValueAtTime(0.05, t);
                 gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
                 osc.start(t);
@@ -171,7 +171,7 @@ class SoundEngine {
             case 'coin':
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(1200, t);
-                osc.frequency.setValueAtTime(1800, t + 0.08); 
+                osc.frequency.setValueAtTime(1800, t + 0.08);
                 gain.gain.setValueAtTime(0.1, t);
                 gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
                 osc.start(t);
@@ -209,9 +209,9 @@ class SoundEngine {
                 break;
             case 'success':
                 osc.type = 'triangle';
-                osc.frequency.setValueAtTime(523.25, t); 
-                osc.frequency.setValueAtTime(659.25, t + 0.1); 
-                osc.frequency.setValueAtTime(783.99, t + 0.2); 
+                osc.frequency.setValueAtTime(523.25, t);
+                osc.frequency.setValueAtTime(659.25, t + 0.1);
+                osc.frequency.setValueAtTime(783.99, t + 0.2);
                 gain.gain.setValueAtTime(0.05, t);
                 gain.gain.linearRampToValueAtTime(0, t + 0.5);
                 osc.start(t);
@@ -582,7 +582,7 @@ const getLogColorClass = (type: LogEntry['type']) => {
         case 'critical':
         case 'breach':
         case 'debt':
-        case 'danger': 
+        case 'danger':
         case 'overdraft':
         case 'surrender':
         case 'combat_win':
@@ -592,7 +592,7 @@ const getLogColorClass = (type: LogEntry['type']) => {
         case 'mining': return 'text-cyan-400';
         case 'investment':
         case 'profit': return 'text-green-400';
-        case 'maintenance': 
+        case 'maintenance':
         case 'evasion': return 'text-orange-400';
         case 'contract':
         case 'buy': return 'text-blue-400';
@@ -656,8 +656,8 @@ const PriceDisplay = ({ value, colored = false, size, compact = false }: { value
 const VerticalToggle = ({ checked, onChange, disabled, label, rightContent }: { checked: boolean, onChange: (e: any) => void, disabled?: boolean, label?: string, rightContent?: React.ReactNode }) => (
     <div className={`flex items-center space-x-2 ${disabled ? 'opacity-30 pointer-events-none' : ''}`}>
         {label && <span className="text-[9px] text-gray-400 uppercase font-black text-left leading-tight w-20">{label}</span>}
-        <div 
-            onClick={() => !disabled && onChange({ target: { checked: !checked } })} 
+        <div
+            onClick={() => !disabled && onChange({ target: { checked: !checked } })}
             className={`relative w-5 h-10 rounded-lg cursor-pointer border-2 border-gray-700 bg-gray-900 overflow-hidden shadow-inner transition-all ${checked ? 'border-green-500/50' : 'border-red-500/50'}`}
         >
             <div className={`absolute left-0 w-full h-1/2 flex items-center justify-center transition-opacity ${checked ? 'bg-green-600 opacity-100' : 'opacity-0'}`}>
@@ -682,7 +682,7 @@ const renderLogMessage = (msg: string) => {
     const markerRegex = /\$B/g;
     const parts = msg.split(markerRegex);
     if (parts.length === 1) return msg;
-    
+
     return (
         <span>
             {parts.map((part, i) => (
@@ -702,7 +702,7 @@ const renderLogMessage = (msg: string) => {
  */
 const StatusDial = ({ value, max, icon: Icon, color, label, isPercent }: { value: number, max: number, icon: any, color: string, label: string, isPercent?: boolean }) => {
   const percentage = Math.min(Math.max(value / max, 0), 1) * 100;
-  
+
   return (
     <div className="flex flex-col items-center mx-1 md:mx-1 p-1 bg-black/40 rounded border border-gray-700 w-16 md:w-20">
         <div className="flex justify-between items-center w-full mb-0.5">
@@ -721,7 +721,7 @@ const StatusDial = ({ value, max, icon: Icon, color, label, isPercent }: { value
 // This is the main component that contains the entire game logic and UI.
 
 export default function App() {
-  
+
   // A. CORE GAME STATE
   // These state variables manage the fundamental aspects of the game.
   // `state` holds the entire game state object.
@@ -745,14 +745,14 @@ export default function App() {
     };
   }, []);
   const [hasSave, setHasSave] = useState(false);
-  
+
   // B. UI & INPUT STATE
   // These state variables manage the user interface and input fields.
   const [buyQuantities, setBuyQuantities] = useState<Record<string, string>>({});
   const [sellQuantities, setSellQuantities] = useState<Record<string, string>>({});
   const [shippingQuantities, setShippingQuantities] = useState<Record<string, string>>({});
-  const [shippingDestinations, setShippingDestinations] = useState<Record<string, string>>({}); 
-  const [shippingSource, setShippingSource] = useState<Record<string, { type: 'cargo' | 'warehouse', venueIdx: number }>>({}); 
+  const [shippingDestinations, setShippingDestinations] = useState<Record<string, string>>({});
+  const [shippingSource, setShippingSource] = useState<Record<string, { type: 'cargo' | 'warehouse', venueIdx: number }>>({});
   const [shippingTiers, setShippingTiers] = useState<Record<string, string>>({});
   const [logisticsTab, setLogisticsTab] = useState<'shipping' | 'contracts' | 'warehouse'>('contracts');
   const [highScoreName, setHighScoreName] = useState('');
@@ -761,8 +761,8 @@ export default function App() {
   const [pulsingContractId, setPulsingContractId] = useState<number | null>(null);
   const [shippingSuccessMessage, setShippingSuccessMessage] = useState<string | null>(null);
   const [cargoUpgradeQty, setCargoUpgradeQty] = useState<string>('1');
-  const [fomoQty, setFomoQty] = useState<string>(''); 
-  const [fomoStimQty, setFomoStimQty] = useState<string>(''); 
+  const [fomoQty, setFomoQty] = useState<string>('');
+  const [fomoStimQty, setFomoStimQty] = useState<string>('');
   const [claimQuantities, setClaimQuantities] = useState<Record<string, string>>({});
   const [shippingPriorityItem, setShippingPriorityItem] = useState<string | null>(null);
   const [bankInvestAmount, setBankInvestAmount] = useState<string>('');
@@ -772,7 +772,7 @@ export default function App() {
   const [stockBuyQuantities, setStockBuyQuantities] = useState<Record<string, string>>({});
   const [stockSellQuantities, setStockSellQuantities] = useState<Record<string, string>>({});
   const [countdown, setCountdown] = useState(0);
-  
+
   const consoleScrollRef = useRef<HTMLDivElement>(null);
   const [consoleScrollPosition, setConsoleScrollPosition] = useState(0);
   const localAssetsScrollRef = useRef<HTMLDivElement>(null);
@@ -877,12 +877,12 @@ export default function App() {
         markets,
         shipHealth: 100,
         laserHealth: 100,
-        equipment: {}, 
+        equipment: {},
         activeLoans: [initialLoan],
         investments: [],
-        loanOffers: [], 
+        loanOffers: [],
         activeContracts: [],
-        availableContracts: [], 
+        availableContracts: [],
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
@@ -893,7 +893,7 @@ export default function App() {
         gameOver: false,
         gamePhase: 1,
         stats: { largestSingleWin: 0, largestSingleLoss: 0 },
-        highScores: [], 
+        highScores: [],
         tutorialActive: true,
         tutorialFlags: { asked_intro: true },
         dailyTransactions: {},
@@ -965,14 +965,14 @@ export default function App() {
     const markets: Market[] = VENUES.map((_, idx) => generateMarket(true, idx === 0));
     const startIdx = Math.floor(Math.random() * VENUES.length);
     markets[startIdx] = generateMarket(true, true);
-    
+
     const initialCargo: Record<string, CargoItem> = {};
     let cargoWeight = 0;
-    
-    const startingCash = -5000; 
+
+    const startingCash = -5000;
     const randomBank = LOAN_FIRMS[Math.floor(Math.random() * LOAN_FIRMS.length)];
     const initialLoan = { id: Date.now(), firmName: randomBank.name, principal: 30000, currentDebt: 30000, interestRate: randomBank.baseRate, daysRemaining: LOAN_REPAYMENT_DAYS, originalDay: 1 };
-    
+
     const baseState = getInitialState(startingCash, startIdx, markets, initialLoan, initialCargo, cargoWeight);
     baseState.loanOffers = generateLoanOffers(baseState.gamePhase, baseState.day);
     baseState.availableContracts = generateContracts(baseState.currentVenueIndex, baseState.day, baseState.gamePhase, {}, [], []);
@@ -1023,7 +1023,7 @@ export default function App() {
         setShippingDestinations(newShippingDestinations);
     }
   }, [state?.day, state?.markets, state?.cargo]);
-  
+
   // Runs the tutorial check when the day changes or a modal is closed.
   // Calls runTutorialCheck.
   useEffect(() => { runTutorialCheck(); }, [state?.day, modal.type]);
@@ -1160,7 +1160,7 @@ export default function App() {
    * Calls SFX.init and SFX.play.
    */
   const loadSavedGame = () => {
-      SFX.init(); 
+      SFX.init();
       setModal({ type: 'none', data: null });
       log('System: Save game loaded successfully.', 'info');
       SFX.play('success');
@@ -1181,7 +1181,7 @@ export default function App() {
    */
   const runTutorialCheck = () => {
      if (!state) return;
-     
+
      if (state.day === 5 && !state.tutorialFlags['day5_save_msg'] && modal.type === 'none') {
         setState(prev => prev ? ({...prev, tutorialFlags: {...prev.tutorialFlags, day5_save_msg: true}}) : null);
         speakRetro("Captain, we have added an option to save and continue your progress. Select the Save icon in the HUD.");
@@ -1257,7 +1257,7 @@ export default function App() {
    * @returns An array of updated market objects.
    */
   const evolveMarkets = (s: GameState): Market[] => {
-    const phaseMult = 1 + ((s.gamePhase - 1) * 0.25); 
+    const phaseMult = 1 + ((s.gamePhase - 1) * 0.25);
     const stockMult = s.gamePhase === 1 ? 1 : (s.gamePhase === 2 ? 5 : (s.gamePhase === 3 ? 10 : 20));
     const globalIncreasePct = 0.10 + Math.random() * 0.15;
     const h2oPasteMinMult = Math.pow(1.05, s.day);
@@ -1275,19 +1275,19 @@ export default function App() {
       Object.keys(m).forEach(key => {
         const item = m[key];
         const c = COMMODITIES.find(x => x.name === key)!;
-        const adjustedStdQty = item.standardQuantity * stockMult; 
-        let newQty = Math.floor(item.quantity * (1 + (Math.random()-0.5))); 
+        const adjustedStdQty = item.standardQuantity * stockMult;
+        let newQty = Math.floor(item.quantity * (1 + (Math.random()-0.5)));
         if (Math.random() < 0.2) {
              const boost = Math.ceil(adjustedStdQty * globalIncreasePct);
              newQty += boost;
         }
         let dDays = item.quantity <= 0 ? item.depletionDays + 1 : 0;
         if (dDays > 2) {
-           newQty = Math.floor(adjustedStdQty * 0.5); 
+           newQty = Math.floor(adjustedStdQty * 0.5);
            dDays = 0;
         }
         newQty = Math.max(0, newQty);
-        const effectiveRatio = (newQty+1) / adjustedStdQty; 
+        const effectiveRatio = (newQty+1) / adjustedStdQty;
         let rangeMin = s.commodityPriceOverrides?.[key]?.min || c.minPrice * phaseMultiplier;
         let rangeMax = s.commodityPriceOverrides?.[key]?.max || c.maxPrice * phaseMultiplier;
         if (key === H2O_NAME || key === NUTRI_PASTE_NAME) {
@@ -1337,27 +1337,27 @@ export default function App() {
    */
   const generateContracts = (currentVenue: number, day: number, phase: number, bans: Record<number, number>, existingAvailable: Contract[], active: Contract[]): Contract[] => {
     const kept = existingAvailable.filter(c => c.daysRemaining > 0);
-    kept.forEach(c => { if(c.daysRemaining > 0) c.daysRemaining--; }); 
+    kept.forEach(c => { if(c.daysRemaining > 0) c.daysRemaining--; });
     const keptActive = kept.filter(c => c.daysRemaining > 0);
-    
+
     const contracts: Contract[] = [...keptActive];
     const limitCount = phase === 1 ? CONTRACT_LIMIT_P1 : (phase === 2 ? CONTRACT_LIMIT_P2 : CONTRACT_LIMIT_P3);
-    const phaseMult = 1 + ((phase - 1) * 0.5); 
+    const phaseMult = 1 + ((phase - 1) * 0.5);
     const qtyMult = phase === 1 ? 1 : (phase === 2 ? 10 : (phase === 3 ? 50 : 100));
 
-    if (contracts.length < limitCount) { 
+    if (contracts.length < limitCount) {
         for (let i = 0; i < 3; i++) {
             const dest = Math.floor(Math.random() * VENUES.length);
-            if (dest === currentVenue || (bans[dest] && bans[dest] > 0)) continue; 
+            if (dest === currentVenue || (bans[dest] && bans[dest] > 0)) continue;
             const firm = CONTRACT_FIRMS[Math.floor(Math.random() * CONTRACT_FIRMS.length)];
             const commod = COMMODITIES[Math.floor(Math.random() * COMMODITIES.length)];
             const alreadyExists = [...active, ...contracts].some(c => c.commodity === commod.name && c.status === 'active');
             if (alreadyExists) continue;
             const baseQty = Math.floor(Math.random() * 50) + 10;
-            const qty = Math.floor(baseQty * qtyMult); 
+            const qty = Math.floor(baseQty * qtyMult);
             const reward = Math.round(commod.maxPrice * qty * (1.5 + Math.random() * 0.5) * phaseMult);
             const penalty = Math.round(reward * 0.5);
-            const time = Math.floor(Math.random() * 3) + 1; 
+            const time = Math.floor(Math.random() * 3) + 1;
             contracts.push({
                 id: Date.now() + Math.random(), firm, commodity: commod.name, quantity: qty, destinationIndex: dest, reward, daysRemaining: time, penalty, status: 'active'
             });
@@ -1374,7 +1374,7 @@ export default function App() {
    */
   const generateLoanOffers = (phase: number, day: number): LoanOffer[] => {
     const goalAmt = phase === 1 ? GOAL_PHASE_1_AMOUNT : (phase === 2 ? GOAL_PHASE_2_AMOUNT : GOAL_PHASE_3_AMOUNT);
-    const maxLoan = goalAmt * 0.10; 
+    const maxLoan = goalAmt * 0.10;
 
     const createOffers = (): LoanOffer[] => {
         const offers = [];
@@ -1442,11 +1442,11 @@ export default function App() {
           const cur = state.cargo[c.name] || { quantity: 0, averageCost: 0 };
           const newTotal = cur.quantity + qty;
           const newAvg = ((cur.quantity * cur.averageCost) + (qty * mItem.price)) / newTotal;
-          setState(prev => prev ? ({ 
-              ...prev, 
-              cash: prev.cash - cost, 
-              cargoWeight: prev.cargoWeight + weight, 
-              markets: newM, 
+          setState(prev => prev ? ({
+              ...prev,
+              cash: prev.cash - cost,
+              cargoWeight: prev.cargoWeight + weight,
+              markets: newM,
               cargo: { ...prev.cargo, [c.name]: { quantity: newTotal, averageCost: newAvg } },
               dailyTransactions: { ...prev.dailyTransactions, [txKey]: txCount + 1 }
           }) : null);
@@ -1464,12 +1464,12 @@ export default function App() {
           if (newC[c.name].quantity <= 0) delete newC[c.name];
           const profit = rev - (qty * owned.averageCost);
           const isProfitable = profit > 0;
-          setState(prev => prev ? ({ 
-              ...prev, 
-              cash: prev.cash + rev, 
-              cargoWeight: prev.cargoWeight - weight, 
-              markets: newM, 
-              cargo: newC, 
+          setState(prev => prev ? ({
+              ...prev,
+              cash: prev.cash + rev,
+              cargoWeight: prev.cargoWeight - weight,
+              markets: newM,
+              cargo: newC,
               stats: { ...prev.stats, largestSingleWin: Math.max(prev.stats.largestSingleWin, rev) },
               dailyTransactions: { ...prev.dailyTransactions, [txKey]: txCount + 1 }
           }) : null);
@@ -1537,7 +1537,7 @@ export default function App() {
      log(`UPGRADES: Purchased ${item.name}`, 'buy');
      SFX.play('success');
   };
-  
+
   /**
    * Repairs the ship's hull or laser.
    * Calls log and SFX.play.
@@ -1586,7 +1586,7 @@ export default function App() {
       const lossRatio = (100 - hullHealth) / 100;
       const totalWeight = s.cargoWeight;
       const targetWeightToLose = totalWeight * lossRatio;
-      
+
       let weightLostSoFar = 0;
       let totalValueLost = 0;
       const cargoNames = Object.keys(s.cargo);
@@ -1597,7 +1597,7 @@ export default function App() {
           const name = cargoNames[randomIndex];
           const item = s.cargo[name];
           const cData = COMMODITIES.find(c => c.name === name)!;
-          
+
           const maxLossQty = Math.min(item.quantity, Math.ceil((targetWeightToLose - weightLostSoFar) / cData.unitWeight));
           const lossQty = Math.max(1, Math.floor(Math.random() * maxLossQty) + 1);
 
@@ -1611,9 +1611,9 @@ export default function App() {
               cargoNames.splice(randomIndex, 1);
           }
       }
-      
+
       s.cargoWeight = Math.max(0, s.cargoWeight - weightLostSoFar);
-      
+
       if (hasInsurance) {
           results.payout = Math.floor(totalValueLost * 0.95);
           s.cash += results.payout;
@@ -1639,7 +1639,7 @@ export default function App() {
      if (!sourceState) return;
      const s = { ...sourceState };
      const report: DailyReport = { events: [], totalHullDamage: 0, totalLaserDamage: 0, fuelUsed: fuelCost, lostItems: {}, gainedItems: {}, insuranceBought: ins };
-     
+
      if (destIdx === s.currentVenueIndex) {
          s.day++;
          processDay(s, report);
@@ -1662,7 +1662,7 @@ export default function App() {
              SFX.play('error');
              return;
          }
-         
+
          if (s.day === deadlineLimit) {
              setModal({type:'message', data: "URGENT WARNING: Today is the Phase Deadline. Meet the goal or face license revocation!", color: 'text-red-500'});
              SFX.play('alarm');
@@ -1690,19 +1690,19 @@ export default function App() {
              report.events.push(`PROTECTION: Invested ${formatCurrencyLog(investAmt)} (95%) in 1-Day CD.`);
          }
      }
-     
+
      const currentMarketLocal = s.markets[s.currentVenueIndex];
-     const insuranceCost = Math.round(getCargoValue(s.cargo, currentMarketLocal) * 0.02); 
+     const insuranceCost = Math.round(getCargoValue(s.cargo, currentMarketLocal) * 0.02);
      if (ins) {
          s.cash -= insuranceCost;
          if (s.cash < 0) report.events.push(`OVERDRAFT: Insurance payment pushed account into negative.`);
      }
-     
+
      const f = COMMODITIES.find(c=>c.name===FUEL_NAME)!;
      s.cargo[FUEL_NAME].quantity -= fuelCost;
      s.cargoWeight -= fuelCost * f.unitWeight;
      if (s.cargo[FUEL_NAME].quantity <= 0) delete s.cargo[FUEL_NAME];
-     
+
      let encounterChance = 0.35;
      if (s.warrantLevel > 0) encounterChance *= 2;
      if (s.sectorPasses.includes(VENUES[destIdx])) encounterChance -= 0.20;
@@ -1712,9 +1712,9 @@ export default function App() {
         const types: Encounter['type'][] = ['visa_audit', 'scam_customs', 'god_license', 'cargo_tax', 'pirate', 'fuel_breach', 'accident', 'structural', 'rust_rats', 'derelict', 'mutiny'];
         const typeEncounter = types[Math.floor(Math.random()*types.length)];
         let encounter: Encounter = { type: typeEncounter, title: '', description: '', riskDamage: 0 };
-        let riskMult = ins ? 1.5 : 4.0; 
+        let riskMult = ins ? 1.5 : 4.0;
         const shieldLv = s.equipment['shield_gen_mk3'] ? 3 : (s.equipment['shield_gen_mk2'] ? 2 : (s.equipment['shield_gen_mk1'] ? 1 : 0));
-        
+
         switch(typeEncounter) {
             case 'visa_audit':
                 encounter.title = 'V.I.S.A. Safety Audit (Code 22-V)';
@@ -1775,7 +1775,7 @@ export default function App() {
 
         setModal({ type: 'event_encounter', data: { state: s, report, encounter, destIdx, mine, overload } });
         SFX.play('alarm');
-        return; 
+        return;
      }
      finalizeJump(s, report, destIdx, mine, overload);
   };
@@ -1790,7 +1790,7 @@ export default function App() {
       const { state: stateData, report: reportData, encounter, destIdx, mine, overload } = modal.data;
       let outcomeMsg = "";
       let outcomeType: 'info' | 'profit' | 'danger' = 'info';
-      
+
       const s = { ...stateData } as GameState;
       const r = { ...reportData } as DailyReport;
 
@@ -1964,7 +1964,7 @@ export default function App() {
 
      if (mine && hasLaser(s)) {
         const pc = s.cargo[POWER_CELL_NAME];
-        
+
         // v5.9.4 Mining Rework: Cost strictly scales Phase * 3^(Level-1)
         const laserLevel = s.equipment['laser_mk3'] ? 3 : (s.equipment['laser_mk2'] ? 2 : 1);
         const cellsNeeded = s.gamePhase * Math.pow(3, (laserLevel - 1));
@@ -1973,15 +1973,15 @@ export default function App() {
             s.cargo[POWER_CELL_NAME].quantity -= cellsNeeded;
             s.cargoWeight -= cellsNeeded * COMMODITIES.find(c=>c.name===POWER_CELL_NAME)!.unitWeight;
             if (s.cargo[POWER_CELL_NAME].quantity <= 0) delete s.cargo[POWER_CELL_NAME];
-            
+
             // v5.9.4 Yield Balancing: yield is scaled strictly by laser health %
             const healthYieldMult = s.laserHealth / 100;
             const phaseYieldMult = s.gamePhase === 1 ? 1 : (s.gamePhase === 2 ? 5 : (s.gamePhase === 3 ? 10 : 20));
-            const equipmentMult = (laserLevel === 3 ? 5 : (laserLevel === 2 ? 2 : 1)) * (overload ? MINING_OVERLOAD_YIELD_MULT : 1); 
-            
-            const baseYield = Math.floor(Math.random() * 10) + 5; 
+            const equipmentMult = (laserLevel === 3 ? 5 : (laserLevel === 2 ? 2 : 1)) * (overload ? MINING_OVERLOAD_YIELD_MULT : 1);
+
+            const baseYield = Math.floor(Math.random() * 10) + 5;
             const finalYieldScale = equipmentMult * phaseYieldMult * healthYieldMult;
-            const amt = Math.max(1, Math.round(baseYield * finalYieldScale)); 
+            const amt = Math.max(1, Math.round(baseYield * finalYieldScale));
 
             const minedItems: {name: string, amt: number}[] = [];
             if (laserLevel >= 1) minedItems.push({name: 'Titanium Ore', amt: amt});
@@ -1989,10 +1989,10 @@ export default function App() {
             if (laserLevel >= 3 && Math.random() > 0.7) minedItems.push({name: 'Dark Matter', amt: Math.ceil(amt * 0.05)});
 
             // v5.9.4 Overload Risk: 5x damage amount/risk
-            if (overload && Math.random() < 0.6) { 
+            if (overload && Math.random() < 0.6) {
                 const baseDmg = Math.floor(Math.random() * 8) + 4;
-                const selfDmg = baseDmg * MINING_OVERLOAD_RISK_MULT; 
-                s.laserHealth = Math.max(0, s.laserHealth - selfDmg); 
+                const selfDmg = baseDmg * MINING_OVERLOAD_RISK_MULT;
+                s.laserHealth = Math.max(0, s.laserHealth - selfDmg);
                 report.totalLaserDamage += selfDmg;
                 report.events.push(`Laser Overload: Massive resonance backfire! Sustained -${selfDmg}% Laser Damage.`);
             } else if (!overload && Math.random() < 0.1) {
@@ -2006,7 +2006,7 @@ export default function App() {
                 const cur = s.cargo[item.name] || { quantity: 0, averageCost: 0 };
                 const newTotal = cur.quantity + item.amt;
                 const newAvg = ((cur.quantity * cur.averageCost) + (item.amt * 0)) / newTotal;
-                s.cargo[item.name] = { quantity: newTotal, averageCost: newAvg }; 
+                s.cargo[item.name] = { quantity: newTotal, averageCost: newAvg };
                 s.cargoWeight += item.amt*cData.unitWeight;
                 report.gainedItems[item.name] = (report.gainedItems[item.name]||0) + item.amt;
             });
@@ -2017,7 +2017,7 @@ export default function App() {
      }
      s.day++;
      s.currentVenueIndex = destIdx;
-     
+
      const arrivedItems = s.warehouse[destIdx];
      const claimed: string[] = [];
      if (arrivedItems) {
@@ -2036,7 +2036,7 @@ export default function App() {
          });
          if (Object.keys(s.warehouse[destIdx]).length === 0) delete s.warehouse[destIdx];
      }
-     
+
      if (claimed.length > 0) {
          report.events.unshift(`ARRIVAL LOGISTICS: Shipment automatically transferred to cargo: ${claimed.join(', ')}`);
      }
@@ -2064,7 +2064,7 @@ export default function App() {
          speakRetro(message);
          setModal({ type: 'goal_achieved', data: { phase: s.gamePhase, nextPhase: s.gamePhase + 1, state: s, report, daysExtended: daysExt } });
          SFX.play('success');
-         return; 
+         return;
      }
      if (nw >= curGoal && s.gamePhase === 3) {
          const daysExt = GOAL_OVERTIME_DAYS - GOAL_PHASE_3_DAYS;
@@ -2075,7 +2075,7 @@ export default function App() {
      }
      const deadlineLimit = s.gamePhase === 1 ? GOAL_PHASE_1_DAYS : (s.gamePhase === 2 ? GOAL_PHASE_2_DAYS : (s.gamePhase === 3 ? GOAL_PHASE_3_DAYS : GOAL_OVERTIME_DAYS));
      if (s.gamePhase <= 4 && s.day > deadlineLimit && nw < curGoal) s.gameOver = true;
-     
+
      if (!s.gameOver) {
         if (s.day === deadlineLimit) {
              setModal({type:'message', data: "URGENT WARNING: Today is the Phase Deadline. Meet the goal or face license revocation!", color: 'text-red-500'});
@@ -2150,7 +2150,7 @@ export default function App() {
         }
     });
     s.optimalVenueToday = bestVenueIndex;
-    
+
     s.activeContracts = s.activeContracts.filter(c => c.status === 'active' || c.dayCompleted === s.day);
 
     COMMODITIES.forEach(c => {
@@ -2178,7 +2178,7 @@ export default function App() {
     }
     const girlMatter = s.cargo['G.I.R.L (Lite) Matter'];
     if (girlMatter && Math.random() < 0.33) {
-        const pct = 0.05 + Math.random() * 0.10; 
+        const pct = 0.05 + Math.random() * 0.10;
         const loss = Math.ceil(girlMatter.quantity * pct);
         s.cargo['G.I.R.L (Lite) Matter'].quantity = Math.max(0, s.cargo['G.I.R.L (Lite) Matter'].quantity - loss);
         const cData = COMMODITIES.find(c => c.name === 'G.I.R.L (Lite) Matter')!;
@@ -2449,14 +2449,14 @@ export default function App() {
   const advancePhase = (s: GameState, nextPhase: 1|2|3|4, report: DailyReport) => {
     s.gamePhase = nextPhase;
     const multiplier = nextPhase === 1 ? 1 : (nextPhase === 2 ? 5 : (nextPhase === 3 ? 10 : 20));
-    const glutFactor = 2.0; 
+    const glutFactor = 2.0;
     s.markets = s.markets.map(m => {
       const newM: Market = {};
       Object.entries(m).forEach(([k, v]) => {
-          newM[k] = { 
-              ...v, 
-              quantity: Math.floor(v.quantity * multiplier * glutFactor), 
-              standardQuantity: v.standardQuantity * multiplier 
+          newM[k] = {
+              ...v,
+              quantity: Math.floor(v.quantity * multiplier * glutFactor),
+              standardQuantity: v.standardQuantity * multiplier
           };
       });
       return newM;
@@ -2541,12 +2541,12 @@ export default function App() {
    * @returns The maximum cargo capacity.
    */
   const getMaxCargo = (phase: number) => {
-    if (phase === 1) return BASE_MAX_CARGO_CAPACITY; 
-    if (phase === 2) return BASE_MAX_CARGO_CAPACITY * 10; 
-    if (phase === 3) return 250000; 
-    return 500000; 
+    if (phase === 1) return BASE_MAX_CARGO_CAPACITY;
+    if (phase === 2) return BASE_MAX_CARGO_CAPACITY * 10;
+    if (phase === 3) return 250000;
+    return 500000;
   };
-  
+
   /**
    * Allows the player to voluntarily end the game.
    * Calls getNetWorth.
@@ -2596,10 +2596,10 @@ export default function App() {
     const activeOnly = state.activeContracts.filter(ac => ac.status === 'active');
     const limitAmt = state.gamePhase === 1 ? CONTRACT_LIMIT_P1 : (state.gamePhase === 2 ? CONTRACT_LIMIT_P2 : CONTRACT_LIMIT_P3);
     if (activeOnly.length >= limitAmt) { SFX.play('error'); return setModal({type:'message', data: `Contract limit reached (${limitAmt}).`}); }
-    
+
     const newAvail = state.availableContracts.filter(con => con.id !== c.id);
     const newActive = [...state.activeContracts, { ...c, status: 'active' as const }];
-    
+
     setState(prev => prev ? ({ ...prev, availableContracts: newAvail, activeContracts: newActive }) : null);
     log(`CONTRACT: Accepted ${c.firm} contract.`, 'contract');
     SFX.play('click');
@@ -2705,7 +2705,7 @@ export default function App() {
           newW[c.destinationIndex][c.commodity].quantity -= c.quantity;
           if (newW[c.destinationIndex][c.commodity].quantity <= 0) delete newW[c.destinationIndex][c.commodity];
           if (Object.keys(newW[c.destinationIndex]).length === 0) delete newW[c.destinationIndex];
-          
+
           const newActive = state.activeContracts.map(ac => {
               if (ac.id === c.id) return { ...ac, status: 'completed' as const, dayCompleted: state.day };
               return ac;
@@ -2780,7 +2780,7 @@ export default function App() {
       fomoDailyUse: { ...prev.fomoDailyUse, mesh: true }
     }) : null);
 
-    log(`FABRICATION: Used ${h2oNeeded} ${H2O_NAME}, ${oreNeeded} Titanium Ore, and ${clothNeeded} Synthetic Cloth to produce ${q} units of ${MESH_NAME}.`, 'mining');
+    log(`FABRICATION: Transformed raw materials into ${q} units of ${MESH_NAME}.`, 'mining');
     setModal({ type: 'none', data: null });
     setFomoQty('');
     SFX.play('success');
@@ -2798,7 +2798,7 @@ export default function App() {
     const h2oNeeded = q;
     const pasteNeeded = q * 2;
     const medKitsNeeded = q;
-    
+
     const h2o = state.cargo[H2O_NAME]?.quantity || 0;
     const paste = state.cargo[NUTRI_PASTE_NAME]?.quantity || 0;
     const medKits = state.cargo['Medical Kits']?.quantity || 0;
@@ -2830,7 +2830,7 @@ export default function App() {
       fomoDailyUse: { ...prev.fomoDailyUse, stims: true }
     }) : null);
 
-    log(`FABRICATION: Used ${h2oNeeded} ${H2O_NAME}, ${pasteNeeded} ${NUTRI_PASTE_NAME}, and ${medKitsNeeded} Medical Kits to produce ${q} Stim-Packs.`, 'mining');
+    log(`FABRICATION: Synthesized ${q} units of Stim-Packs.`, 'mining');
     setModal({ type: 'none', data: null });
     setFomoStimQty('');
     SFX.play('success');
@@ -2975,7 +2975,7 @@ export default function App() {
   const currentMarketLocal = state.markets[state.currentVenueIndex];
   const phaseMultiplier = 1 + ((state.gamePhase - 1) * 0.25);
   const netWorth = getNetWorth(state);
-  const goalAmt = state.gamePhase===1 ? GOAL_PHASE_1_AMOUNT : (state.gamePhase===2 ? GOAL_PHASE_2_AMOUNT : (state.gamePhase === 3 ? GOAL_PHASE_3_AMOUNT : 0)); 
+  const goalAmt = state.gamePhase===1 ? GOAL_PHASE_1_AMOUNT : (state.gamePhase===2 ? GOAL_PHASE_2_AMOUNT : (state.gamePhase === 3 ? GOAL_PHASE_3_AMOUNT : 0));
   const deadlineLimit = state.gamePhase===1 ? GOAL_PHASE_1_DAYS : (state.gamePhase === 2 ? GOAL_PHASE_2_DAYS : (state.gamePhase === 3 ? GOAL_PHASE_3_DAYS : GOAL_OVERTIME_DAYS));
   const totalDebt = state.activeLoans.reduce((a,b)=>a+b.currentDebt,0);
   const totalInv = state.investments.reduce((a,b)=>a+b.amount,0);
@@ -2991,13 +2991,13 @@ export default function App() {
                    <h2 className="text-3xl font-bold text-white tracking-tight">{modal.data.title}</h2>
                    <p className="text-gray-300 text-lg leading-relaxed whitespace-pre-wrap">{modal.data.text}</p>
                    {TUTORIAL_QUOTES[modal.data.feature] && (<div className={`p-4 bg-slate-800/50 rounded-xl italic text-sm ${TUTORIAL_QUOTES[modal.data.feature].color} border-l-4 ${TUTORIAL_QUOTES[modal.data.feature].color.replace('text-', 'border-')}`}>"{TUTORIAL_QUOTES[modal.data.feature].text}" <br/> - {TUTORIAL_QUOTES[modal.data.feature].author}</div>)}
-                   <button onClick={()=>{ 
-                       setState(prev => { 
-                           if(!prev) return null; 
-                           const newFlags = {...prev.tutorialFlags, [modal.data.feature]: true}; 
-                           return {...prev, tutorialFlags: newFlags}; 
-                       }); 
-                       modal.data.callback(); 
+                   <button onClick={()=>{
+                       setState(prev => {
+                           if(!prev) return null;
+                           const newFlags = {...prev.tutorialFlags, [modal.data.feature]: true};
+                           return {...prev, tutorialFlags: newFlags};
+                       });
+                       modal.data.callback();
                    }} className="bg-blue-600 hover:bg-blue-500 text-white font-black py-4 px-12 rounded-xl text-2xl shadow-xl action-btn uppercase">INITIATE SYSTEM</button>
               </div>
           );
@@ -3213,7 +3213,7 @@ export default function App() {
             </div>
         );
       }
-      
+
       if (modal.type === 'none') {
           if (!priorityAcknowledged) {
               return (
@@ -3222,13 +3222,13 @@ export default function App() {
                         <h2 className="text-4xl font-scifi text-cyan-400 tracking-tighter">Things to do First</h2>
                         <span className="text-[10px] text-cyan-800 font-mono uppercase mt-2">Directive: 098-ALPHA</span>
                       </div>
-                      
+
                       <div className="space-y-6 text-xl md:text-2xl font-bold text-gray-200 leading-snug max-w-4xl">
                           <div className="flex items-start"><span className="text-cyan-500 mr-4 font-black">1.)</span> Take out another loan from I.B.A.N.K. Hub to continue trading.</div>
                           <div className="flex items-start"><span className="text-cyan-500 mr-4 font-black">2.)</span> Do some fabricating in the F.O.M.O deck.</div>
                           <div className="flex items-start"><span className="text-cyan-500 mr-4 font-black">3.)</span> Buy some commodities Low and stock up on fuel (Space Spice) and cells (Hot Isotope Hummers) to mine asteroids.</div>
                           <div className="flex items-start"><span className="text-cyan-500 mr-4 font-black">4.)</span> Buy a mining laser and protection for the ship from the upgrade deck.</div>
-                          
+
                           <div className="bg-cyan-950/20 border-l-4 border-cyan-500 p-6 space-y-4">
                               <p className="text-yellow-400 font-black uppercase tracking-widest text-sm">Most important: Keep your Trading license for as many days as possible.</p>
                               <p className="text-emerald-400 font-black italic">Don't forget to buy commodities low and sell high.</p>
@@ -3251,7 +3251,7 @@ export default function App() {
                     <div className={`text-lg md:text-2xl font-scifi font-bold w-1/3 text-center flex justify-center items-center ${state.cash >= 0 ? 'text-green-500' : 'text-red-500'}`}><PriceDisplay value={state.cash} size="text-lg md:text-2xl" /></div>
                     <span className={`${isOverfilled ? 'text-red-500' : 'text-yellow-400'} text-sm md:text-xl font-bold font-mono w-1/3 text-right`}>{Math.round(state.cargoWeight)}/{state.cargoCapacity}T</span>
                 </div>
-                
+
                 <div className="overflow-y-auto custom-scrollbar flex-grow p-2" ref={consoleScrollRef}>
                     <table className="w-full border-collapse hidden md:table">
                         <thead className="bg-gray-800/90 text-gray-400 sticky top-0 z-10 text-base">
@@ -3351,7 +3351,7 @@ export default function App() {
               <div className="flex flex-col h-full bg-slate-900/60 p-4 md:p-6 space-y-4">
                   <div className="flex flex-col md:flex-row justify-start items-center mb-2 gap-3">
                       <h2 className="text-2xl font-scifi text-emerald-400 whitespace-nowrap">C.A.T. Station</h2>
-                      
+
                       <div className="flex space-x-2 bg-black/40 px-3 py-1.5 rounded-full border border-emerald-500/30">
                           <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-500">Cells : <span className="text-white font-mono text-xs">{currentCells}</span></div>
                           <div className="text-[10px] font-bold uppercase tracking-widest text-blue-400">Fuel : <span className="text-white font-mono text-xs">{currentFuel}</span></div>
@@ -3378,28 +3378,28 @@ export default function App() {
                       <div className="text-emerald-400 font-bold text-sm mb-4 uppercase tracking-wider flex items-center"><Cpu size={16} className="mr-1"/> Flight Configuration Matrix</div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                           <VerticalToggle label="Hull Insurance" checked={travelConfig.insurance} onChange={(e)=>setTravelConfig({...travelConfig, insurance: e.target.checked})} rightContent={<PriceDisplay value={insuranceCost} size="text-[10px]" compact />} />
-                          
-                          <VerticalToggle 
-                            label="Mining Laser" 
-                            disabled={!hasLaser(state)} 
-                            checked={travelConfig.mining} 
+
+                          <VerticalToggle
+                            label="Mining Laser"
+                            disabled={!hasLaser(state)}
+                            checked={travelConfig.mining}
                             onChange={(e)=>{
                                 const isChecked = e.target.checked;
                                 setTravelConfig(prev => ({
-                                    ...prev, 
+                                    ...prev,
                                     mining: isChecked,
-                                    overload: isChecked ? prev.overload : false 
+                                    overload: isChecked ? prev.overload : false
                                 }));
-                            }} 
+                            }}
                           />
-                          
-                          <VerticalToggle 
-                            label="Laser Overload" 
-                            disabled={!hasLaser(state) || !travelConfig.mining} 
-                            checked={travelConfig.overload} 
-                            onChange={(e)=>setTravelConfig({...travelConfig, overload: e.target.checked})} 
+
+                          <VerticalToggle
+                            label="Laser Overload"
+                            disabled={!hasLaser(state) || !travelConfig.mining}
+                            checked={travelConfig.overload}
+                            onChange={(e)=>setTravelConfig({...travelConfig, overload: e.target.checked})}
                           />
-                          
+
                           <VerticalToggle label="Deposit 95% of capital" disabled={state.activeLoans.length > 0} checked={travelConfig.invest95} onChange={(e)=>setTravelConfig({...travelConfig, invest95: e.target.checked})} />
                       </div>
                   </div>
@@ -3410,11 +3410,11 @@ export default function App() {
                           const dist = BASE_DISTANCE_MATRIX[state.currentVenueIndex][i];
                           const fuel = getFuelCost(state.currentVenueIndex, i, state.cargoWeight, state.gamePhase);
                           const missingFuel = Math.max(0, fuel - (state.cargo[FUEL_NAME]?.quantity||0));
-                          
+
                           const laserLevel = state.equipment['laser_mk3'] ? 3 : (state.equipment['laser_mk2'] ? 2 : 1);
                           const cellsNeeded = travelConfig.mining ? (state.gamePhase * Math.pow(3, (laserLevel - 1))) : 0;
                           const missingCells = Math.max(0, cellsNeeded - (state.cargo[POWER_CELL_NAME]?.quantity||0));
-                          
+
                           const autoBuyCost = (missingFuel * (state.markets[state.currentVenueIndex][FUEL_NAME]?.price||0)) + (missingCells * (state.markets[state.currentVenueIndex][POWER_CELL_NAME]?.price||0));
                           const risk = dist > 8 ? 'High' : (dist > 4 ? 'Med' : 'Low');
                           const riskColor = risk === 'High' ? 'text-red-500' : (risk === 'Med' ? 'text-yellow-500' : 'text-green-500');
@@ -3633,7 +3633,7 @@ export default function App() {
                                                 <PriceDisplay value={nextUpgradeItem.cost * (nextUpgradeItem.type === 'defense' ? state.gamePhase : 1)} size="text-sm" compact />
                                             </div>
                                             <div className="text-xs text-gray-500 mb-4">{nextUpgradeItem.description}</div>
-                                            <button 
+                                            <button
                                                 onClick={() => buyEquipment(nextUpgradeItem)}
                                         disabled={state.cash < (nextUpgradeItem.cost * (nextUpgradeItem.type === 'defense' ? state.gamePhase : 1)) || (nextUpgradeItem.id === 'scanner_mk2' && state.gamePhase < 2) || (nextUpgradeItem.id === 'scanner_mk3' && state.gamePhase < 3)}
                                                 className="w-full bg-purple-600 hover:bg-purple-500 disabled:bg-slate-700 text-white font-bold py-2 rounded-lg text-xs transition-all shadow-md border-b-4 border-purple-900 action-btn"
@@ -3699,13 +3699,13 @@ export default function App() {
                                 </div>
                                 <div className="flex gap-3">
                                     <input type="number" placeholder="Qty" className="w-32 bg-gray-900 text-white text-center rounded-xl border border-gray-700 text-2xl font-bold p-3" value={fomoQty || ''} onChange={e=>setFomoQty(e.target.value)} />
-                                    <button onClick={()=>{ 
+                                    <button onClick={()=>{
                                         const h2oAmt = state.cargo[H2O_NAME]?.quantity || 0;
-                                        const oreAmt = state.cargo['Titanium Ore']?.quantity || 0; 
-                                        const clothAmt = state.cargo['Synthetic Cloth']?.quantity || 0; 
-                                        const cashMaxAmt = Math.floor(state.cash / 2000); 
-                                        const maxFab = Math.max(0, Math.min(h2oAmt, oreAmt, clothAmt, cashMaxAmt)); 
-                                        setFomoQty(maxFab.toString()); 
+                                        const oreAmt = state.cargo['Titanium Ore']?.quantity || 0;
+                                        const clothAmt = state.cargo['Synthetic Cloth']?.quantity || 0;
+                                        const cashMaxAmt = Math.floor(state.cash / 2000);
+                                        const maxFab = Math.max(0, Math.min(h2oAmt, oreAmt, clothAmt, cashMaxAmt));
+                                        setFomoQty(maxFab.toString());
                                     }} className="bg-gray-700 hover:bg-gray-600 px-4 rounded-xl text-white font-bold text-sm uppercase transition-colors">MAX</button>
                                     <button onClick={()=>{ const qVal = parseInt(fomoQty); if(!isNaN(qVal) && qVal>0) fabricateItem(qVal); }} disabled={state.fomoDailyUse.mesh} className="flex-grow bg-orange-600 hover:bg-orange-500 disabled:bg-gray-700 text-white font-black rounded-xl text-xl shadow-lg action-btn uppercase">{state.fomoDailyUse.mesh ? 'LOCKOUT' : 'FABRICATE'}</button>
                                 </div>
@@ -3724,13 +3724,13 @@ export default function App() {
                                 </div>
                                 <div className="flex gap-3">
                                     <input type="number" placeholder="Qty" className="w-32 bg-gray-900 text-white text-center rounded-xl border border-gray-700 text-2xl font-bold p-3" value={fomoStimQty || ''} onChange={e=>setFomoStimQty(e.target.value)} />
-                                    <button onClick={()=>{ 
-                                        const h2oAmt = state.cargo[H2O_NAME]?.quantity || 0; 
-                                        const pasteAmt = state.cargo[NUTRI_PASTE_NAME]?.quantity || 0; 
+                                    <button onClick={()=>{
+                                        const h2oAmt = state.cargo[H2O_NAME]?.quantity || 0;
+                                        const pasteAmt = state.cargo[NUTRI_PASTE_NAME]?.quantity || 0;
                                         const kitsAmt = state.cargo['Medical Kits']?.quantity || 0;
-                                        const cashMaxAmt = Math.floor(state.cash / 200); 
-                                        const maxFab = Math.max(0, Math.min(h2oAmt, Math.floor(pasteAmt/2), kitsAmt, cashMaxAmt)); 
-                                        setFomoStimQty(maxFab.toString()); 
+                                        const cashMaxAmt = Math.floor(state.cash / 200);
+                                        const maxFab = Math.max(0, Math.min(h2oAmt, Math.floor(pasteAmt/2), kitsAmt, cashMaxAmt));
+                                        setFomoStimQty(maxFab.toString());
                                     }} className="bg-gray-700 hover:bg-gray-600 px-4 rounded-xl text-white font-bold text-sm uppercase transition-colors">MAX</button>
                                     <button onClick={()=>{ const qVal = parseInt(fomoStimQty); if(!isNaN(qVal) && qVal>0) fabricateStimPacks(qVal); }} disabled={state.fomoDailyUse.stims} className="flex-grow bg-orange-600 hover:bg-orange-500 disabled:bg-gray-700 text-white font-black rounded-xl text-xl shadow-lg action-btn uppercase">{state.fomoDailyUse.stims ? 'LOCKOUT' : 'SYNTHESIZE'}</button>
                                 </div>
@@ -3756,9 +3756,6 @@ export default function App() {
                         <div className="text-[10px] text-yellow-600 font-mono uppercase font-black">Status: Connected</div>
                     </div>
                   </div>
-            <div className="bg-black/50 backdrop-blur-sm p-2 border-y border-gray-700 overflow-y-auto custom-scrollbar text-xs font-mono mb-2" ref={commsContainerRef}>
-                {state.messages.slice(-2).reverse().map((msg) => (<div key={msg.id} className={`p-1 ${getLogColorClass(msg.type)}`}>{renderLogMessage(msg.message)}</div>))}
-            </div>
 
                   {state.gamePhase >= 3 && (
                     <div className="flex bg-slate-800/50 p-1 rounded-xl mb-4">
@@ -3789,7 +3786,7 @@ export default function App() {
                            <div className="pt-6 border-t border-gray-800">
                                <h4 className="text-blue-400 font-bold mb-4 flex items-center text-lg uppercase"><Shield className="mr-2" size={20}/> Available Credit</h4>
                                <div className="space-y-3">
-                                   {state.activeLoans.length >= 3 ? <div className="p-4 bg-red-900/20 rounded-xl text-red-400 italic text-center">Regulatory credit block: Maximum loan limit (3) reached.</div> : state.loanOffers.map((o,i)=>{ const alreadyOwe = state.activeLoans.some(l=>l.firmName===o.firmName); const dailyLimitHit = state.loanTakenToday; return (<div key={i} className={`bg-slate-800/50 p-4 rounded-xl flex justify-between items-center border border-transparent transition-all ${(alreadyOwe || dailyLimitHit) ? 'opacity-30' : 'hover:border-blue-500/50'}`}><div><div className="text-white font-bold text-lg">{o.firmName}</div><div className="text-gray-400 text-xs flex items-center"><PriceDisplay value={o.amount} size="text-xs mr-2"/> @ {o.interestRate.toFixed(1)}% APR</div></div><button onClick={()=>{ if(state.activeLoans.length>=3 || alreadyOwe || state.loanTakenToday) return; 
+                                   {state.activeLoans.length >= 3 ? <div className="p-4 bg-red-900/20 rounded-xl text-red-400 italic text-center">Regulatory credit block: Maximum loan limit (3) reached.</div> : state.loanOffers.map((o,i)=>{ const alreadyOwe = state.activeLoans.some(l=>l.firmName===o.firmName); const dailyLimitHit = state.loanTakenToday; return (<div key={i} className={`bg-slate-800/50 p-4 rounded-xl flex justify-between items-center border border-transparent transition-all ${(alreadyOwe || dailyLimitHit) ? 'opacity-30' : 'hover:border-blue-500/50'}`}><div><div className="text-white font-bold text-lg">{o.firmName}</div><div className="text-gray-400 text-xs flex items-center"><PriceDisplay value={o.amount} size="text-xs mr-2"/> @ {o.interestRate.toFixed(1)}% APR</div></div><button onClick={()=>{ if(state.activeLoans.length>=3 || alreadyOwe || state.loanTakenToday) return;
                                    // Fix: Corrected assignment of o.firmName (string) to loanEntry.firmName instead of o.amount (number)
                                    const loanEntry = {id:Date.now(), firmName:o.firmName, principal:o.amount, currentDebt:o.amount, interestRate:o.interestRate, daysRemaining:5, originalDay:state.day}; setState(prev=>prev?({...prev, cash:prev.cash+o.amount, activeLoans:[...prev.activeLoans, loanEntry], loanTakenToday:true}):null); SFX.play('coin'); log(`LOAN: Secured ${formatCurrencyLog(o.amount)} from ${o.firmName}`, 'buy'); setModal({ type: 'banking_transaction_success', data: { message: `Successfully secured loan of ${formatCurrencyLog(o.amount)}` } }); }} disabled={alreadyOwe || dailyLimitHit} className="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 text-white px-6 py-2 rounded-xl font-black uppercase text-xs transition-all">DRAW FUNDS</button></div>);})}
                                </div>
@@ -3962,7 +3959,7 @@ export default function App() {
                                        const wh = state.warehouse[c.destinationIndex];
                                        const hasItems = wh && wh[c.commodity] && wh[c.commodity].quantity >= c.quantity;
                                        const isReady = c.status === 'active' && hasItems && wh[c.commodity].arrivalDay <= state.day;
-                                       
+
                                        return (
                                            <div key={c.id} className={`p-5 rounded-2xl mb-3 border shadow-inner transition-all ${c.status === 'completed' ? 'bg-emerald-900/40 border-emerald-500' : (c.status === 'failed' ? 'bg-red-900/40 border-red-500' : (isReady ? 'bg-purple-900/40 border-purple-500 animate-in fade-in zoom-in-95' : 'bg-blue-900/10 border-blue-500/50'))}`}>
                                                <div className="flex justify-between items-center mb-2">
@@ -4008,7 +4005,7 @@ export default function App() {
                                            const isSelected = highlightShippingItem === name && !shippingSource[name]?.type;
                                            const qtyValStr = shippingQuantities[name] || '';
                                            const destValStr = shippingDestinations[name] || '';
-                                           const methodValStr = shippingTiers[name] || 'fast'; 
+                                           const methodValStr = shippingTiers[name] || 'fast';
 
                                            return (
                                                <div key={name} className={`p-5 rounded-2xl border transition-all ${isSelected ? 'border-blue-500 bg-blue-900/20 shadow-2xl' : 'border-slate-700 bg-slate-800/40 hover:border-slate-600'}`}>
@@ -4085,10 +4082,10 @@ export default function App() {
                                                    const destInt = stagedContract.destinationIndex;
                                                    const itemOwned = state.cargo[nameVal];
                                                    if (!itemOwned || itemOwned.quantity < qtyInt) return setModal({type:'message', data: `Insufficient ${nameVal}.`});
-                                                   
+
                                                    const cData = COMMODITIES.find(x=>x.name===nameVal)!;
                                                    const totalWeightVal = qtyInt * cData.unitWeight;
-                                                   const costVal = Math.ceil(totalWeightVal * 100); 
+                                                   const costVal = Math.ceil(totalWeightVal * 100);
                                                    if (state.cash < costVal) return setModal({type:'message', data: `Insufficient funds: ${formatCurrencyLog(costVal)}`});
 
                                                    const newCargoDict = {...state.cargo};
@@ -4097,12 +4094,12 @@ export default function App() {
                                                    const newWarehouseDict: Warehouse = {...state.warehouse};
                                                    if(!newWarehouseDict[destInt]) newWarehouseDict[destInt] = {};
                                                    const existingWare = newWarehouseDict[destInt][nameVal];
-                                                   let newArrivalDay = state.day + 1; 
+                                                   let newArrivalDay = state.day + 1;
                                                    let newAvgCostVal = itemOwned.averageCost;
                                                    let newQtyVal = qtyInt;
                                                    if (existingWare) { newArrivalDay = Math.max(existingWare.arrivalDay, newArrivalDay); newAvgCostVal = ((existingWare.quantity * existingWare.originalAvgCost) + (qtyInt * itemOwned.averageCost)) / (existingWare.quantity + qtyInt); newQtyVal += existingWare.quantity; }
                                                    newWarehouseDict[destInt][nameVal] = { quantity: newQtyVal, originalAvgCost: newAvgCostVal, arrivalDay: newArrivalDay, isContractReserved: true };
-                                                   
+
                                                    setState(prev => prev ? ({ ...prev, cash: prev.cash - costVal, cargo: newCargoDict, cargoWeight: prev.cargoWeight - totalWeightVal, warehouse: newWarehouseDict }) : null);
                                                    setStagedContract(null); setHighlightShippingItem(null); SFX.play('warp');
                                                }} className="w-full bg-purple-600 hover:bg-purple-500 text-white font-black py-5 rounded-2xl shadow-xl uppercase action-btn">Fulfill contract</button>
@@ -4308,7 +4305,7 @@ export default function App() {
                                 <p className="text-gray-400 font-mono text-sm leading-relaxed">{sec.content}</p>
                             </div>
                         );
-                    })}       
+                    })}
                    </div>
               </div>
           );
@@ -4357,25 +4354,25 @@ export default function App() {
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
                     <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.3.3</span>
-                    
+
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
-                        <button onClick={toggleSound} 
-                                className="w-9 h-9 rounded-full bg-gray-800/80 border border-gray-700 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-lg text-white hover:text-cyan-400" 
+                        <button onClick={toggleSound}
+                                className="w-9 h-9 rounded-full bg-gray-800/80 border border-gray-700 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-lg text-white hover:text-cyan-400"
                                 title="Toggle Audio">
                             {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
                         </button>
-                        
+
                         {/* Legends Toggle */}
-                        <button onClick={()=>handleFeatureClick('highscores', ()=>setModal({type:'highscores', data:null}))} 
-                                className="w-9 h-9 rounded-full bg-gray-800/80 border border-gray-700 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-lg text-yellow-500 hover:text-yellow-400" 
+                        <button onClick={()=>handleFeatureClick('highscores', ()=>setModal({type:'highscores', data:null}))}
+                                className="w-9 h-9 rounded-full bg-gray-800/80 border border-gray-700 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-lg text-yellow-500 hover:text-yellow-400"
                                 title="Galactic Legends">
                             <Trophy size={18} />
                         </button>
-                        
+
                         {/* Save Game */}
-                        <button onClick={(e)=>saveAndExit(e)} 
-                                className={`w-9 h-9 rounded-full bg-gray-800/80 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-lg border ${hasSave ? 'border-green-900/50 text-green-500 hover:border-green-500' : 'border-red-900/50 text-red-500 hover:border-red-500'}`} 
+                        <button onClick={(e)=>saveAndExit(e)}
+                                className={`w-9 h-9 rounded-full bg-gray-800/80 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-lg border ${hasSave ? 'border-green-900/50 text-green-500 hover:border-green-500' : 'border-red-900/50 text-red-500 hover:border-red-500'}`}
                                 title="Save Neural State">
                             <Save size={18} />
                         </button>
@@ -4407,36 +4404,36 @@ export default function App() {
 
            <div className="flex flex-col items-stretch">
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-8 gap-1 px-1">
-                 <button onClick={()=>handleFeatureClick('shop', ()=>setModal({type:'shop', data:null}))} 
+                 <button onClick={()=>handleFeatureClick('shop', ()=>setModal({type:'shop', data:null}))}
                          className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-purple-600/50 ${modal.type==='shop'?'bg-purple-900/60 text-white shadow-[0_-5px_15px_rgba(147,51,234,0.3)]':'bg-purple-900/20 text-purple-300 hover:bg-purple-900/40'} font-scifi text-[10px] md:text-xs transition-all`}>
                     <Zap className="mb-1" size={14}/> Upgrades
                  </button>
-                 <button onClick={()=>handleFeatureClick('banking', ()=>setModal({type:'banking', data:null}))} 
+                 <button onClick={()=>handleFeatureClick('banking', ()=>setModal({type:'banking', data:null}))}
                          className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-yellow-600/50 ${modal.type==='banking'?'bg-yellow-900/60 text-white shadow-[0_-5px_15px_rgba(234,179,8,0.3)]':'bg-yellow-900/20 text-yellow-500 hover:bg-yellow-900/40'} font-scifi text-[10px] md:text-xs transition-all`}>
                     <Building2 className="mb-1" size={14}/> I.B.A.N.K.
                     <span className={`text-[8px] flex items-center font-bold ${totalDebt > 0 ? 'text-red-500' : (totalInv > 0 ? 'text-green-500' : 'text-yellow-600')}`}>{totalDebt > 0 ? formatCompactNumber(totalDebt) : (totalInv > 0 ? formatCompactNumber(totalInv) : '')}</span>
                  </button>
-                 <button onClick={()=>{setModal({type:'none', data:null}); SFX.play('click');}} 
+                 <button onClick={()=>{setModal({type:'none', data:null}); SFX.play('click');}}
                          className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-blue-500/50 ${modal.type==='none'?'bg-blue-900/60 text-white shadow-[0_-5px_15px_rgba(37,99,235,0.3)]':'bg-blue-900/20 text-blue-400 hover:bg-blue-900/40'} font-scifi text-[10px] md:text-xs transition-all`}>
                     <LineChart className="mb-1" size={14}/> Console
                  </button>
-                 <button onClick={()=>handleFeatureClick('fomo', ()=>setModal({type:'fomo', data:null}))} 
+                 <button onClick={()=>handleFeatureClick('fomo', ()=>setModal({type:'fomo', data:null}))}
                          className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-orange-600/50 ${modal.type==='fomo'?'bg-orange-900/60 text-white shadow-[0_-5px_15px_rgba(234,88,12,0.3)]':'bg-orange-900/20 text-orange-300 hover:bg-orange-900/40'} font-scifi text-[10px] md:text-xs transition-all`}>
                     <Factory className="mb-1" size={14}/> F.O.M.O.
                  </button>
-                 <button onClick={()=>handleFeatureClick('travel', ()=>setModal({type:'travel', data:null}))} 
+                 <button onClick={()=>handleFeatureClick('travel', ()=>setModal({type:'travel', data:null}))}
                          className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-emerald-600/50 ${modal.type==='travel' || modal.type==='venue_intel' ?'bg-emerald-900/60 text-white shadow-[0_-5px_15px_rgba(16,185,129,0.3)]':'bg-emerald-900/20 text-emerald-300 hover:bg-emerald-900/40'} font-scifi text-[10px] md:text-xs transition-all`}>
                     <Rocket className="mb-1" size={14}/> Travel
                  </button>
-                 <button onClick={()=>handleFeatureClick('shipping', ()=>setModal({type:'shipping', data:null}))} 
+                 <button onClick={()=>handleFeatureClick('shipping', ()=>setModal({type:'shipping', data:null}))}
                          className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-blue-600/50 ${modal.type==='shipping' ?'bg-blue-800/60 text-white shadow-[0_-5px_15px_rgba(37,99,235,0.3)]':'bg-blue-900/20 text-blue-300 hover:bg-blue-900/40'} font-scifi text-[10px] md:text-xs transition-all`}>
                     <Truck className="mb-1" size={14}/> Logistics
                  </button>
-                 <button onClick={()=>handleFeatureClick('comms', ()=>setModal({type:'comms', data:null}))} 
+                 <button onClick={()=>handleFeatureClick('comms', ()=>setModal({type:'comms', data:null}))}
                          className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-cyan-500/50 ${modal.type==='comms'?'bg-cyan-900/60 text-white shadow-[0_-5px_15px_rgba(6,182,212,0.3)]':'bg-cyan-900/20 text-cyan-300 hover:bg-cyan-900/40'} font-scifi text-[10px] md:text-xs transition-all`}>
                     <Radio className="mb-1" size={14}/> G.I.G.O.
                  </button>
-                 <button onClick={()=>handleFeatureClick('wiki', ()=>setModal({type:'wiki', data:null}))} 
+                 <button onClick={()=>handleFeatureClick('wiki', ()=>setModal({type:'wiki', data:null}))}
                          className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-orange-600/50 ${modal.type==='wiki'?'bg-orange-800/60 text-white shadow-[0_-5px_15px_rgba(234,88,12,0.3)]':'bg-orange-900/20 text-orange-400 hover:bg-orange-800/60'} font-scifi text-[10px] md:text-xs transition-all`}>
                     <BookOpen className="mb-1" size={14}/> Codex
                  </button>
@@ -4450,13 +4447,13 @@ export default function App() {
            </div>
          </>
        )}
-       
+
        {modal.type === 'event_encounter' && (
            <div className="absolute inset-0 bg-black/95 flex items-center justify-center z-50 p-4">
                <div className="bg-slate-900 border border-red-600 p-8 rounded-2xl max-w-2xl w-full sci-fi-box animate-[shake_0.5s_ease-in-out]">
                    <h2 className="text-3xl font-scifi text-red-500 mb-4 animate-pulse uppercase">Alert: {modal.data.encounter.title}</h2>
                    <p className="text-white text-xl mb-8 leading-relaxed italic font-mono">"{modal.data.encounter.description}"</p>
-                   
+
                    <div className="flex flex-col gap-4">
                        {modal.data.encounter.type === 'derelict' ? (
                            <>
@@ -4489,7 +4486,7 @@ export default function App() {
                    </div>
                    <h2 className={`text-2xl font-black mb-6 uppercase tracking-tighter ${modal.data.outcomeType === 'danger' ? 'text-red-400' : (modal.data.outcomeType === 'profit' ? 'text-green-400' : 'text-blue-400')}`}>Comm-Log Update</h2>
                    <p className="text-white text-xl mb-10 leading-relaxed font-mono">"{modal.data.outcomeMsg}"</p>
-                   
+
                    <button onClick={() => {
                         const { state: sData, report: rData, destIdx, mine, overload } = modal.data;
                         if (sData.shipHealth <= 0) {
