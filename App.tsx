@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v10.3.5 Shandy // Updated version to 10.3.5 Shandy
+ * VERSION: v10.3.5 Shandy
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -3251,7 +3251,9 @@ export default function App() {
                     <div className={`text-lg md:text-2xl font-scifi font-bold w-1/3 text-center flex justify-center items-center ${state.cash >= 0 ? 'text-green-500' : 'text-red-500'}`}><PriceDisplay value={state.cash} size="text-lg md:text-2xl" /></div>
                     <span className={`${isOverfilled ? 'text-red-500' : 'text-yellow-400'} text-sm md:text-xl font-bold font-mono w-1/3 text-right`}>{Math.round(state.cargoWeight)}/{state.cargoCapacity}T</span>
                 </div>
-                
+                <div className="bg-black/50 backdrop-blur-sm p-2 border-y border-gray-700 overflow-y-auto custom-scrollbar text-xs font-mono">
+                    {state.messages.slice(-2).reverse().map((msg) => (<div key={msg.id} className={`p-1 ${getLogColorClass(msg.type)}`}>{renderLogMessage(msg.message)}</div>))}
+                </div>
                 <div className="overflow-y-auto custom-scrollbar flex-grow p-2" ref={consoleScrollRef}>
                     <table className="w-full border-collapse hidden md:table">
                         <thead className="bg-gray-800/90 text-gray-400 sticky top-0 z-10 text-base">
@@ -3326,8 +3328,25 @@ export default function App() {
                                         </td>
                                         <td className="p-2 align-middle">
                                             <div className="flex flex-col space-y-2">
-                                                <div className="flex space-x-1 items-center bg-gray-900/50 p-1 rounded"><input type="number" min="0" placeholder="Qty" className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={buyQuantities[c.name]||''} onChange={e=>setBuyQuantities({...buyQuantities, [c.name]: e.target.value})} /><button onClick={()=>setMaxBuy(c, mItem)} className="w-auto px-4 bg-gray-700 hover:bg-gray-600 text-sm text-white rounded py-1 action-btn">MAX</button><button onClick={()=>handleTrade('buy', c, mItem, owned)} className="w-auto px-4 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded font-bold py-1 action-btn">BUY</button>{availableContract && (<button onClick={() => acceptContract(availableContract)} className="w-auto px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-sm rounded font-bold py-1 action-btn">ACCEPT</button>)}</div>
-                                                <div className="flex space-x-1 items-center bg-gray-900/50 p-1 rounded"><input type="number" min="0" placeholder="Qty" className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={sellQuantities[c.name]||''} onChange={e=>setSellQuantities({...sellQuantities, [c.name]: e.target.value})} /><button onClick={()=>setSellQuantities({...sellQuantities, [c.name]: owned.quantity.toString()})} disabled={owned.quantity===0} className="w-auto px-4 bg-gray-700 hover:bg-gray-600 disabled:opacity-30 text-sm text-white rounded py-1 action-btn">ALL</button><button onClick={()=>handleTrade('sell', c, mItem, owned)} disabled={owned.quantity===0} className="w-auto px-4 bg-green-700 hover:bg-green-600 disabled:opacity-30 text-white text-sm rounded font-bold py-1 action-btn">SELL</button>{activeContract && !isCovered && (<button onClick={() => handleFulfill(activeContract)} disabled={owned.quantity < activeContract.quantity || pulsingContractId !== null} className={`w-auto px-4 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 disabled:opacity-50 text-white text-sm rounded font-bold py-1 action-btn ${pulsingContractId === activeContract.id ? 'animate-pulse' : ''}`}>FULFILL</button>)}{!activeContract && (<button onClick={() => { const ownedQuantity = state.cargo[c.name]?.quantity || 0; setShippingQuantities(prev => ({ ...prev, [c.name]: ownedQuantity.toString() })); setModal({ type: 'shipping', data: null }); setLogisticsTab('shipping'); setShippingPriorityItem(c.name); }} className="w-auto px-4 bg-cyan-600 hover:bg-cyan-500 text-white text-sm rounded font-bold py-1 action-btn">SHIP</button>)}</div>
+                                                <div className="flex space-x-1 items-center bg-gray-900/50 p-1 rounded">
+                                                    <input type="number" min="0" placeholder="Qty" className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={buyQuantities[c.name]||''} onChange={e=>setBuyQuantities({...buyQuantities, [c.name]: e.target.value})} />
+                                                    <button onClick={()=>handleTrade('buy', c, mItem, owned)} className="w-auto px-4 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded font-bold py-1 action-btn">BUY</button>
+                                                    {availableContract && (<button onClick={() => acceptContract(availableContract)} className="w-auto px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-sm rounded font-bold py-1 action-btn">ACCEPT</button>)}
+                                                    {state.warehouse[state.currentVenueIndex]?.[c.name] && state.warehouse[state.currentVenueIndex][c.name].arrivalDay <= state.day && (
+                                                        <button onClick={() => {
+                                                            setHighlightShippingItem(c.name);
+                                                            setLogisticsTab('shipping');
+                                                            setShippingSource({ [c.name]: { type: 'warehouse', venueIdx: state.currentVenueIndex } });
+                                                            setModal({ type: 'shipping', data: null });
+                                                        }} className="w-auto px-4 bg-purple-700 hover:bg-purple-600 text-white text-sm rounded font-bold py-1 action-btn">STORE</button>
+                                                    )}
+                                                </div>
+                                                <div className="flex space-x-1 items-center bg-gray-900/50 p-1 rounded">
+                                                    <input type="number" min="0" placeholder="Qty" className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={sellQuantities[c.name]||''} onChange={e=>setSellQuantities({...sellQuantities, [c.name]: e.target.value})} />
+                                                    <button onClick={()=>handleTrade('sell', c, mItem, owned)} disabled={owned.quantity===0} className="w-auto px-4 bg-green-700 hover:bg-green-600 disabled:opacity-30 text-white text-sm rounded font-bold py-1 action-btn">SELL</button>
+                                                    {activeContract && !isCovered && (<button onClick={() => handleFulfill(activeContract)} disabled={owned.quantity < activeContract.quantity || pulsingContractId !== null} className={`w-auto px-4 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 disabled:opacity-50 text-white text-sm rounded font-bold py-1 action-btn ${pulsingContractId === activeContract.id ? 'animate-pulse' : ''}`}>FULFILL</button>)}
+                                                    {!activeContract && (<button onClick={() => { const ownedQuantity = state.cargo[c.name]?.quantity || 0; setShippingQuantities(prev => ({ ...prev, [c.name]: ownedQuantity.toString() })); setModal({ type: 'shipping', data: null }); setLogisticsTab('shipping'); setShippingPriorityItem(c.name); }} disabled={owned.quantity === 0} className="w-auto px-4 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-30 text-white text-sm rounded font-bold py-1 action-btn">SHIP</button>)}
+                                                </div>
                                             </div>
                                         </td>
                                     </tr>
@@ -3756,7 +3775,6 @@ export default function App() {
                         <div className="text-[10px] text-yellow-600 font-mono uppercase font-black">Status: Connected</div>
                     </div>
                   </div>
-
                   {state.gamePhase >= 3 && (
                     <div className="flex bg-slate-800/50 p-1 rounded-xl mb-4">
                       <button onClick={() => setBankingTab('loans')} className={`flex-1 px-6 py-2 rounded-lg font-bold text-xs uppercase transition-all ${bankingTab === 'loans' ? 'bg-yellow-600 text-white shadow-md' : 'text-gray-400 hover:bg-slate-700'}`}>Loans & Deposits</button>
@@ -4032,7 +4050,7 @@ export default function App() {
                                                        </select>
                                                    </div>
                                                    <button
-                                                        disabled={!qtyValStr || parseInt(qtyValStr) <= 0 || !destValStr || item.quantity === 0}
+                                                        disabled={!qtyValStr || parseInt(qtyValStr) <= 0 || !destValStr || (state.cargo[name]?.quantity || 0) === 0}
                                                         onClick={() => {
                                                                 const qtyInt = parseInt(qtyValStr);
                                                                 const destInt = parseInt(destValStr);
