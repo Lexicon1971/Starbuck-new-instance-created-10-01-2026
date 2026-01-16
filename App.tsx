@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v10.3.3 Constancy
+ * VERSION: v10.3.5 Shandy // Updated version to 10.3.5 Shandy
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -886,7 +886,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v10.3.3 Constancy ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v10.3.5 Shandy ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -2969,7 +2969,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.3.3</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.3.5</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -3521,18 +3521,6 @@ export default function App() {
                       <div className="flex gap-3 items-center">
                           <input type="number" min="1" className="w-20 bg-gray-900 text-white text-center rounded-lg border border-gray-700 text-lg p-2" value={cargoUpgradeQty || ''} onChange={e=>setCargoUpgradeQty(e.target.value)} />
                           <button onClick={() => {
-                              let upgradeCostAmt = 2000; let meshReqAmt = 1;
-                              if (state.cargoCapacity >= 250000) { upgradeCostAmt = 15000; meshReqAmt = 5; }
-                              else if (state.cargoCapacity >= 50000) { upgradeCostAmt = 10000; meshReqAmt = 5; }
-                              else if (state.cargoCapacity >= 5000) { upgradeCostAmt = 5000; meshReqAmt = 3; }
-                              const meshOwned = state.cargo[MESH_NAME]?.quantity || 0;
-                              const cashMaxUpgrade = Math.floor(state.cash / upgradeCostAmt);
-                              const capMaxUpgrade = (getMaxCargo(state.gamePhase) - state.cargoCapacity) / 100;
-                              const meshMaxUpgrade = Math.floor(meshOwned / meshReqAmt);
-                              const maxPossibleUpgrade = Math.max(0, Math.floor(Math.min(meshMaxUpgrade, cashMaxUpgrade, capMaxUpgrade)));
-                              setCargoUpgradeQty(maxPossibleUpgrade.toString());
-                          }} className="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg text-white text-xs font-bold transition-colors">MAX</button>
-                          <button onClick={() => {
                               const qtyVal = parseInt(cargoUpgradeQty);
                               if (isNaN(qtyVal) || qtyVal <= 0) return;
                               let costPerAmt = 2000; let meshPerAmt = 1;
@@ -3699,14 +3687,6 @@ export default function App() {
                                 </div>
                                 <div className="flex gap-3">
                                     <input type="number" placeholder="Qty" className="w-32 bg-gray-900 text-white text-center rounded-xl border border-gray-700 text-2xl font-bold p-3" value={fomoQty || ''} onChange={e=>setFomoQty(e.target.value)} />
-                                    <button onClick={()=>{ 
-                                        const h2oAmt = state.cargo[H2O_NAME]?.quantity || 0;
-                                        const oreAmt = state.cargo['Titanium Ore']?.quantity || 0; 
-                                        const clothAmt = state.cargo['Synthetic Cloth']?.quantity || 0; 
-                                        const cashMaxAmt = Math.floor(state.cash / 2000); 
-                                        const maxFab = Math.max(0, Math.min(h2oAmt, oreAmt, clothAmt, cashMaxAmt)); 
-                                        setFomoQty(maxFab.toString()); 
-                                    }} className="bg-gray-700 hover:bg-gray-600 px-4 rounded-xl text-white font-bold text-sm uppercase transition-colors">MAX</button>
                                     <button onClick={()=>{ const qVal = parseInt(fomoQty); if(!isNaN(qVal) && qVal>0) fabricateItem(qVal); }} disabled={state.fomoDailyUse.mesh} className="flex-grow bg-orange-600 hover:bg-orange-500 disabled:bg-gray-700 text-white font-black rounded-xl text-xl shadow-lg action-btn uppercase">{state.fomoDailyUse.mesh ? 'LOCKOUT' : 'FABRICATE'}</button>
                                 </div>
                             </div>
@@ -3724,14 +3704,6 @@ export default function App() {
                                 </div>
                                 <div className="flex gap-3">
                                     <input type="number" placeholder="Qty" className="w-32 bg-gray-900 text-white text-center rounded-xl border border-gray-700 text-2xl font-bold p-3" value={fomoStimQty || ''} onChange={e=>setFomoStimQty(e.target.value)} />
-                                    <button onClick={()=>{ 
-                                        const h2oAmt = state.cargo[H2O_NAME]?.quantity || 0; 
-                                        const pasteAmt = state.cargo[NUTRI_PASTE_NAME]?.quantity || 0; 
-                                        const kitsAmt = state.cargo['Medical Kits']?.quantity || 0;
-                                        const cashMaxAmt = Math.floor(state.cash / 200); 
-                                        const maxFab = Math.max(0, Math.min(h2oAmt, Math.floor(pasteAmt/2), kitsAmt, cashMaxAmt)); 
-                                        setFomoStimQty(maxFab.toString()); 
-                                    }} className="bg-gray-700 hover:bg-gray-600 px-4 rounded-xl text-white font-bold text-sm uppercase transition-colors">MAX</button>
                                     <button onClick={()=>{ const qVal = parseInt(fomoStimQty); if(!isNaN(qVal) && qVal>0) fabricateStimPacks(qVal); }} disabled={state.fomoDailyUse.stims} className="flex-grow bg-orange-600 hover:bg-orange-500 disabled:bg-gray-700 text-white font-black rounded-xl text-xl shadow-lg action-btn uppercase">{state.fomoDailyUse.stims ? 'LOCKOUT' : 'SYNTHESIZE'}</button>
                                 </div>
                             </div>
@@ -3756,9 +3728,6 @@ export default function App() {
                         <div className="text-[10px] text-yellow-600 font-mono uppercase font-black">Status: Connected</div>
                     </div>
                   </div>
-            <div className="bg-black/50 backdrop-blur-sm p-2 border-y border-gray-700 overflow-y-auto custom-scrollbar text-xs font-mono mb-2" ref={commsContainerRef}>
-                {state.messages.slice(-2).reverse().map((msg) => (<div key={msg.id} className={`p-1 ${getLogColorClass(msg.type)}`}>{renderLogMessage(msg.message)}</div>))}
-            </div>
 
                   {state.gamePhase >= 3 && (
                     <div className="flex bg-slate-800/50 p-1 rounded-xl mb-4">
@@ -3805,7 +3774,6 @@ export default function App() {
                                        <label className="text-[10px] text-gray-500 uppercase tracking-widest ml-1 font-black">Principal Investment</label>
                                        <div className="flex gap-3">
                                            <input type="number" value={bankInvestAmount || ''} onChange={(e) => setBankInvestAmount(e.target.value)} min="1" placeholder="Amount..." className="flex-grow bg-gray-900 text-white p-4 rounded-xl border border-gray-700 focus:border-green-500 outline-none transition-all text-xl font-mono" />
-                                           <button onClick={() => setBankInvestAmount(Math.floor(Math.max(0, state.cash)).toString())} className="bg-gray-700 hover:bg-gray-600 px-6 rounded-xl text-white font-black text-xs uppercase border border-gray-600 transition-all shadow-md">MAX</button>
                                        </div>
                                    </div>
                                    <div className="space-y-2">
@@ -3881,15 +3849,10 @@ export default function App() {
                             <div className="flex flex-col space-y-2">
                               <div className="flex space-x-1 items-center bg-gray-900/50 p-1 rounded">
                                 <input type="number" min="0" placeholder="Qty" className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={stockBuyQuantities[stock.name]||''} onChange={e=>setStockBuyQuantities({...stockBuyQuantities, [stock.name]: e.target.value})} />
-                                <button onClick={() => {
-                                  const maxBuy = Math.floor(state.cash / (stock.price * 1.022));
-                                  setStockBuyQuantities({...stockBuyQuantities, [stock.name]: maxBuy.toString()});
-                                }} className="w-auto px-4 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded font-bold py-1">MAX</button>
                                 <button onClick={() => handleBuyStock(stock.name)} className="w-auto px-4 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded font-bold py-1 action-btn">BUY</button>
                               </div>
                               <div className="flex space-x-1 items-center bg-gray-900/50 p-1 rounded">
                                 <input type="number" min="0" placeholder="Qty" className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={stockSellQuantities[stock.name]||''} onChange={e=>setStockSellQuantities({...stockSellQuantities, [stock.name]: e.target.value})} />
-                                <button onClick={() => setStockSellQuantities({...stockSellQuantities, [stock.name]: stock.quantity.toString()})} className="w-auto px-4 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded font-bold py-1">MAX</button>
                                 <button onClick={() => handleSellStock(stock.name)} className="w-auto px-4 bg-green-700 hover:bg-green-600 text-white text-sm rounded font-bold py-1 action-btn">SELL</button>
                               </div>
                             </div>
@@ -4019,9 +3982,8 @@ export default function App() {
                                                       </div>
                                                       <span className="text-[10px] text-gray-500 font-mono uppercase">Avail: {item.quantity}</span>
                                                    </div>
-                                                   <div className="grid grid-cols-3 gap-3 mb-4">
+                                                   <div className="grid grid-cols-2 gap-3 mb-4">
                                                        <input type="number" placeholder="Qty" className="bg-gray-900 text-white p-3 rounded-xl border border-gray-700 text-lg font-bold outline-none col-span-1" value={qtyValStr || ''} onChange={e=>setShippingQuantities({...shippingQuantities, [name]:e.target.value})} />
-                                                       <button onClick={()=>setShippingQuantities({...shippingQuantities, [name]: item.quantity.toString()})} className="bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-xl transition-colors">ALL</button>
                                                        <select className="bg-gray-900 text-white p-3 rounded-xl border border-gray-700 font-bold outline-none col-span-1" value={destValStr || ''} onChange={e=>setShippingDestinations({...shippingDestinations, [name]:e.target.value})}>
                                                            <option value="">Dest...</option>
                                                            {VENUES.map((v,i)=>(i!==state.currentVenueIndex ? <option key={i} value={i}>{v}</option> : null))}
@@ -4035,7 +3997,7 @@ export default function App() {
                                                        </select>
                                                    </div>
                                                    <button
-                                                        disabled={!qtyValStr || parseInt(qtyValStr) <= 0 || !destValStr}
+                                                        disabled={!qtyValStr || parseInt(qtyValStr) <= 0 || !destValStr || item.quantity === 0}
                                                         onClick={() => {
                                                                 const qtyInt = parseInt(qtyValStr);
                                                                 const destInt = parseInt(destValStr);
@@ -4356,7 +4318,7 @@ export default function App() {
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.3.3</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.3.5</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -4539,7 +4501,7 @@ export default function App() {
                   <div className="flex justify-center gap-8 px-4 w-full max-w-4xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.3.3</p>
+                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.3.5</p>
                </div>
            </div>
        )}
