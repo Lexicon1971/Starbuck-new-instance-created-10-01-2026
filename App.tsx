@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v10.3.5 Shandy // Updated version to 10.3.5 Shandy
+ * VERSION: v10.3.6 Abductable // Updated version to 10.3.6 Abductable
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -555,11 +555,42 @@ const formatCompactNumber = (num: number, useMForMillions: boolean = false) => {
  * @param phase The current game phase.
  * @returns The calculated fuel cost.
  */
+  const useCorporateSynergy = (perkType: 'logistics' | 'banking') => {
+    if (!state || !state.stocks) return 1.0; // No discount by default
+
+    let firmName: string;
+    let ownershipThreshold = 0.05; // 5%
+
+    if (perkType === 'logistics') {
+      firmName = "Weyland-Yutani Logistics";
+    } else { // banking
+      firmName = "Starfleet Credit Union";
+    }
+
+    const stock = state.stocks.find(s => s.name === firmName);
+
+    if (stock && stock.quantity > 0 && stock.totalShares) {
+      const ownershipPercentage = stock.quantity / stock.totalShares;
+      if (ownershipPercentage > ownershipThreshold) {
+        if (perkType === 'logistics') return 0.85; // 15% discount
+        if (perkType === 'banking') return 0.99; // 1% interest rate reduction (multiplier)
+      }
+    }
+
+    return 1.0; // No perk applicable
+  };
+
 const getFuelCost = (from: number, to: number, weight: number, phase: number) => {
   const distance = BASE_DISTANCE_MATRIX[from][to];
-  if (phase === 1) return distance * 2;
-  const fuelPerDist = Math.max(1, Math.ceil(weight / 1000));
-  return fuelPerDist * distance;
+  let cost;
+  if (phase === 1) {
+    cost = distance * 2;
+  } else {
+    const fuelPerDist = Math.max(1, Math.ceil(weight / 1000));
+    cost = fuelPerDist * distance;
+  }
+  const logisticsDiscount = useCorporateSynergy('logistics');
+  return Math.round(cost * logisticsDiscount);
 };
 
 /**
@@ -886,7 +917,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v10.3.5 Shandy ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v10.3.6 Abductable ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -913,42 +944,62 @@ export default function App() {
     } as GameState;
   };
 
+  /**
+   * Initializes the stock market when the game advances to Phase 3.
+   * This function sets the initial public offering (IPO) price and total shares for each company.
+   * Prices are randomized, and total shares are assigned based on the firm's prestige.
+   */
+  const initializeStocks = () => {
+    // Combine all firms from loan and contract lists to create the full list of publicly traded companies.
+    const allFirms = [...LOAN_FIRMS, ...CONTRACT_FIRMS];
+    const initialStocks = allFirms.map((firm, index) => {
+      // Determine the firm's name, whether it's a string or an object.
+      const name = typeof firm === 'string' ? firm : firm.name;
+
+      // Assign a risk level based on a random tier.
+      const riskTier = Math.random();
+      let risk: 'low' | 'medium' | 'high';
+      let price: number;
+
+      if (riskTier < 0.33) {
+        risk = 'low';
+        price = 2500 + Math.random() * (15000 - 2500);
+      } else if (riskTier < 0.66) {
+        risk = 'medium';
+        price = 5000 + Math.random() * (50000 - 5000);
+      } else {
+        risk = 'high';
+        price = 7 + Math.random() * (70000 - 7);
+      }
+
+      // Lower prestige (higher index) results in more shares. This creates a market with varied capitalizations.
+      const prestigeMultiplier = allFirms.length - index;
+      const totalShares = 100000 * prestigeMultiplier;
+
+      // Return the newly created stock object.
+      return {
+        name,
+        price,
+        quantity: 0, // Player starts with 0 shares.
+        risk,
+        averageCost: 0,
+        history: [price], // Initialize price history for sparkline charts.
+        totalShares,
+      };
+    });
+
+    // Update the game state with the newly initialized stocks.
+    setState(prev => prev ? ({ ...prev, stocks: initialStocks }) : null);
+  };
+
   // E. GAME INITIALIZATION & LIFECYCLE
   // These useEffect hooks manage the game's startup, save/load functionality,
   // and other lifecycle events.
 
-  // Initializes the stock market on the first day of a new game.
+  // This effect is no longer needed as stock initialization is now handled by the `advancePhase` function.
   useEffect(() => {
-    if (state && state.day === 1 && !state.stocks?.length) {
-      const initialStocks = [...LOAN_FIRMS, ...CONTRACT_FIRMS].map(firm => {
-        const name = typeof firm === 'string' ? firm : firm.name;
-        const riskTier = Math.random();
-        let risk: 'low' | 'medium' | 'high';
-        let price: number;
-
-        if (riskTier < 0.33) {
-          risk = 'low';
-          price = 2500 + Math.random() * (15000 - 2500);
-        } else if (riskTier < 0.66) {
-          risk = 'medium';
-          price = 5000 + Math.random() * (50000 - 5000);
-        } else {
-          risk = 'high';
-          price = 7 + Math.random() * (70000 - 7);
-        }
-
-        return {
-          name,
-          price,
-          quantity: 0,
-          risk,
-          averageCost: 0,
-          history: [price],
-        };
-      });
-      setState(prev => prev ? ({ ...prev, stocks: initialStocks }) : null);
-    }
-  }, [state?.day]);
+    // Stock initialization is now triggered when the game advances to Phase 3.
+  }, []);
 
   // Main game initialization effect. Runs once on component mount.
   // Calls initGame.
@@ -1377,14 +1428,16 @@ export default function App() {
     const maxLoan = goalAmt * 0.10; 
 
     const createOffers = (): LoanOffer[] => {
+        const bankingDiscount = useCorporateSynergy('banking');
         const offers = [];
         for(let i=0; i<5; i++) {
             const firm = LOAN_FIRMS[i % LOAN_FIRMS.length];
             const minAmt = Math.max(5000, maxLoan * 0.05);
+            const baseInterest = Math.max(1, Math.min(15, firm.baseRate + Math.random() * 5));
             offers.push({
                 firmName: firm.name,
                 amount: Math.ceil((Math.random() * (maxLoan - minAmt) + minAmt) / 1000) * 1000,
-                interestRate: Math.max(1, Math.min(15, firm.baseRate + Math.random() * 5))
+                interestRate: baseInterest * bankingDiscount
             });
         }
         return offers;
@@ -2311,29 +2364,26 @@ export default function App() {
         return { ...stock, price: newPrice, availableQuantity };
       });
 
-      updatedStocks.sort((a, b) => (b.availableQuantity || 0) - (a.availableQuantity || 0));
+      // E. Daily Supply Replenishment ("The Float")
+      s.stocks = updatedStocks.map(stock => {
+        const randomWeight = Math.random() * 2 - 1; // -1 to 1
+        const change = Math.round((stock.totalShares ?? 1000000) * 0.05 * randomWeight);
+        const newAvailable = Math.max(0, (stock.availableQuantity ?? 0) + change);
 
-      const top3 = updatedStocks.slice(0, 3);
-      const bottom3 = updatedStocks.slice(-3);
-      const middle4 = updatedStocks.slice(3, -3);
+        // B. Stock Splits
+        let newPrice = stock.price;
+        let newQuantity = stock.quantity;
+        let newAvailableQuantity = newAvailable;
+        if (newPrice > 1000000) {
+          newPrice /= 2;
+          newQuantity *= 2;
+          newAvailableQuantity *= 2;
+          log(`STOCK SPLIT: ${stock.name} has split 2-for-1 due to high valuation.`, 'phase');
+        }
 
-      const applyChanges = (stocks: Stock[], changeFn: (stock: Stock) => number) => {
-        return stocks.map(stock => {
-          const priceChange = changeFn(stock);
-          const newPrice = Math.max(1, stock.price + priceChange);
-          const newHistory = [...(stock.history || []), newPrice].slice(-5);
-          return { ...stock, price: newPrice, history: newHistory };
-        });
-      };
-
-      const changedTop3 = applyChanges(top3, stock => stock.price * -(0.25 + Math.random() * 0.25));
-      const changedBottom3 = applyChanges(bottom3, stock => stock.price * (0.11 + Math.random() * 0.11));
-      const changedMiddle4 = applyChanges(middle4, stock => {
-        const direction = Math.random() < 0.5 ? 1 : -1;
-        return stock.price * (0.01 + Math.random() * 0.06) * direction;
-      });
-
-      s.stocks = [...changedTop3, ...changedMiddle4, ...changedBottom3].sort((a, b) => a.name.localeCompare(b.name));
+        const newHistory = [...(stock.history || []), newPrice].slice(-5);
+        return { ...stock, price: newPrice, quantity: newQuantity, availableQuantity: newAvailableQuantity, history: newHistory };
+      }).sort((a, b) => a.name.localeCompare(b.name));
 
       if (Math.random() < 0.22) {
         if (s.hasTradedStocksToday) {
@@ -2364,10 +2414,27 @@ export default function App() {
     if (!state || !state.stocks) return;
     const qty = parseInt(stockBuyQuantities[stockName] || '0');
     if (qty <= 0) return;
-    const stock = state.stocks.find(s => s.name === stockName);
-    if (!stock) return;
 
-    const cost = qty * stock.price;
+    const stockIndex = state.stocks.findIndex(s => s.name === stockName);
+    if (stockIndex === -1) return;
+
+    const stock = state.stocks[stockIndex];
+
+    // A. "Liquidity Lock" Fix: Check against available market quantity.
+    if (qty > (stock.availableQuantity ?? 0)) {
+      setModal({ type: 'message', data: "Market Liquidity Exhausted." });
+      return;
+    }
+
+    let transactionPrice = stock.price;
+    // C. Market Impact Simulation (Slippage) for buying
+    if (stock.availableQuantity && qty > stock.availableQuantity * 0.10) {
+      const slippagePercent = 1 + (Math.random() * 0.01 + 0.01); // 1-2% increase
+      transactionPrice *= slippagePercent;
+      log(`SLIPPAGE: High volume purchase increased ${stockName} price for this transaction.`, 'maintenance');
+    }
+
+    const cost = qty * transactionPrice;
     const fee = cost * 0.022;
     const totalCost = cost + fee;
 
@@ -2376,16 +2443,19 @@ export default function App() {
       return;
     }
 
-    const newStocks = state.stocks.map(s => {
-      if (s.name === stockName) {
-        const currentTotalValue = (s.averageCost || 0) * s.quantity;
-        const newTotalValue = currentTotalValue + (qty * stock.price);
-        const newTotalQuantity = s.quantity + qty;
-        const newAverageCost = newTotalValue / newTotalQuantity;
-        return { ...s, quantity: newTotalQuantity, averageCost: newAverageCost };
-      }
-      return s;
-    });
+    const newStocks = [...state.stocks];
+    const updatedStock = { ...newStocks[stockIndex] };
+
+    const currentTotalValue = (updatedStock.averageCost || 0) * updatedStock.quantity;
+    const newTotalValue = currentTotalValue + (qty * transactionPrice);
+    const newTotalQuantity = updatedStock.quantity + qty;
+    updatedStock.averageCost = newTotalValue / newTotalQuantity;
+    updatedStock.quantity = newTotalQuantity;
+
+    // A. Decrement available quantity from the global state.
+    updatedStock.availableQuantity = (updatedStock.availableQuantity ?? 0) - qty;
+
+    newStocks[stockIndex] = updatedStock;
 
     setState(prev => prev ? ({
       ...prev,
@@ -2401,7 +2471,7 @@ export default function App() {
   };
 
   /**
-   * Handles the selling of stocks.
+   * Handles the selling of stocks, including liquidity and slippage effects.
    * Calls log and SFX.play.
    * @param stockName The name of the stock to sell.
    */
@@ -2409,22 +2479,37 @@ export default function App() {
     if (!state || !state.stocks) return;
     const qty = parseInt(stockSellQuantities[stockName] || '0');
     if (qty <= 0) return;
-    const stock = state.stocks.find(s => s.name === stockName);
-    if (!stock || stock.quantity < qty) {
+
+    const stockIndex = state.stocks.findIndex(s => s.name === stockName);
+    if (stockIndex === -1) return;
+
+    const stock = state.stocks[stockIndex];
+
+    if (stock.quantity < qty) {
       setModal({ type: 'message', data: "Insufficient shares." });
       return;
     }
 
-    const revenue = qty * stock.price;
+    let transactionPrice = stock.price;
+    // C. Market Impact Simulation (Slippage) for selling
+    if (stock.availableQuantity && qty > stock.availableQuantity * 0.10) {
+      const slippagePercent = 1 - (Math.random() * 0.01 + 0.01); // 1-2% decrease
+      transactionPrice *= slippagePercent;
+      log(`SLIPPAGE: High volume sale decreased ${stockName} price for this transaction.`, 'maintenance');
+    }
+
+    const revenue = qty * transactionPrice;
     const fee = revenue * 0.022;
     const totalRevenue = revenue - fee;
 
-    const newStocks = state.stocks.map(s => {
-      if (s.name === stockName) {
-        return { ...s, quantity: s.quantity - qty };
-      }
-      return s;
-    });
+    const newStocks = [...state.stocks];
+    const updatedStock = { ...newStocks[stockIndex] };
+
+    updatedStock.quantity -= qty;
+    // A. Increment available quantity (add back to the market pool).
+    updatedStock.availableQuantity = (updatedStock.availableQuantity ?? 0) + qty;
+
+    newStocks[stockIndex] = updatedStock;
 
     setState(prev => prev ? ({
       ...prev,
@@ -2448,6 +2533,12 @@ export default function App() {
    */
   const advancePhase = (s: GameState, nextPhase: 1|2|3|4, report: DailyReport) => {
     s.gamePhase = nextPhase;
+
+    // Initialize the stock market when the player reaches Phase 3.
+    if (nextPhase === 3) {
+      initializeStocks();
+    }
+
     const multiplier = nextPhase === 1 ? 1 : (nextPhase === 2 ? 5 : (nextPhase === 3 ? 10 : 20));
     const glutFactor = 2.0; 
     s.markets = s.markets.map(m => {
@@ -2697,6 +2788,80 @@ export default function App() {
    * Calls log and speakRetro.
    * @param c The contract to settle.
    */
+
+  const omniShip = (commodityName: string, destinationIndex: number) => {
+    if (!state) return;
+    const commodity = COMMODITIES.find(c => c.name === commodityName);
+    if (!commodity) return;
+
+    const totalWarehouseStock = Object.values(state.warehouse).reduce((total, venue) => {
+        return total + (venue[commodityName]?.quantity || 0);
+    }, 0);
+    const totalSectorStock = (state.cargo[commodityName]?.quantity || 0) + totalWarehouseStock;
+    const unitWeight = commodity.unitWeight;
+    const totalWeight = totalSectorStock * unitWeight;
+    const logisticsFee = totalWeight * 100;
+
+    setState(prev => {
+      const newState = { ...prev! };
+      newState.cash -= logisticsFee;
+
+      const newWarehouse: Warehouse = JSON.parse(JSON.stringify(newState.warehouse));
+      // Remove from all warehouses
+      Object.keys(newWarehouse).forEach(vIdx => {
+        if(newWarehouse[parseInt(vIdx)][commodityName]) {
+          delete newWarehouse[parseInt(vIdx)][commodityName];
+        }
+      });
+
+      // Add to destination warehouse
+      if (!newWarehouse[destinationIndex]) newWarehouse[destinationIndex] = {};
+      newWarehouse[destinationIndex][commodityName] = {
+        quantity: totalSectorStock,
+        originalAvgCost: state.cargo[commodityName]?.averageCost || 0,
+        arrivalDay: state.day + 1
+      };
+
+      const newCargo = { ...newState.cargo };
+      delete newCargo[commodityName];
+
+      return { ...newState, cargo: newCargo, warehouse: newWarehouse };
+    });
+
+    log(`OMNI-SHIP: Moving ${totalSectorStock} ${commodityName} to ${VENUES[destinationIndex]}. Fee: ${formatCurrencyLog(logisticsFee)}`, 'buy');
+  };
+
+  const instantSell = (commodityName: string, venueIndex: number) => {
+    if(!state) return;
+    const marketPrice = state.markets[venueIndex][commodityName]?.price || 0;
+    let totalToSell = 0;
+    if (venueIndex === state.currentVenueIndex) {
+        totalToSell += state.cargo[commodityName]?.quantity || 0;
+    }
+    totalToSell += state.warehouse[venueIndex]?.[commodityName]?.quantity || 0;
+
+    if (totalToSell > 0) {
+        const revenue = totalToSell * marketPrice;
+        const newCargo = { ...state.cargo };
+        const newWarehouse = { ...state.warehouse };
+
+        if (venueIndex === state.currentVenueIndex) {
+           delete newCargo[commodityName];
+        }
+        if (newWarehouse[venueIndex]?.[commodityName]) {
+            delete newWarehouse[venueIndex][commodityName];
+        }
+
+        setState(prev => ({
+            ...prev!,
+            cash: prev!.cash + revenue,
+            cargo: newCargo,
+            warehouse: newWarehouse,
+        }));
+        log(`SOLD: ${totalToSell} ${commodityName} at ${VENUES[venueIndex]} for ${formatCurrencyLog(revenue)}.`, 'sell');
+    }
+  };
+
   const settleContract = (c: Contract) => {
       if (!state) return;
       const wh = state.warehouse[c.destinationIndex];
@@ -2969,7 +3134,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.3.5</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.3.6</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -3834,75 +3999,89 @@ export default function App() {
                   )}
 
                   {bankingTab === 'stocks' && state.gamePhase >= 3 && (
-                    <div className="grid grid-cols-1 gap-8 flex-grow overflow-y-auto custom-scrollbar">
-                      <div className="bg-slate-800/80 p-4 rounded-xl border border-yellow-700/50 shadow-lg">
-                        <div className="flex justify-between items-center mb-4">
-                          <h3 className="text-yellow-400 font-bold flex items-center text-lg"><Trophy size={20} className="mr-2"/> Daily Jackpot</h3>
-                          <PriceDisplay value={state.jackpot ? state.jackpot * 10 : 0} size="text-2xl" />
-                        </div>
-                        <p className="text-xs text-gray-400 mb-2">2.2% of every transaction is added to the jackpot. You have a 22% chance to win 10x the pool each day you trade stocks.</p>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {state.stocks?.map(stock => {
-                          const profitLoss = stock.quantity > 0 && stock.averageCost ? (stock.price - stock.averageCost) * stock.quantity : 0;
-                          return (
-                          <div key={stock.name} className="bg-slate-800/60 p-5 rounded-2xl border border-slate-700">
-                            <div className="flex justify-between items-start mb-2">
-                              <span className="text-white font-black text-lg">{stock.name}</span>
-                              <PriceDisplay value={stock.price} size="text-lg"/>
-                            </div>
-                            <div className="text-sm text-gray-400 mb-4">Risk: <span className={`font-bold ${stock.risk === 'high' ? 'text-red-500' : stock.risk === 'medium' ? 'text-yellow-500' : 'text-green-500'}`}>{stock.risk}</span></div>
-                            <div className="text-sm text-gray-400 mb-4">Owned: {stock.quantity}</div>
-                             {stock.quantity > 0 && (
-                                <div className="text-sm text-gray-400 mb-4">P/L: <PriceDisplay value={profitLoss} colored size="text-sm" /></div>
-                              )}
-                             <div className="h-16 bg-black/20 p-2 rounded mb-4 flex items-center justify-center">
-                                {stock.history && stock.history.length > 1 ? (
-                                  <svg viewBox="0 0 100 50" className="w-full h-full">
-                                    <polyline
-                                      fill="none"
-                                      stroke="#22c55e"
-                                      strokeWidth="2"
-                                      points={
-                                        stock.history.map((price, i) => {
-                                          const x = (i / (stock.history.length - 1)) * 100;
-                                          const max = Math.max(...stock.history);
-                                          const y = 50 - (price / max) * 50;
-                                          return `${x},${y}`;
-                                        }).join(' ')
-                                      }
-                                    />
-                                  </svg>
-                                ) : <span className="text-xs text-gray-600">No price history</span>}
-                              </div>
-                            <div className="flex flex-col space-y-2">
-                              <div className="flex space-x-1 items-center bg-gray-900/50 p-1 rounded">
-                                <input type="number" min="0" placeholder="Qty" className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={stockBuyQuantities[stock.name]||''} onChange={e=>setStockBuyQuantities({...stockBuyQuantities, [stock.name]: e.target.value})} />
-                                <button onClick={() => {
-                                  const maxBuy = Math.floor(state.cash / (stock.price * 1.022));
-                                  setStockBuyQuantities({...stockBuyQuantities, [stock.name]: maxBuy.toString()});
-                                }} className="w-auto px-4 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded font-bold py-1">MAX</button>
-                                <button onClick={() => handleBuyStock(stock.name)} className="w-auto px-4 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded font-bold py-1 action-btn">BUY</button>
-                              </div>
-                              <div className="flex space-x-1 items-center bg-gray-900/50 p-1 rounded">
-                                <input type="number" min="0" placeholder="Qty" className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={stockSellQuantities[stock.name]||''} onChange={e=>setStockSellQuantities({...stockSellQuantities, [stock.name]: e.target.value})} />
-                                <button onClick={() => setStockSellQuantities({...stockSellQuantities, [stock.name]: stock.quantity.toString()})} className="w-auto px-4 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded font-bold py-1">MAX</button>
-                                <button onClick={() => handleSellStock(stock.name)} className="w-auto px-4 bg-green-700 hover:bg-green-600 text-white text-sm rounded font-bold py-1 action-btn">SELL</button>
-                              </div>
-                            </div>
+                    <div className="flex flex-col h-full">
+                      {/* Floating comms panel for stock market news and tips */}
+                      <div className="shrink-0 bg-black/50 p-3 rounded-lg border border-cyan-500/30 mb-4 shadow-inner">
+                          <div className="font-mono text-xs text-cyan-300 space-y-1 h-[70px] overflow-y-auto custom-scrollbar pr-2">
+                              <div>[09:32] Weyland-Yutani announces record profits; stock supply tightening.</div>
+                              <div>[08:55] HOT TIP: Starfleet Credit Union expected to rally tomorrow.</div>
+                              <div>[08:10] Hutt Cartel shares tumble after spice shipment seizure.</div>
+                              <div>[07:45] Market volatility is high. Trade with caution.</div>
+                              <div>[07:01] Welcome to the Galactic Stock Exchange.</div>
                           </div>
-                        )})}
                       </div>
-                      <div className="mt-4">
-                        <button
-                          onClick={() => {
-                            setModal({ type: 'shipping', data: null });
-                            setLogisticsTab('warehouse');
-                          }}
-                          className="w-full flex items-center justify-center gap-2 bg-cyan-700/80 hover:bg-cyan-600/80 text-white font-bold py-3 rounded-lg text-sm transition-all shadow-md"
-                        >
-                          <WarehouseIcon size={16} /> VIEW STORAGE
-                        </button>
+                      <div className="flex-grow overflow-y-auto custom-scrollbar pr-2">
+                        <div className="grid grid-cols-1 gap-8">
+                          <div className="bg-slate-800/80 p-4 rounded-xl border border-yellow-700/50 shadow-lg">
+                            <div className="flex justify-between items-center mb-4">
+                              <h3 className="text-yellow-400 font-bold flex items-center text-lg"><Trophy size={20} className="mr-2"/> Daily Jackpot</h3>
+                              <PriceDisplay value={state.jackpot ? state.jackpot * 10 : 0} size="text-2xl" />
+                            </div>
+                            <p className="text-xs text-gray-400 mb-2">2.2% of every transaction is added to the jackpot. You have a 22% chance to win 10x the pool each day you trade stocks.</p>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {state.stocks?.map(stock => {
+                              const profitLoss = stock.quantity > 0 && stock.averageCost ? (stock.price - stock.averageCost) * stock.quantity : 0;
+                              return (
+                              <div key={stock.name} className="bg-slate-800/60 p-5 rounded-2xl border border-slate-700">
+                                <div className="flex justify-between items-start mb-2">
+                                  <span className="text-white font-black text-lg">{stock.name}</span>
+                                  <PriceDisplay value={stock.price} size="text-lg"/>
+                                </div>
+                                <div className="text-sm text-gray-400 mb-4">Risk: <span className={`font-bold ${stock.risk === 'high' ? 'text-red-500' : stock.risk === 'medium' ? 'text-yellow-500' : 'text-green-500'}`}>{stock.risk}</span></div>
+                                <div className="text-sm text-gray-400 mb-4">Owned: {stock.quantity}</div>
+                                {stock.quantity > 0 && (
+                                    <div className="text-sm text-gray-400 mb-4">P/L: <PriceDisplay value={profitLoss} colored size="text-sm" /></div>
+                                  )}
+                                <div className="h-16 bg-black/20 p-2 rounded mb-4 flex items-center justify-center">
+                                    {stock.history && stock.history.length > 1 ? (
+                                      <svg viewBox="0 0 100 50" className="w-full h-full">
+                                        <polyline
+                                          fill="none"
+                                          stroke="#22c55e"
+                                          strokeWidth="2"
+                                          points={
+                                            stock.history.map((price, i) => {
+                                              const x = (i / (stock.history.length - 1)) * 100;
+                                              const max = Math.max(...stock.history);
+                                              const y = 50 - (price / max) * 50;
+                                              return `${x},${y}`;
+                                            }).join(' ')
+                                          }
+                                        />
+                                      </svg>
+                                    ) : <span className="text-xs text-gray-600">No price history</span>}
+                                  </div>
+                                <div className="flex flex-col space-y-2">
+                                  <div className="flex space-x-1 items-center bg-gray-900/50 p-1 rounded">
+                                    <input type="number" min="0" placeholder="Qty" className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={stockBuyQuantities[stock.name]||''} onChange={e=>setStockBuyQuantities({...stockBuyQuantities, [stock.name]: e.target.value})} />
+                                    <button onClick={() => {
+                                      const maxBuy = Math.floor(state.cash / (stock.price * 1.022));
+                                      setStockBuyQuantities({...stockBuyQuantities, [stock.name]: maxBuy.toString()});
+                                    }} className="w-auto px-4 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded font-bold py-1">MAX</button>
+                                    <button onClick={() => handleBuyStock(stock.name)} className="w-auto px-4 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded font-bold py-1 action-btn">BUY</button>
+                                  </div>
+                                  <div className="flex space-x-1 items-center bg-gray-900/50 p-1 rounded">
+                                    <input type="number" min="0" placeholder="Qty" className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={stockSellQuantities[stock.name]||''} onChange={e=>setStockSellQuantities({...stockSellQuantities, [stock.name]: e.target.value})} />
+                                    <button onClick={() => setStockSellQuantities({...stockSellQuantities, [stock.name]: stock.quantity.toString()})} className="w-auto px-4 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded font-bold py-1">MAX</button>
+                                    <button onClick={() => handleSellStock(stock.name)} className="w-auto px-4 bg-green-700 hover:bg-green-600 text-white text-sm rounded font-bold py-1 action-btn">SELL</button>
+                                  </div>
+                                </div>
+                              </div>
+                            )})}
+                          </div>
+                          <div className="mt-4">
+                            <button
+                              onClick={() => {
+                                setModal({ type: 'shipping', data: null });
+                                setLogisticsTab('warehouse');
+                              }}
+                              className="w-full flex items-center justify-center gap-2 bg-cyan-700/80 hover:bg-cyan-600/80 text-white font-bold py-3 rounded-lg text-sm transition-all shadow-md"
+                            >
+                              <WarehouseIcon size={16} /> VIEW STORAGE
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -4311,6 +4490,86 @@ export default function App() {
           );
       }
 
+      if (modal.type === 'commodity_intel' && state) {
+        const { commodityName } = modal.data;
+        const commodity = COMMODITIES.find(c => c.name === commodityName);
+        if (!commodity) return null;
+
+        const totalWarehouseStock = Object.values(state.warehouse).reduce((total, venue) => {
+            return total + (venue[commodityName]?.quantity || 0);
+        }, 0);
+
+        const globalStock = (state.cargo[commodityName]?.quantity || 0) + totalWarehouseStock;
+
+        if (globalStock === 0 && modal.type === 'commodity_intel') {
+             setTimeout(() => setModal({ type: 'none', data: null }), 100);
+             return null;
+        }
+
+        return (
+            <div className="absolute inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
+                <div className="bg-slate-900 border border-cyan-500 p-6 rounded-2xl w-full max-w-6xl h-[80vh] sci-fi-box flex flex-col">
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-2xl font-scifi text-cyan-400">Neural Intel: {commodityName}</h2>
+                        <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 font-bold hover:text-red-400"><XCircle /></button>
+                    </div>
+                    <div className="flex-grow flex gap-6 overflow-hidden">
+                        {/* Left Panel (30%) */}
+                        <div className="w-[30%] flex flex-col gap-4 bg-black/30 p-4 rounded-xl border border-cyan-500/20">
+                            <h3 className="text-xl font-bold text-white text-center">{commodity.name}</h3>
+                            <div className="flex justify-center text-6xl">{commodity.icon}</div>
+                            <div className="text-center text-cyan-400 font-mono">Sector Rarity: {commodity.rarity}</div>
+                            <div className="text-sm text-gray-400 flex-grow custom-scrollbar overflow-y-auto pr-2">
+                                <p className="font-bold text-white mb-2">System Analysis:</p>
+                                <p>Detailed analysis and market trends for {commodityName} would be displayed here. This includes historical price data, demand forecasts, and potential market-moving events.</p>
+                            </div>
+                        </div>
+
+                        {/* Right Panel (70%) */}
+                        <div className="w-[70%] flex flex-col gap-4 bg-black/30 p-4 rounded-xl border border-cyan-500/20 overflow-y-auto custom-scrollbar">
+                             {VENUES.map((venueName, i) => {
+                                const marketPrice = state.markets[i][commodityName]?.price || 0;
+                                const cargoQty = i === state.currentVenueIndex ? (state.cargo[commodityName]?.quantity || 0) : 0;
+                                const warehouseQty = state.warehouse[i]?.[commodityName]?.quantity || 0;
+                                const totalOwned = cargoQty + warehouseQty;
+
+                                return (
+                                    <div key={i} className="grid grid-cols-[2fr_1fr_2fr_1fr] items-center gap-4 bg-slate-800/50 p-3 rounded-lg">
+                                        <div className="font-bold text-white">{venueName}</div>
+                                        <div>
+                                            <div className="text-xs text-gray-400">Owned</div>
+                                            <div className="font-bold">{totalOwned}</div>
+                                        </div>
+                                        <div className="flex items-center justify-end gap-2">
+                                            <button
+                                                onClick={() => instantSell(commodityName, i)}
+                                                disabled={totalOwned <= 0}
+                                                className="bg-red-600 hover:bg-red-500 disabled:bg-gray-700 text-white font-bold py-2 px-4 rounded text-xs"
+                                            >
+                                                SELL
+                                            </button>
+                                            <button
+                                              onClick={() => omniShip(commodityName, i)}
+                                              disabled={!((state.cargo[commodityName]?.quantity || 0) > 0 || totalWarehouseStock > 0)}
+                                              className="bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-700 text-white font-bold py-2 px-4 rounded text-xs"
+                                            >
+                                              SET DESTINATION
+                                            </button>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-xs text-gray-400">Price</div>
+                                            <PriceDisplay value={marketPrice} size="text-sm" />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+      }
+
       if (modal.type === 'highscores') {
           return (
               <div className="flex flex-col h-full bg-slate-900/40 p-4 md:p-8 animate-in fade-in duration-300">
@@ -4353,7 +4612,7 @@ export default function App() {
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.3.5</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.3.6</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -4536,7 +4795,7 @@ export default function App() {
                   <div className="flex justify-center gap-8 px-4 w-full max-w-4xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.3.5</p>
+                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.3.6</p>
                </div>
            </div>
        )}

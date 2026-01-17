@@ -199,6 +199,7 @@ export interface Stock {
   averageCost?: number;
   history?: number[];
   availableQuantity?: number;
+  totalShares?: number;
 }
 
 // Fix: Updated Encounter type union to include 'fuel_breach' and 'cargo_tax' instead of 'fuel_leak' and 'tax'
