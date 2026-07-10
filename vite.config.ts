@@ -19,10 +19,7 @@ export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
 
     return {
-      // Relative base path ensures asset URLs resolve correctly in subdirectories (e.g. GitHub Pages)
-      base: './',
-
-      // Development server configuration
+      base: '/Starbuck-new-instance-created-10-01-2026/', // Essential for GitHub Pages subfolder routing
       server: {
         port: 3000,
         host: '0.0.0.0',
