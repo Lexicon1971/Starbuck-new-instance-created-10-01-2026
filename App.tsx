@@ -555,43 +555,6 @@ const formatCompactNumber = (num: number, useMForMillions: boolean = false) => {
  * @param phase The current game phase.
  * @returns The calculated fuel cost.
  */
-  const useCorporateSynergy = (perkType: 'logistics' | 'banking') => {
-    if (!state || !state.stocks) return 1.0; // No discount by default
-
-    let firmName: string;
-    let ownershipThreshold = 0.05; // 5%
-
-    if (perkType === 'logistics') {
-      firmName = "Weyland-Yutani Logistics";
-    } else { // banking
-      firmName = "Starfleet Credit Union";
-    }
-
-    const stock = state.stocks.find(s => s.name === firmName);
-
-    if (stock && stock.quantity > 0 && stock.totalShares) {
-      const ownershipPercentage = stock.quantity / stock.totalShares;
-      if (ownershipPercentage > ownershipThreshold) {
-        if (perkType === 'logistics') return 0.85; // 15% discount
-        if (perkType === 'banking') return 0.99; // 1% interest rate reduction (multiplier)
-      }
-    }
-
-    return 1.0; // No perk applicable
-  };
-
-const getFuelCost = (from: number, to: number, weight: number, phase: number) => {
-  const distance = BASE_DISTANCE_MATRIX[from][to];
-  let cost;
-  if (phase === 1) {
-    cost = distance * 2;
-  } else {
-    const fuelPerDist = Math.max(1, Math.ceil(weight / 1000));
-    cost = fuelPerDist * distance;
-  }
-  const logisticsDiscount = useCorporateSynergy('logistics');
-  return Math.round(cost * logisticsDiscount);
-};
 
 /**
  * Calculates the total market value of the player's cargo.
@@ -758,6 +721,59 @@ export default function App() {
   // `state` holds the entire game state object.
   // `modal` controls which modal window is currently displayed.
   const [state, setState] = useState<GameState | null>(null);
+
+  /**
+   * Helper function to calculate corporate synergy perks based on stock ownership.
+   * Redefined within App component scope to correctly access the state variable.
+   * @param perkType The type of perk to check (logistics or banking).
+   * @returns A multiplier (e.g. 0.85 for a 15% discount, or 1.0 for no perk).
+   */
+  const useCorporateSynergy = (perkType: 'logistics' | 'banking') => {
+    if (!state || !state.stocks) return 1.0; // No discount by default
+
+    let firmName: string;
+    let ownershipThreshold = 0.05; // 5%
+
+    if (perkType === 'logistics') {
+      firmName = "Weyland-Yutani Logistics";
+    } else { // banking
+      firmName = "Starfleet Credit Union";
+    }
+
+    const stock = state.stocks.find(s => s.name === firmName);
+
+    if (stock && stock.quantity > 0 && stock.totalShares) {
+      const ownershipPercentage = stock.quantity / stock.totalShares;
+      if (ownershipPercentage > ownershipThreshold) {
+        if (perkType === 'logistics') return 0.85; // 15% discount
+        if (perkType === 'banking') return 0.99; // 1% interest rate reduction (multiplier)
+      }
+    }
+
+    return 1.0; // No perk applicable
+  };
+
+  /**
+   * Calculates the fuel cost for a trip between two venues.
+   * Redefined within App component scope to correctly utilize useCorporateSynergy.
+   * @param from The starting venue index.
+   * @param to The destination venue index.
+   * @param weight The current cargo weight.
+   * @param phase The current game phase.
+   * @returns The calculated fuel cost.
+   */
+  const getFuelCost = (from: number, to: number, weight: number, phase: number) => {
+    const distance = BASE_DISTANCE_MATRIX[from][to];
+    let cost;
+    if (phase === 1) {
+      cost = distance * 2;
+    } else {
+      const fuelPerDist = Math.max(1, Math.ceil(weight / 1000));
+      cost = fuelPerDist * distance;
+    }
+    const logisticsDiscount = useCorporateSynergy('logistics');
+    return Math.round(cost * logisticsDiscount);
+  };
   const [modal, setModal] = useState<{ type: string, data: any, color?: string }>({ type: 'none', data: null });
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);

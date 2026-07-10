@@ -1,0 +1,11 @@
+/*
+ * ============================================================================
+ * STYLESHEET: index.css
+ * PURPOSE: Global Stylesheet for Star Bucks Galaxy Trade Empire.
+ * FUNCTIONALITY:
+ *   - Imports Tailwind CSS v4 framework compiled at build-time.
+ *   - Integrates custom animations and utility classes if needed.
+ * ============================================================================
+ */
+
+@import "tailwindcss";
