@@ -5,6 +5,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
+      base: '/Starbuck-new-instance-created-10-01-2026/', // Essential for GitHub Pages subfolder routing
       server: {
         port: 3000,
         host: '0.0.0.0',
