@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>STAR BUCKS - Jules (v10.2.2)</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Removed CDN script to avoid console production warnings and allow build-time compiled CSS -->
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
       html {
@@ -62,7 +62,10 @@
         background-image:
             linear-gradient(rgba(0, 255, 0, 0.05) 1px, transparent 1px);
         background-size: 100% 2px;
-        box-shadow: 0 0 10px #0d2a1a, inset 0 0 10px #0d2a1a;
+        /* Fixed multi-layer box shadow syntax by removing incorrect mid-declaration semicolon */
+        box-shadow:
+              0 0 10px #0d2a1a,
+              inset 0 0 10px #0d2a1a,
               0 0 5px rgba(16, 185, 129, 0.2),
               inset 0 0 20px rgba(0, 0, 0, 0.5),
               2px 4px 10px rgba(0,0,0,0.8);
@@ -198,13 +201,15 @@
   }
 }
 </script>
-  <link rel="stylesheet" href="/index.css">
-  <link rel="stylesheet" href="starfield.css">
+  <!-- Updated stylesheet paths to use relative urls for GitHub Pages subfolder compatibility -->
+  <link rel="stylesheet" href="./index.css">
+  <link rel="stylesheet" href="./starfield.css">
 </head>
   <body>
     <div id="starfield"></div>
     <div id="root"></div>
-    <script type="module" src="index.js"></script>
+    <!-- Updated script source to index.tsx to allow correct compilation and bundling by Vite -->
+    <script type="module" src="./index.tsx"></script>
     <script>
       document.addEventListener('DOMContentLoaded', function () {
         const starfield = document.getElementById('starfield');

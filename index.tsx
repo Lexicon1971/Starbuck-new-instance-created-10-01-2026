@@ -1,5 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+// Import the compiled Tailwind CSS stylesheet for the application
+import './index.css';
 import App from './App.tsx';
 
 const rootElement = document.getElementById('root');
