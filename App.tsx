@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v10.4.0 Collision
+ * VERSION: v10.4.1 Departure
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -1015,7 +1015,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v10.4.0 Collision ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v10.4.1 Departure ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -3056,7 +3056,8 @@ export default function App() {
     directFulfillContract(c);
     setTimeout(() => {
         setPulsingContractId(null);
-        setModal({type: 'none', data: null});
+        // Do not close or change open modals (e.g. shipping / logistics screens) when auto-completing!
+        setModal(prev => prev.type === 'shipping' ? prev : { type: 'none', data: null });
     }, 2000);
   };
 
@@ -3506,7 +3507,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.4.0</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.4.1</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -3736,7 +3737,7 @@ export default function App() {
         return (
             <div className="flex flex-col h-full bg-slate-900/40 p-4 md:p-8 animate-in fade-in duration-300">
                 <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.4.0 Collision</h2>
+                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.4.1 Departure</h2>
                     <div className="text-[10px] text-gray-500 font-mono text-right uppercase leading-tight">Neural Reference System <br/>Database: UNRESTRICTED</div>
                 </div>
                 <div className="flex-grow overflow-y-auto custom-scrollbar pr-4 space-y-6">
@@ -4310,7 +4311,7 @@ export default function App() {
 
                    <div className="flex-grow flex flex-col overflow-y-auto custom-scrollbar relative pt-10">
                         <div className="absolute top-0 right-0 w-72 text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                            SYSTEM LOG: FABRICATION MATRIX v10.4.0 Collision ACTIVE
+                            SYSTEM LOG: FABRICATION MATRIX v10.4.1 Departure ACTIVE
                         </div>
 
                         <div className="text-center space-y-2 mb-10">
@@ -4487,7 +4488,7 @@ export default function App() {
                               <div>[07:01] Welcome to the Galactic Stock Exchange.</div>
                           </div>
                       </div>
-                      <div className="flex-grow overflow-y-auto custom-scrollbar pr-2">
+                      <div className="flex-grow overflow-y-auto custom-scrollbar pr-2 pb-16">
                         <div className="grid grid-cols-1 gap-8">
                           <div className="bg-slate-800/80 p-4 rounded-xl border border-yellow-700/50 shadow-lg">
                             <div className="flex justify-between items-center mb-4">
@@ -4496,7 +4497,7 @@ export default function App() {
                             </div>
                             <p className="text-xs text-gray-400 mb-2">2.2% of every transaction is added to the jackpot. You have a 22% chance to win 10x the pool each day you trade stocks.</p>
                           </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-20">
                             {state.stocks?.map(stock => {
                               const profitLoss = stock.quantity > 0 && stock.averageCost ? (stock.price - stock.averageCost) * stock.quantity : 0;
                               return (
@@ -4534,25 +4535,6 @@ export default function App() {
                                 {stock.quantity > 0 && (
                                     <div className="text-sm text-gray-400 mb-4">P/L: <PriceDisplay value={profitLoss} colored size="text-sm" /></div>
                                   )}
-                                <div className="h-16 bg-black/20 p-2 rounded mb-4 flex items-center justify-center">
-                                    {stock.history && stock.history.length > 1 ? (
-                                      <svg viewBox="0 0 100 50" className="w-full h-full">
-                                        <polyline
-                                          fill="none"
-                                          stroke="#22c55e"
-                                          strokeWidth="2"
-                                          points={
-                                            stock.history.map((price, i) => {
-                                              const x = (i / (stock.history.length - 1)) * 100;
-                                              const max = Math.max(...stock.history);
-                                              const y = 50 - (price / max) * 50;
-                                              return `${x},${y}`;
-                                            }).join(' ')
-                                          }
-                                        />
-                                      </svg>
-                                    ) : <span className="text-xs text-gray-600">No price history</span>}
-                                  </div>
                                 <div className="flex flex-col space-y-2">
                                   <div className="flex space-x-1 items-center bg-gray-900/50 p-1 rounded">
                                     <input type="number" min="0" placeholder="Qty" disabled={state.gamePhase < 3} className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5 disabled:opacity-50" value={stockBuyQuantities[stock.name]||''} onChange={e=>setStockBuyQuantities({...stockBuyQuantities, [stock.name]: e.target.value})} />
@@ -4571,6 +4553,7 @@ export default function App() {
                               </div>
                             )})}
                           </div>
+                          <div className="h-24"></div> {/* Spacer for scroll room */}
                         </div>
                       </div>
                     </div>
@@ -4650,7 +4633,21 @@ export default function App() {
                                                            <span className="text-purple-300 font-black">READY TO FULFILL</span>
                                                            <button onClick={() => settleContract(c)} className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded font-black text-[10px] uppercase">SETTLE</button>
                                                        </div>
-                                                   ) : (hasItems ? <span className="text-yellow-400">STATUS: Transit...</span> : <span className="text-red-400">STATUS: Pending arrival...</span>)}
+                                                   ) : (
+                                                       <div className="flex flex-col gap-2">
+                                                           {hasItems ? (
+                                                               <span className="text-yellow-400">STATUS: Transit...</span>
+                                                           ) : (
+                                                               <span className="text-red-400">STATUS: Pending arrival...</span>
+                                                           )}
+                                                           {state.cargo[c.commodity] && state.cargo[c.commodity].quantity >= c.quantity && (
+                                                               <div className="flex justify-between items-center bg-purple-950/20 p-2 rounded border border-purple-500/30 mt-2">
+                                                                   <span className="text-purple-300 font-bold">CARGO ON HAND</span>
+                                                                   <button onClick={() => handleFulfill(c)} className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded font-black text-[10px] uppercase">FULFILL</button>
+                                                               </div>
+                                                           )}
+                                                       </div>
+                                                   )}
                                                </div>
                                            </div>
                                        );
@@ -4992,7 +4989,7 @@ export default function App() {
         return (
             <div className="flex flex-col h-full bg-slate-900/40 p-4 md:p-8 animate-in fade-in duration-300">
                 <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.4.0 Collision</h2>
+                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.4.1 Departure</h2>
                     <div className="text-[10px] text-gray-500 font-mono text-right uppercase leading-tight">Neural Reference System <br/>Database: UNRESTRICTED</div>
                 </div>
                 <div className="flex-grow overflow-y-auto custom-scrollbar pr-4 space-y-6">
@@ -5291,7 +5288,7 @@ export default function App() {
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.4.0 Collision</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.4.1 Departure</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -5514,7 +5511,7 @@ export default function App() {
                   <div className="flex justify-center gap-8 px-4 w-full max-w-4xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.4.0 Collision</p>
+                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.4.1 Departure</p>
                </div>
            </div>
        )}
@@ -5548,7 +5545,7 @@ export default function App() {
                    </div>
                    <div className="flex flex-col gap-3">
                        {/*
-                         STRATEGY 1: Auto-Ship to All Destinations.
+                         STRATEGY 1: Ship item individually to best-selling location.
                          Ships each commodity directly to its highest-paying venue across the sector.
                          This is ideal for securing peak sale opportunities upon arrival.
                        */}
@@ -5558,7 +5555,12 @@ export default function App() {
 
                            const baseState = newStateForTravel || state;
                            const ns = JSON.parse(JSON.stringify(baseState));
-                           ns.cash -= shippingCost;
+
+                           // Credit check bypassed: go into debit with 10% interest if cash is insufficient
+                           const willDebit = ns.cash < shippingCost;
+                           const interestFee = willDebit ? Math.ceil(shippingCost * 0.10) : 0;
+                           const totalCost = shippingCost + interestFee;
+                           ns.cash -= totalCost;
                            ns.cargoWeight = Math.max(0, ns.cargoWeight - totalWeight);
 
                            eligibleItems.forEach(([name, item]: [string, CargoItem]) => {
@@ -5579,6 +5581,12 @@ export default function App() {
                                }
                            });
 
+                           log(`LOGISTICS: Shipped overloaded cargo individually to best-selling venues. Fee: ${formatCurrencyLog(shippingCost)} paid.`, 'buy');
+                           if (interestFee > 0) {
+                               log(`OVERDRAFT FEE: Paid interest of ${formatCurrencyLog(interestFee)} for traveling overloaded in debit.`, 'overdraft');
+                               SFX.play('error');
+                           }
+
                            if (willBeOverfilledWithOnlyExcluded) {
                                setModal({
                                    type: 'message',
@@ -5590,13 +5598,12 @@ export default function App() {
                                triggerTravelExecution(destIdx, fuel, missingFuel, missingCells, ns);
                            }
                        }} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl text-md shadow-lg action-btn uppercase">
-                           Auto-Ship to All Destinations & Jump (-<PriceDisplay value={Math.ceil(modal.data.totalWeight * 100)} size="text-sm" compact />)
+                           Ship item individually to best-selling location & Jump (-<PriceDisplay value={Math.ceil(modal.data.totalWeight * 100)} size="text-sm" compact />)
                        </button>
 
                        {/*
-                         STRATEGY 2: Auto-Ship to Most Profit.
-                         Ships commodities with positive profit margins directly to their most profitable venue across the sector.
-                         For any items that would incur a loss or have negative margin, falls back to local storage (0-day transit lag) to hold them.
+                         STRATEGY 2: Ship all to destination travelling to.
+                         Ships all commodities directly to the destination venue index.
                        */}
                        <button onClick={() => {
                            const { destIdx, fuel, missingFuel, missingCells, newStateForTravel, eligibleItems, totalWeight, excludedWeight, willBeOverfilledWithOnlyExcluded } = modal.data;
@@ -5604,43 +5611,37 @@ export default function App() {
 
                            const baseState = newStateForTravel || state;
                            const ns = JSON.parse(JSON.stringify(baseState));
-                           ns.cash -= shippingCost;
+
+                           // Credit check bypassed: go into debit with 10% interest if cash is insufficient
+                           const willDebit = ns.cash < shippingCost;
+                           const interestFee = willDebit ? Math.ceil(shippingCost * 0.10) : 0;
+                           const totalCost = shippingCost + interestFee;
+                           ns.cash -= totalCost;
                            ns.cargoWeight = Math.max(0, ns.cargoWeight - totalWeight);
 
                            eligibleItems.forEach(([name, item]: [string, CargoItem]) => {
-                               // Calculate highest profit venue across all OTHER venues
-                               let bestVenueIdx = ns.currentVenueIndex;
-                               let maxProfit = -99999999;
-
-                               ns.markets.forEach((m: Market, index: number) => {
-                                   if (index === ns.currentVenueIndex) return;
-                                   const sellPrice = m[name]?.price || 0;
-                                   const profitPerUnit = sellPrice - item.averageCost;
-                                   if (profitPerUnit > maxProfit) {
-                                       maxProfit = profitPerUnit;
-                                       bestVenueIdx = index;
-                                   }
-                               });
-
-                               // If the highest profit is positive, ship to that remote venue.
-                               // Otherwise, fallback to the local venue (current venue's local storage) to avoid cross-sector transit.
-                               const finalTargetDest = maxProfit > 0 ? bestVenueIdx : ns.currentVenueIndex;
-                               const arrivalOffset = finalTargetDest === ns.currentVenueIndex ? 0 : 1;
-
+                               // Destination is destIdx (the venue index we are travelling to)
+                               const targetDest = destIdx;
                                delete ns.cargo[name];
-                               if (!ns.warehouse[finalTargetDest]) ns.warehouse[finalTargetDest] = {};
-                               const existing = ns.warehouse[finalTargetDest][name];
+                               if (!ns.warehouse[targetDest]) ns.warehouse[targetDest] = {};
+                               const existing = ns.warehouse[targetDest][name];
                                if (existing) {
                                    existing.quantity += item.quantity;
                                    existing.originalAvgCost = ((existing.quantity * existing.originalAvgCost) + (item.quantity * item.averageCost)) / (existing.quantity + item.quantity);
                                } else {
-                                   ns.warehouse[finalTargetDest][name] = {
+                                   ns.warehouse[targetDest][name] = {
                                        quantity: item.quantity,
                                        originalAvgCost: item.averageCost,
-                                       arrivalDay: ns.day + arrivalOffset
+                                       arrivalDay: ns.day + 1 // Arrives tomorrow at destination venue
                                    };
                                }
                            });
+
+                           log(`LOGISTICS: Shipped overloaded cargo to destination travelling to (${VENUES[destIdx]}). Fee: ${formatCurrencyLog(shippingCost)} paid.`, 'buy');
+                           if (interestFee > 0) {
+                               log(`OVERDRAFT FEE: Paid interest of ${formatCurrencyLog(interestFee)} for traveling overloaded in debit.`, 'overdraft');
+                               SFX.play('error');
+                           }
 
                            if (willBeOverfilledWithOnlyExcluded) {
                                setModal({
@@ -5653,7 +5654,7 @@ export default function App() {
                                triggerTravelExecution(destIdx, fuel, missingFuel, missingCells, ns);
                            }
                        }} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl text-md shadow-lg action-btn uppercase">
-                           Auto-Ship to Most Profit Venues & Jump (-<PriceDisplay value={Math.ceil(modal.data.totalWeight * 100)} size="text-sm" compact />)
+                           Ship all to destination travelling to & Jump (-<PriceDisplay value={Math.ceil(modal.data.totalWeight * 100)} size="text-sm" compact />)
                        </button>
 
                        <button onClick={() => {
