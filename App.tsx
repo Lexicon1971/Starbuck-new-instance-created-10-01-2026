@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v10.3.6 Abductable // Updated version to 10.3.6 Abductable
+ * VERSION: v10.3.7 Abductable // Updated version to 10.3.7 Abductable
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -697,6 +697,14 @@ const renderLogMessage = (msg: string) => {
 const StatusDial = ({ value, max, icon: Icon, color, label, isPercent }: { value: number, max: number, icon: any, color: string, label: string, isPercent?: boolean }) => {
   const percentage = Math.min(Math.max(value / max, 0), 1) * 100;
   
+  // Statically map text-color class to background hex for robust Tailwind v4 rendering
+  const getBgColorHex = (textColorClass: string) => {
+    if (textColorClass.includes('green')) return '#22c55e'; // green-500
+    if (textColorClass.includes('blue')) return '#3b82f6';  // blue-500
+    if (textColorClass.includes('red')) return '#ef4444';   // red-500
+    return '#4b5563'; // gray-600
+  };
+
   return (
     <div className="flex flex-col items-center mx-1 md:mx-1 p-1 bg-black/40 rounded border border-gray-700 w-16 md:w-20">
         <div className="flex justify-between items-center w-full mb-0.5">
@@ -704,7 +712,7 @@ const StatusDial = ({ value, max, icon: Icon, color, label, isPercent }: { value
             <span className={`text-[8px] md:text-[10px] font-bold ${color}`}>{value}{isPercent?'%':''}</span>
         </div>
         <div className="w-full bg-gray-800 rounded-full h-1 mb-0.5 overflow-hidden">
-            <div className={`h-1 rounded-full ${color.replace('text-', 'bg-')}`} style={{ width: `${percentage}%` }}></div>
+            <div className="h-1 rounded-full" style={{ width: `${percentage}%`, backgroundColor: getBgColorHex(color) }}></div>
         </div>
         <div className="text-[7px] md:text-[8px] text-white uppercase tracking-wider font-bold">{label}</div>
     </div>
@@ -959,7 +967,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v10.3.6 Abductable ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v10.3.7 Abductable ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -991,7 +999,7 @@ export default function App() {
    * This function sets the initial public offering (IPO) price and total shares for each company.
    * Prices are randomized, and total shares are assigned based on the firm's prestige.
    */
-  const initializeStocks = () => {
+  const initializeStocks = (s: GameState) => {
     // Combine all firms from loan and contract lists to create the full list of publicly traded companies.
     const allFirms = [...LOAN_FIRMS, ...CONTRACT_FIRMS];
     const initialStocks = allFirms.map((firm, index) => {
@@ -1027,11 +1035,12 @@ export default function App() {
         averageCost: 0,
         history: [price], // Initialize price history for sparkline charts.
         totalShares,
+        availableQuantity: Math.floor(totalShares * 0.5) // Ensure available shares are populated!
       };
     });
 
-    // Update the game state with the newly initialized stocks.
-    setState(prev => prev ? ({ ...prev, stocks: initialStocks }) : null);
+    // Update the stocks directly in the passed state to prevent async overwriting bugs
+    s.stocks = initialStocks;
   };
 
   // E. GAME INITIALIZATION & LIFECYCLE
@@ -1198,10 +1207,11 @@ export default function App() {
   const openingMessage = `Welcome, Captain. Your former business partner has passed, leaving his debts... and his dreams... to you. We have secured a 30,000 Star Bucks loan to buy out his Widow and reinstate our trading license, but your ship has been stripped down by mutiny. Prepare to board the RR Firefox 22 RustyRedeemer: She’s 60% oxidation and 40% hope, but she’ll get your cargo across the sector if you treat her right.`;
 
   // Plays the opening message when the welcome modal is displayed.
-  // Calls speakRetro.
+  // Commented out to prevent duplicate speaking as it is now directly linked
+  // to the user's explicit Connect Neural Uplink click gesture.
   useEffect(() => {
     if (modal.type === 'welcome') {
-      speakRetro(openingMessage);
+      // speakRetro(openingMessage);
     }
   }, [modal.type]);
 
@@ -2193,6 +2203,128 @@ export default function App() {
      }
   };
 
+  const triggerTravelExecution = (
+      destIdx: number,
+      fuel: number,
+      missingFuel: number,
+      missingCells: number,
+      newStateForTravel?: GameState
+  ) => {
+      if (missingFuel > 0 || missingCells > 0) {
+          let ns = newStateForTravel;
+          if (!ns) {
+              const fuelPrice = COMMODITIES.find(c => c.name === FUEL_NAME)!.maxPrice;
+              const cellPrice = COMMODITIES.find(c => c.name === POWER_CELL_NAME)!.maxPrice;
+              const cost = (missingFuel * fuelPrice) + (missingCells * cellPrice);
+              const overdraftFee = state!.cash < cost ? cost * 0.10 : 0;
+              const totalCost = cost + overdraftFee;
+
+              ns = JSON.parse(JSON.stringify(state));
+              ns.cash -= totalCost;
+
+              const newCargo = ns.cargo;
+              if (missingFuel > 0) {
+                  const curF = newCargo[FUEL_NAME] || { quantity: 0, averageCost: 0 };
+                  newCargo[FUEL_NAME] = {
+                      quantity: curF.quantity + missingFuel,
+                      averageCost: ((curF.quantity * curF.averageCost) + (missingFuel * fuelPrice)) / (curF.quantity + missingFuel)
+                  };
+              }
+              if (missingCells > 0) {
+                  const curC = newCargo[POWER_CELL_NAME] || { quantity: 0, averageCost: 0 };
+                  newCargo[POWER_CELL_NAME] = {
+                      quantity: curC.quantity + missingCells,
+                      averageCost: ((curC.quantity * curC.averageCost) + (missingCells * cellPrice)) / (curC.quantity + missingCells)
+                  };
+              }
+
+              ns.cargoWeight += (missingFuel * COMMODITIES.find(c => c.name === FUEL_NAME)!.unitWeight) + (missingCells * COMMODITIES.find(c => c.name === POWER_CELL_NAME)!.unitWeight);
+
+              log(`EMERGENCY: Auto-bought ${missingFuel} Fuel and ${missingCells} Cells at max price.`, 'maintenance');
+              if (overdraftFee > 0) log(`OVERDRAFT FEE: Paid ${formatCurrencyLog(overdraftFee)} for emergency purchase.`, 'overdraft');
+              SFX.play('coin');
+          }
+          handleTravel(destIdx, fuel, travelConfig.insurance, travelConfig.mining, travelConfig.overload, travelConfig.invest95, ns);
+      } else {
+          handleTravel(destIdx, fuel, travelConfig.insurance, travelConfig.mining, travelConfig.overload, travelConfig.invest95, newStateForTravel);
+      }
+  };
+
+  const checkCargoBeforeTravel = (
+      destIdx: number,
+      fuel: number,
+      missingFuel: number,
+      missingCells: number,
+      newStateForTravel?: GameState
+  ) => {
+      const currentState = newStateForTravel || state;
+      if (!currentState) return;
+
+      // Eligible items (excluding hot isotopes and spice fuel)
+      const eligibleCargoItems = Object.entries(currentState.cargo).filter(([name, item]) => {
+          return name !== POWER_CELL_NAME && name !== FUEL_NAME && item.quantity > 0;
+      });
+
+      const hasEligibleItems = eligibleCargoItems.length > 0;
+      const isOverfilled = currentState.cargoWeight > currentState.cargoCapacity;
+
+      // Excluded items weight
+      const excludedWeight = Object.entries(currentState.cargo)
+          .filter(([name, item]) => (name === POWER_CELL_NAME || name === FUEL_NAME) && item.quantity > 0)
+          .reduce((sum, [name, item]) => {
+              const cData = COMMODITIES.find(c => c.name === name);
+              return sum + (item.quantity * (cData?.unitWeight || 0));
+          }, 0);
+
+      const willBeOverfilledWithOnlyExcluded = excludedWeight > currentState.cargoCapacity;
+
+      if (isOverfilled) {
+          if (hasEligibleItems) {
+              setModal({
+                  type: 'cargo_capacity_ship_confirm',
+                  data: {
+                      destIdx,
+                      fuel,
+                      missingFuel,
+                      missingCells,
+                      newStateForTravel,
+                      eligibleItems: eligibleCargoItems,
+                      totalWeight: currentState.cargoWeight - excludedWeight,
+                      excludedWeight,
+                      willBeOverfilledWithOnlyExcluded
+                  }
+              });
+          } else {
+              setModal({
+                  type: 'message',
+                  data: `CARGO OVERFILL BLOCK: Captain, your cargo hold is overloaded (${Math.round(currentState.cargoWeight)}/${currentState.cargoCapacity}T). Spice Fuel and Hot Isotope Hummers alone exceed your capacity. You must manually ship or sell these commodities until your cargo weight is under capacity before you can depart!`,
+                  color: 'text-red-500'
+              });
+              SFX.play('error');
+          }
+      } else {
+          if (hasEligibleItems) {
+              setModal({
+                  type: 'cargo_capacity_ship_confirm',
+                  data: {
+                      destIdx,
+                      fuel,
+                      missingFuel,
+                      missingCells,
+                      newStateForTravel,
+                      eligibleItems: eligibleCargoItems,
+                      totalWeight: currentState.cargoWeight - excludedWeight,
+                      excludedWeight,
+                      willBeOverfilledWithOnlyExcluded,
+                      isProactive: true
+                  }
+              });
+          } else {
+              triggerTravelExecution(destIdx, fuel, missingFuel, missingCells, newStateForTravel);
+          }
+      }
+  };
+
   // L. DAILY CYCLE & CORE SYSTEMS LOGIC
   // These functions handle the end-of-day processing and other core game systems.
 
@@ -2578,7 +2710,7 @@ export default function App() {
 
     // Initialize the stock market when the player reaches Phase 3.
     if (nextPhase === 3) {
-      initializeStocks();
+      initializeStocks(s);
     }
 
     const multiplier = nextPhase === 1 ? 1 : (nextPhase === 2 ? 5 : (nextPhase === 3 ? 10 : 20));
@@ -2877,29 +3009,40 @@ export default function App() {
     if(!state) return;
     const marketPrice = state.markets[venueIndex][commodityName]?.price || 0;
     let totalToSell = 0;
-    if (venueIndex === state.currentVenueIndex) {
-        totalToSell += state.cargo[commodityName]?.quantity || 0;
+
+    const newCargo = { ...state.cargo };
+    let cargoQuantitySold = 0;
+    if (venueIndex === state.currentVenueIndex && newCargo[commodityName]) {
+        cargoQuantitySold = newCargo[commodityName].quantity;
+        totalToSell += cargoQuantitySold;
+        delete newCargo[commodityName];
     }
-    totalToSell += state.warehouse[venueIndex]?.[commodityName]?.quantity || 0;
+
+    const newWarehouse = JSON.parse(JSON.stringify(state.warehouse));
+    const whItem = newWarehouse[venueIndex]?.[commodityName];
+    let warehouseQuantitySold = 0;
+    if (whItem) {
+        // Safe check: Only allow selling unreserved warehouse stock to protect contract commitments
+        if (!whItem.isContractReserved) {
+            warehouseQuantitySold = whItem.quantity;
+            totalToSell += warehouseQuantitySold;
+            delete newWarehouse[venueIndex][commodityName];
+        }
+    }
 
     if (totalToSell > 0) {
         const revenue = totalToSell * marketPrice;
-        const newCargo = { ...state.cargo };
-        const newWarehouse = { ...state.warehouse };
+        const unitWeight = COMMODITIES.find(c => c.name === commodityName)!.unitWeight;
+        const weightLost = cargoQuantitySold * unitWeight;
 
-        if (venueIndex === state.currentVenueIndex) {
-           delete newCargo[commodityName];
-        }
-        if (newWarehouse[venueIndex]?.[commodityName]) {
-            delete newWarehouse[venueIndex][commodityName];
-        }
-
-        setState(prev => ({
-            ...prev!,
-            cash: prev!.cash + revenue,
+        setState(prev => prev ? ({
+            ...prev,
+            cash: prev.cash + revenue,
             cargo: newCargo,
             warehouse: newWarehouse,
-        }));
+            cargoWeight: Math.max(0, prev.cargoWeight - weightLost)
+        }) : null);
+        SFX.play('coin');
         log(`SOLD: ${totalToSell} ${commodityName} at ${VENUES[venueIndex]} for ${formatCurrencyLog(revenue)}.`, 'sell');
     }
   };
@@ -3176,7 +3319,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.3.6</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.3.7</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -3400,7 +3543,7 @@ export default function App() {
         return (
             <div className="flex flex-col h-full bg-slate-900/40 p-4 md:p-8 animate-in fade-in duration-300">
                 <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.3.2</h2>
+                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.3.7</h2>
                     <div className="text-[10px] text-gray-500 font-mono text-right uppercase leading-tight">Neural Reference System <br/>Database: UNRESTRICTED</div>
                 </div>
                 <div className="flex-grow overflow-y-auto custom-scrollbar pr-4 space-y-6">
@@ -3525,7 +3668,44 @@ export default function App() {
                                         <td className={`p-2 text-right align-middle`}>
                                             <div className={`flex justify-end font-bold text-xl ${priceColorClass}`}>{Math.round(mItem.price).toLocaleString()} <StarCoin size={20} /></div>
                                         </td>
-                                        <td className="p-2 text-center text-gray-400 text-lg align-middle">{mItem.quantity}</td>
+                                        <td className="p-2 text-center text-gray-400 text-lg align-middle">
+                                            <div>{mItem.quantity}</div>
+                                            {(() => {
+                                                const stockArrivedElsewhere = Object.entries(state.warehouse).some(([vIdxStr, venueWarehouse]) => {
+                                                    const vIdx = parseInt(vIdxStr);
+                                                    if (vIdx === state.currentVenueIndex) return false;
+                                                    const item = venueWarehouse[c.name];
+                                                    return item && item.quantity > 0 && !item.isContractReserved && state.day >= item.arrivalDay;
+                                                });
+                                                if (stockArrivedElsewhere) {
+                                                    return (
+                                                        <button
+                                                            onClick={() => {
+                                                                let targetStorageVenueIdx = -1;
+                                                                for (const [vIdxStr, venueWarehouse] of Object.entries(state.warehouse)) {
+                                                                    const vIdx = parseInt(vIdxStr);
+                                                                    if (vIdx !== state.currentVenueIndex) {
+                                                                        const item = venueWarehouse[c.name];
+                                                                        if (item && item.quantity > 0 && !item.isContractReserved && state.day >= item.arrivalDay) {
+                                                                            targetStorageVenueIdx = vIdx;
+                                                                            break;
+                                                                        }
+                                                                    }
+                                                                }
+                                                                if (targetStorageVenueIdx !== -1) {
+                                                                    showCommodityIntel(c.name, 'storage', targetStorageVenueIdx);
+                                                                }
+                                                            }}
+                                                            className="mt-1 text-[10px] bg-red-600 hover:bg-red-500 hover:scale-105 active:scale-95 text-white px-2 py-1 rounded font-black border border-red-800 shadow-[0_0_8px_rgba(220,38,38,0.5)] transition-all uppercase block mx-auto animate-pulse whitespace-nowrap"
+                                                            title="Arrived Storage Detected! Click to open Storage Intel."
+                                                        >
+                                                            STORE
+                                                        </button>
+                                                    );
+                                                }
+                                                return null;
+                                            })()}
+                                        </td>
                                         <td className="p-2 text-center align-middle">
                                             {owned.quantity > 0 ? (
                                                 <div className="leading-tight flex flex-col items-center"><div className="text-white font-bold text-lg">{owned.quantity}</div><PriceDisplay value={(mItem.price-owned.averageCost)*owned.quantity} colored={true} size="text-sm" compact /></div>
@@ -3533,8 +3713,37 @@ export default function App() {
                                         </td>
                                         <td className="p-2 align-middle">
                                             <div className="flex flex-col space-y-2">
-                                                <div className="flex space-x-1 items-center bg-gray-900/50 p-1 rounded"><input type="number" min="0" placeholder="Qty" className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={buyQuantities[c.name]||''} onChange={e=>setBuyQuantities({...buyQuantities, [c.name]: e.target.value})} /><button onClick={()=>setMaxBuy(c, mItem)} className="w-auto px-4 bg-gray-700 hover:bg-gray-600 text-sm text-white rounded py-1 action-btn">MAX</button><button onClick={()=>handleTrade('buy', c, mItem, owned)} className="w-auto px-4 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded font-bold py-1 action-btn">BUY</button>{availableContract && (<button onClick={() => acceptContract(availableContract)} className="w-auto px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-sm rounded font-bold py-1 action-btn">ACCEPT</button>)}</div>
-                                                <div className="flex space-x-1 items-center bg-gray-900/50 p-1 rounded"><input type="number" min="0" placeholder="Qty" className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={sellQuantities[c.name]||''} onChange={e=>setSellQuantities({...sellQuantities, [c.name]: e.target.value})} /><button onClick={()=>setSellQuantities({...sellQuantities, [c.name]: owned.quantity.toString()})} disabled={owned.quantity===0} className="w-auto px-4 bg-gray-700 hover:bg-gray-600 disabled:opacity-30 text-sm text-white rounded py-1 action-btn">ALL</button><button onClick={()=>handleTrade('sell', c, mItem, owned)} disabled={owned.quantity===0} className="w-auto px-4 bg-green-700 hover:bg-green-600 disabled:opacity-30 text-white text-sm rounded font-bold py-1 action-btn">SELL</button>{activeContract && !isCovered && (<button onClick={() => handleFulfill(activeContract)} disabled={owned.quantity < activeContract.quantity || pulsingContractId !== null} className={`w-auto px-4 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 disabled:opacity-50 text-white text-sm rounded font-bold py-1 action-btn ${pulsingContractId === activeContract.id ? 'animate-pulse' : ''}`}>FULFILL</button>)}{!activeContract && (<button onClick={() => { const ownedQuantity = state.cargo[c.name]?.quantity || 0; setShippingQuantities(prev => ({ ...prev, [c.name]: ownedQuantity.toString() })); setModal({ type: 'shipping', data: null }); setLogisticsTab('shipping'); setShippingPriorityItem(c.name); }} className="w-auto px-4 bg-cyan-600 hover:bg-cyan-500 text-white text-sm rounded font-bold py-1 action-btn">SHIP</button>)}</div>
+                                                <div className="flex space-x-1 items-center bg-gray-900/50 p-1 rounded">
+                                                    <input type="number" min="0" placeholder="Qty" className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={buyQuantities[c.name]||''} onChange={e=>setBuyQuantities({...buyQuantities, [c.name]: e.target.value})} />
+                                                    <button
+                                                        onClick={()=>setMaxBuy(c, mItem)}
+                                                        disabled={mItem.quantity === 0}
+                                                        className={`w-auto px-4 bg-gray-700 hover:bg-gray-600 text-sm text-white rounded py-1 action-btn ${mItem.quantity === 0 ? 'opacity-30 pointer-events-none' : ''}`}
+                                                    >
+                                                        MAX
+                                                    </button>
+                                                    <button
+                                                        onClick={()=>handleTrade('buy', c, mItem, owned)}
+                                                        disabled={mItem.quantity === 0}
+                                                        className={`w-auto px-4 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded font-bold py-1 action-btn ${mItem.quantity === 0 ? 'opacity-30 pointer-events-none' : ''}`}
+                                                    >
+                                                        BUY
+                                                    </button>
+                                                    {availableContract && (
+                                                        <button onClick={() => acceptContract(availableContract)} className="w-auto px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-sm rounded font-bold py-1 action-btn">
+                                                            ACCEPT
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                <div className="flex space-x-1 items-center bg-gray-900/50 p-1 rounded">
+                                                    <input type="number" min="0" placeholder="Qty" className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={sellQuantities[c.name]||''} onChange={e=>setSellQuantities({...sellQuantities, [c.name]: e.target.value})} />
+                                                    <button onClick={()=>setSellQuantities({...sellQuantities, [c.name]: owned.quantity.toString()})} disabled={owned.quantity===0} className="w-auto px-4 bg-gray-700 hover:bg-gray-600 disabled:opacity-30 text-sm text-white rounded py-1 action-btn">ALL</button>
+                                                    <button onClick={()=>handleTrade('sell', c, mItem, owned)} disabled={owned.quantity===0} className="w-auto px-4 bg-green-700 hover:bg-green-600 disabled:opacity-30 text-white text-sm rounded font-bold py-1 action-btn">SELL</button>
+                                                    <button onClick={() => { const ownedQuantity = state.cargo[c.name]?.quantity || 0; setShippingQuantities(prev => ({ ...prev, [c.name]: ownedQuantity.toString() })); setModal({ type: 'shipping', data: null }); setLogisticsTab('shipping'); setShippingPriorityItem(c.name); }} className="w-auto px-4 bg-cyan-600 hover:bg-cyan-500 text-white text-sm rounded font-bold py-1 action-btn">SHIP</button>
+                                                    {activeContract && !isCovered && (
+                                                        <button onClick={() => handleFulfill(activeContract)} disabled={owned.quantity < activeContract.quantity || pulsingContractId !== null} className={`w-auto px-4 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 disabled:opacity-50 text-white text-sm rounded font-bold py-1 action-btn ${pulsingContractId === activeContract.id ? 'animate-pulse' : ''}`}>FULFILL</button>
+                                                    )}
+                                                </div>
                                             </div>
                                         </td>
                                     </tr>
@@ -3646,28 +3855,7 @@ export default function App() {
                                       </div>
                                       <button onClick={()=>{
                                           if (isBanned) return;
-                                          if (missingFuel > 0 || missingCells > 0) {
-                                              const fuelPrice = COMMODITIES.find(c => c.name === FUEL_NAME)!.maxPrice;
-                                              const cellPrice = COMMODITIES.find(c => c.name === POWER_CELL_NAME)!.maxPrice;
-                                              const cost = (missingFuel * fuelPrice) + (missingCells * cellPrice);
-                                              const overdraftFee = state.cash < cost ? cost * 0.10 : 0;
-                                              const totalCost = cost + overdraftFee;
-
-                                              const newState = JSON.parse(JSON.stringify(state));
-                                              newState.cash -= totalCost;
-
-                                              const newCargo = newState.cargo;
-                                              if(missingFuel > 0) { const curF = newCargo[FUEL_NAME] || {quantity:0, averageCost:0}; newCargo[FUEL_NAME] = { quantity: curF.quantity + missingFuel, averageCost: ((curF.quantity*curF.averageCost)+(missingFuel*fuelPrice))/(curF.quantity+missingFuel)}; }
-                                              if(missingCells > 0) { const curC = newCargo[POWER_CELL_NAME] || {quantity:0, averageCost:0}; newCargo[POWER_CELL_NAME] = { quantity: curC.quantity + missingCells, averageCost: ((curC.quantity*curC.averageCost)+(missingCells*cellPrice))/(curC.quantity+missingCells)}; }
-
-                                              newState.cargoWeight += (missingFuel*COMMODITIES.find(c=>c.name===FUEL_NAME)!.unitWeight) + (missingCells*COMMODITIES.find(c=>c.name===POWER_CELL_NAME)!.unitWeight);
-
-                                              log(`EMERGENCY: Auto-bought ${missingFuel} Fuel and ${missingCells} Cells at max price.`, 'maintenance');
-                                              if(overdraftFee > 0) log(`OVERDRAFT FEE: Paid ${formatCurrencyLog(overdraftFee)} for emergency purchase.`, 'overdraft');
-                                              SFX.play('coin');
-
-                                              handleTravel(i, fuel, travelConfig.insurance, travelConfig.mining, travelConfig.overload, travelConfig.invest95, newState);
-                                          } else { handleTravel(i, fuel, travelConfig.insurance, travelConfig.mining, travelConfig.overload, travelConfig.invest95); }
+                                          checkCargoBeforeTravel(i, fuel, missingFuel, missingCells);
                                       }} disabled={isBanned} className={`w-full font-bold py-3 rounded-xl text-sm transition-all border-b-4 ${(missingFuel > 0 || missingCells > 0) ? 'bg-red-700 hover:bg-red-600 text-red-100 border-red-900' : 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-900 shadow-lg'}`}>
                                           {(missingFuel > 0 || missingCells > 0) ? (
                                               <span className="flex items-center justify-center">BUY & JUMP (<PriceDisplay value={autoBuyCost} size="text-[10px]" compact/>)</span>
@@ -3884,7 +4072,7 @@ export default function App() {
 
                    <div className="flex-grow flex flex-col overflow-y-auto custom-scrollbar relative pt-10">
                         <div className="absolute top-0 right-0 w-72 text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                            SYSTEM LOG: FABRICATION MATRIX v10.3.1 ACTIVE
+                            SYSTEM LOG: FABRICATION MATRIX v10.3.7 ACTIVE
                         </div>
 
                         <div className="text-center space-y-2 mb-10">
@@ -4513,7 +4701,7 @@ export default function App() {
         return (
             <div className="flex flex-col h-full bg-slate-900/40 p-4 md:p-8 animate-in fade-in duration-300">
                 <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.3.1</h2>
+                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.3.7</h2>
                     <div className="text-[10px] text-gray-500 font-mono text-right uppercase leading-tight">Neural Reference System <br/>Database: UNRESTRICTED</div>
                 </div>
                 <div className="flex-grow overflow-y-auto custom-scrollbar pr-4 space-y-6">
@@ -4574,21 +4762,30 @@ export default function App() {
                              {VENUES.map((venueName, i) => {
                                 const marketPrice = state.markets[i][commodityName]?.price || 0;
                                 const cargoQty = i === state.currentVenueIndex ? (state.cargo[commodityName]?.quantity || 0) : 0;
-                                const warehouseQty = state.warehouse[i]?.[commodityName]?.quantity || 0;
-                                const totalOwned = cargoQty + warehouseQty;
+                                const warehouseItem = state.warehouse[i]?.[commodityName];
+                                const warehouseQty = warehouseItem?.quantity || 0;
+                                const isReserved = warehouseItem?.isContractReserved;
+                                const sellableQty = isReserved ? cargoQty : (cargoQty + warehouseQty);
 
                                 return (
                                     <div key={i} className="grid grid-cols-[2fr_1fr_2fr_1fr] items-center gap-4 bg-slate-800/50 p-3 rounded-lg">
                                         <div className="font-bold text-white">{venueName}</div>
                                         <div>
                                             <div className="text-xs text-gray-400">Owned</div>
-                                            <div className="font-bold">{totalOwned}</div>
+                                            <div className="font-bold flex flex-col text-sm">
+                                                <span>Total: {cargoQty + warehouseQty}</span>
+                                                {warehouseQty > 0 && (
+                                                    <span className={`text-[9px] uppercase tracking-tighter ${isReserved ? 'text-purple-400 font-bold' : 'text-green-400 font-bold animate-pulse'}`}>
+                                                        {isReserved ? 'Contract Lock' : 'Unreserved Stock'}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                         <div className="flex items-center justify-end gap-2">
                                             <button
                                                 onClick={() => instantSell(commodityName, i)}
-                                                disabled={totalOwned <= 0}
-                                                className="bg-red-600 hover:bg-red-500 disabled:bg-gray-700 text-white font-bold py-2 px-4 rounded text-xs"
+                                                disabled={sellableQty <= 0}
+                                                className="bg-red-600 hover:bg-red-500 disabled:bg-gray-700 text-white font-bold py-2 px-4 rounded text-xs transition-all active:scale-95"
                                             >
                                                 SELL
                                             </button>
@@ -4651,10 +4848,72 @@ export default function App() {
     return (
       <div className="fixed inset-0 bg-black z-[9999] flex flex-col items-center justify-center p-4">
         <Starfield />
-        <div className="text-center space-y-8 max-w-xl p-8 bg-slate-900/80 rounded-3xl border-2 border-yellow-500/50 shadow-[0_0_50px_rgba(234,179,8,0.15)] relative z-50 animate-in zoom-in-95 duration-500">
+        <div className="text-center space-y-6 max-w-2xl p-8 bg-slate-900/80 rounded-3xl border-2 border-yellow-500/50 shadow-[0_0_50px_rgba(234,179,8,0.15)] relative z-50 animate-in zoom-in-95 duration-500">
           <h1 className="text-5xl md:text-6xl font-scifi text-white font-black tracking-widest uppercase animate-pulse">STAR BUCKS</h1>
           <p className="text-yellow-500 font-mono text-sm tracking-widest uppercase font-bold">GALAXY TRADE EMPIRE</p>
-          <div className="text-gray-300 text-sm md:text-base leading-relaxed space-y-4">
+
+          {/* Detailed retro sci-fi illustration of RR Firefox 22 RustyRedeemer */}
+          <div className="border border-cyan-500/30 p-2 rounded-xl bg-black/40 shadow-inner">
+            <svg viewBox="0 0 800 360" className="w-full h-auto opacity-90 my-2" xmlns="http://www.w3.org/2000/svg">
+              {/* Radar Grid and Crosshairs */}
+              <g stroke="#0891b2" strokeWidth="0.5" strokeDasharray="4,4" opacity="0.3">
+                <line x1="50" y1="180" x2="750" y2="180" />
+                <line x1="400" y1="30" x2="400" y2="330" />
+                <circle cx="400" cy="180" r="80" fill="none" />
+                <circle cx="400" cy="180" r="140" fill="none" />
+              </g>
+
+              <g transform="translate(40, -10)">
+                {/* Engines / Hot Isotope Hummers (Glowing Cyan) */}
+                <path d="M100,140 L140,140 L140,220 L100,242 Z" fill="#0891b2" opacity="0.6" filter="blur(2px)" />
+                <path d="M110,150 L130,150 L130,210 L110,210 Z" fill="#22d3ee" />
+                {/* Thruster exhaust plumes */}
+                <polygon points="40,160 100,145 100,175" fill="#22d3ee" opacity="0.7" />
+                <polygon points="40,200 100,185 100,215" fill="#22d3ee" opacity="0.7" />
+                <polygon points="30,180 100,165 100,195" fill="#06b6d4" opacity="0.9" />
+
+                {/* Main Hull - Decommissioned Cargo Frigate (60% Oxidation - burnt orange, 40% Hope - grey steel) */}
+                {/* Steel grey plates (Hope) */}
+                <polygon points="140,130 250,110 360,120 480,130 480,230 360,240 250,250 140,230" fill="#475569" stroke="#64748b" strokeWidth="2.5" />
+                <polygon points="480,150 620,160 660,180 620,200 480,210" fill="#334155" stroke="#475569" strokeWidth="2" />
+                {/* Rusty Nose Cone (60% Oxidation) */}
+                <polygon points="660,175 740,180 660,185" fill="#ea580c" stroke="#c2410c" strokeWidth="2" />
+
+                {/* Rusted / Oxidized Plating Details (60% Oxidation) */}
+                <rect x="180" y="125" width="55" height="40" fill="#9a3412" stroke="#7c2d12" strokeWidth="1" />
+                <rect x="290" y="130" width="75" height="35" fill="#c2410c" stroke="#9a3412" strokeWidth="1" />
+                <rect x="220" y="195" width="70" height="45" fill="#ea580c" stroke="#c2410c" strokeWidth="1" />
+                <rect x="390" y="140" width="60" height="70" fill="#7c2d12" stroke="#9a3412" strokeWidth="1" />
+                <rect x="150" y="170" width="45" height="30" fill="#9a3412" stroke="#ea580c" strokeWidth="1" />
+
+                {/* Exposed Space Cables & Pipes */}
+                <path d="M260,110 C280,90 330,90 350,120" fill="none" stroke="#ea580c" strokeWidth="3" />
+                <path d="M140,230 C160,260 200,260 220,240" fill="none" stroke="#0891b2" strokeWidth="2" strokeDasharray="3,3" />
+                <path d="M480,130 L550,145" fill="none" stroke="#ea580c" strokeWidth="2" />
+                <path d="M480,230 L550,215" fill="none" stroke="#334155" strokeWidth="2" />
+
+                {/* Crew Command Bridge / Cockpit HUD (Glowing Cyan glass) */}
+                <polygon points="590,165 630,170 630,190 590,195" fill="#22d3ee" stroke="#0891b2" strokeWidth="1.5" opacity="0.8" />
+
+                {/* Modular Cargo Pods (oxidized / steel combination) */}
+                <rect x="200" y="150" width="45" height="40" rx="3" fill="#64748b" stroke="#ea580c" strokeWidth="1.5" />
+                <rect x="260" y="150" width="45" height="40" rx="3" fill="#ea580c" stroke="#9a3412" strokeWidth="1.5" />
+                <rect x="320" y="150" width="45" height="40" rx="3" fill="#475569" stroke="#0891b2" strokeWidth="1.5" />
+
+                {/* Antenna Arrays */}
+                <line x1="250" y1="110" x2="250" y2="60" stroke="#64748b" strokeWidth="2" />
+                <polygon points="240,60 260,60 250,40" fill="#9a3412" />
+                <line x1="360" y1="240" x2="360" y2="290" stroke="#64748b" strokeWidth="2" />
+                <polygon points="350,290 370,290 360,310" fill="#ea580c" />
+              </g>
+
+              {/* Hull Technical Callouts */}
+              <text x="50" y="340" fill="#22d3ee" fontFamily="monospace" fontSize="10" letterSpacing="1" opacity="0.8">SYSTEM STATUS: 60% OXIDIZED / 40% HOPE</text>
+              <text x="560" y="340" fill="#ea580c" fontFamily="monospace" fontSize="10" letterSpacing="1" opacity="0.8">REGISTRY: RR-FIREFOX-22</text>
+            </svg>
+          </div>
+
+          <div className="text-gray-300 text-sm md:text-base leading-relaxed space-y-3">
             <p>
               This experience utilizes browser Speech Synthesis and the Web Audio API for immersive, voice-narrated retro computer reports and ambient effects.
             </p>
@@ -4675,9 +4934,11 @@ export default function App() {
               } catch (e) {
                 console.warn("Failed to pre-unlock speech synthesis:", e);
               }
+              // Immersive voice narration initialized directly on user gesture
+              speakRetro(openingMessage);
               setPreWelcomeClicked(true);
             }}
-            className="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-black py-4 px-6 rounded-xl text-lg md:text-xl shadow-[0_0_30px_rgba(234,179,8,0.4)] transition-all uppercase border-b-4 border-yellow-900 active:scale-95"
+            className="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-black py-4 px-6 rounded-xl text-lg md:text-xl shadow-[0_0_30px_rgba(234,179,8,0.4)] transition-all uppercase border-b-4 border-yellow-900 active:scale-95 z-50 relative animate-bounce"
           >
             Connect Neural Uplink
           </button>
@@ -4695,7 +4956,7 @@ export default function App() {
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.3.6</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.3.7</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -4894,7 +5155,7 @@ export default function App() {
                   <div className="flex justify-center gap-8 px-4 w-full max-w-4xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.3.6</p>
+                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.3.7</p>
                </div>
            </div>
        )}
@@ -4905,6 +5166,86 @@ export default function App() {
 
        {modal.type === 'message' && (
            <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 p-4"><div className="bg-slate-900 border border-gray-500 p-8 rounded-2xl max-w-lg w-full sci-fi-box text-center relative shadow-2xl"><p className={`text-xl font-black mb-8 whitespace-pre-wrap leading-tight uppercase ${modal.color || 'text-white'}`}>{renderLogMessage(modal.data)}</p><button onClick={()=>{setModal({type:'none', data:null}); SFX.play('click');}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl text-xl shadow-lg action-btn uppercase">Acknowledge</button></div></div>
+       )}
+
+       {modal.type === 'cargo_capacity_ship_confirm' && (
+           <div className="absolute inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
+               <div className="bg-slate-900 border-2 border-red-500 p-8 rounded-3xl max-w-xl w-full sci-fi-box text-center relative shadow-2xl">
+                   <h3 className="text-red-400 font-bold text-2xl mb-4 uppercase tracking-widest font-scifi">
+                       {modal.data.isProactive ? "Cargo Space Optimization" : "Cargo Overfill Warning"}
+                   </h3>
+                   <p className="text-gray-300 mb-6 text-sm uppercase leading-relaxed font-mono">
+                       {modal.data.isProactive
+                           ? `You have commodities in cargo that can be stored to free up space. Would you like to ship them to local storage at ${VENUES[state.currentVenueIndex]} before departure?`
+                           : `Your cargo hold is currently overloaded (${Math.round(state.cargoWeight)}/${state.cargoCapacity}T). You must free up space before departure.`
+                       }
+                   </p>
+                   <div className="bg-black/40 p-4 rounded-xl border border-gray-800 mb-6 text-left text-xs font-mono space-y-2">
+                       <div className="text-yellow-400 font-bold uppercase border-b border-gray-800 pb-2 mb-2">Logistics Summary</div>
+                       <div>Eligible cargo weight: <span className="text-white font-bold">{Math.round(modal.data.totalWeight)}T</span></div>
+                       <div>Excluded cargo weight (Fuel & Hummers): <span className="text-white font-bold">{Math.round(modal.data.excludedWeight)}T</span></div>
+                       <div>Estimated logistics fee: <span className="text-yellow-500 font-bold"><PriceDisplay value={Math.ceil(modal.data.totalWeight * 100)} size="text-xs" compact /></span></div>
+                   </div>
+                   <div className="flex flex-col gap-3">
+                       <button onClick={() => {
+                           const { destIdx, fuel, missingFuel, missingCells, newStateForTravel, eligibleItems, totalWeight, excludedWeight, willBeOverfilledWithOnlyExcluded } = modal.data;
+                           const shippingCost = Math.ceil(totalWeight * 100);
+
+                           const baseState = newStateForTravel || state;
+                           const ns = JSON.parse(JSON.stringify(baseState));
+                           ns.cash -= shippingCost;
+                           ns.cargoWeight = Math.max(0, ns.cargoWeight - totalWeight);
+
+                           eligibleItems.forEach(([name, item]: [string, CargoItem]) => {
+                               delete ns.cargo[name];
+                               if (!ns.warehouse[ns.currentVenueIndex]) ns.warehouse[ns.currentVenueIndex] = {};
+                               const existing = ns.warehouse[ns.currentVenueIndex][name];
+                               if (existing) {
+                                   existing.quantity += item.quantity;
+                                   existing.originalAvgCost = ((existing.quantity * existing.originalAvgCost) + (item.quantity * item.averageCost)) / (existing.quantity + item.quantity);
+                               } else {
+                                   ns.warehouse[ns.currentVenueIndex][name] = {
+                                       quantity: item.quantity,
+                                       originalAvgCost: item.averageCost,
+                                       arrivalDay: ns.day
+                                   };
+                               }
+                           });
+
+                           if (willBeOverfilledWithOnlyExcluded) {
+                               setModal({
+                                   type: 'message',
+                                   data: `CARGO OVERFILL BLOCK: Even after auto-shipping eligible cargo, your remaining Hot Isotope Hummers and Spice Fuel alone weigh ${Math.round(excludedWeight)}T, exceeding your cargo capacity of ${ns.cargoCapacity}T. You must manually ship or sell these commodities until your cargo weight is under capacity before you can depart!`,
+                                   color: 'text-red-500'
+                               });
+                               SFX.play('error');
+                           } else {
+                               triggerTravelExecution(destIdx, fuel, missingFuel, missingCells, ns);
+                           }
+                       }} className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-4 rounded-xl text-lg shadow-lg action-btn uppercase">
+                           Auto-Ship to Storage & Jump (-<PriceDisplay value={Math.ceil(modal.data.totalWeight * 100)} size="text-sm" compact />)
+                       </button>
+                       <button onClick={() => {
+                           const { destIdx, fuel, missingFuel, missingCells, newStateForTravel, isProactive } = modal.data;
+                           if (isProactive) {
+                               triggerTravelExecution(destIdx, fuel, missingFuel, missingCells, newStateForTravel);
+                           } else {
+                               setModal({
+                                   type: 'message',
+                                   data: `CARGO OVERFILL BLOCK: Travel denied. Your cargo hold is overloaded (${Math.round(state.cargoWeight)}/${state.cargoCapacity}T). You must manually ship or sell these commodities until your cargo weight is under capacity before you can depart!`,
+                                   color: 'text-red-500'
+                               });
+                               SFX.play('error');
+                           }
+                       }} className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-xl uppercase">
+                           Proceed with Cargo
+                       </button>
+                       <button onClick={() => { setModal({ type: 'travel', data: null }); SFX.play('click'); }} className="w-full bg-slate-800 hover:bg-slate-700 text-gray-400 font-bold py-2 rounded-xl uppercase">
+                           Cancel Flight
+                       </button>
+                   </div>
+               </div>
+           </div>
        )}
 
        {modal.type === 'stock_limit_confirm' && (
