@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v10.3.8 Abductable // Updated version to 10.3.8 Abductable
+ * VERSION: v10.3.9 Base
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -917,7 +917,7 @@ export default function App() {
     let scores: HighScore[] = [];
     if (db) {
       try {
-        const q = query(collection(db, "highscores"), orderBy("score", "desc"), limit(10));
+        const q = query(collection(db, "highscores"), orderBy("score", "desc"), limit(100));
         const s = await getDocs(q);
         s.forEach((doc) => scores.push(doc.data() as HighScore));
       } catch (e) {}
@@ -1015,7 +1015,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v10.3.8 Abductable ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v10.3.9 Base ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -1179,6 +1179,19 @@ export default function App() {
   // Runs the tutorial check when the day changes or a modal is closed.
   // Calls runTutorialCheck.
   useEffect(() => { runTutorialCheck(); }, [state?.day, modal.type]);
+
+  // Self-healing hook: If the player has advanced to Phase 3 or 4, but their stock market state
+  // is empty or uninitialized (e.g. from an older save merge), automatically populate the stocks.
+  useEffect(() => {
+    if (state && state.gamePhase >= 3 && (!state.stocks || state.stocks.length === 0)) {
+        setState(prev => {
+            if (!prev) return null;
+            const ns = JSON.parse(JSON.stringify(prev));
+            initializeStocks(ns);
+            return ns;
+        });
+    }
+  }, [state?.gamePhase, state?.stocks]);
 
   // Subscribes to the real-time universal leaderboard
   useEffect(() => {
@@ -1812,7 +1825,7 @@ export default function App() {
 
          if (s.day > GOAL_OVERTIME_DAYS) {
              s.gameOver = true;
-             const isHS = s.highScores.length < 10 || nw > s.highScores[s.highScores.length - 1].score;
+             const isHS = s.highScores.length < 100 || nw > s.highScores[s.highScores.length - 1].score;
              setModal({ type: 'endgame', data: { reason: "Retirement Day: Trade License Expired Successfully", netWorth: nw, stats: s.stats, isHighScore: isHS, days: GOAL_OVERTIME_DAYS } });
              SFX.play('success');
              return;
@@ -1820,7 +1833,7 @@ export default function App() {
 
          if (s.day > deadlineLimit && nw < curGoal) {
              s.gameOver = true;
-             const isHS = s.highScores.length < 10 || nw > s.highScores[s.highScores.length - 1].score;
+             const isHS = s.highScores.length < 100 || nw > s.highScores[s.highScores.length - 1].score;
              setModal({ type: 'endgame', data: { reason: "Phase Deadline Missed. License Revoked.", netWorth: nw, stats: s.stats, isHighScore: isHS, days: s.day - 1 } });
              SFX.play('error');
              return;
@@ -2209,7 +2222,7 @@ export default function App() {
 
      if (s.day > GOAL_OVERTIME_DAYS) {
         s.gameOver = true;
-        const isHS = s.highScores.length < 10 || nw > s.highScores[s.highScores.length - 1].score;
+        const isHS = s.highScores.length < 100 || nw > s.highScores[s.highScores.length - 1].score;
         setModal({ type: 'endgame', data: { reason: "Retirement Day: Trade License Expired Successfully", netWorth: nw, stats: s.stats, isHighScore: isHS, days: GOAL_OVERTIME_DAYS } });
         SFX.play('success');
         return;
@@ -2255,7 +2268,7 @@ export default function App() {
         speakDailyStatusAlerts(s);
         setState(s);
      } else {
-        const isHS = s.highScores.length < 10 || nw > s.highScores[s.highScores.length - 1].score;
+        const isHS = s.highScores.length < 100 || nw > s.highScores[s.highScores.length - 1].score;
         setModal({ type: 'endgame', data: { reason: "Deadline Missed. License Revoked.", netWorth: nw, stats: s.stats, isHighScore: isHS, days: s.day - 1 } });
         SFX.play('error');
      }
@@ -2361,7 +2374,11 @@ export default function App() {
               SFX.play('error');
           }
       } else {
-          if (hasEligibleItems) {
+          // Flow Optimization: To prevent prompt fatigue, we only offer proactive cargo space optimization
+          // if the cargo hold is actually close to full (over 85% capacity). Otherwise, we bypass the modal and travel immediately.
+          const isCloseToFull = currentState.cargoWeight > (currentState.cargoCapacity * 0.85);
+
+          if (isCloseToFull && hasEligibleItems) {
               setModal({
                   type: 'cargo_capacity_ship_confirm',
                   data: {
@@ -2764,16 +2781,18 @@ export default function App() {
    * @param report The daily report object.
    */
   const advancePhase = (s: GameState, nextPhase: 1|2|3|4, report: DailyReport) => {
-    s.gamePhase = nextPhase;
+    // Perform a deep copy of the game state to ensure React registers a fresh object reference
+    const ns = JSON.parse(JSON.stringify(s)) as GameState;
+    ns.gamePhase = nextPhase;
 
     // Initialize the stock market when the player reaches Phase 3.
     if (nextPhase === 3) {
-      initializeStocks(s);
+      initializeStocks(ns);
     }
 
     const multiplier = nextPhase === 1 ? 1 : (nextPhase === 2 ? 5 : (nextPhase === 3 ? 10 : 20));
     const glutFactor = 2.0; 
-    s.markets = s.markets.map(m => {
+    ns.markets = ns.markets.map(m => {
       const newM: Market = {};
       Object.entries(m).forEach(([k, v]) => {
           newM[k] = { 
@@ -2784,8 +2803,8 @@ export default function App() {
       });
       return newM;
     });
-    setModal({ type: 'report', data: { events: [...report.events, `PHASE ${nextPhase} STARTED. Markets expanded. Stock Levels Multiplied by ${multiplier}x. Supply Glut detected!`], day: s.day, tips: getMarketTips(s) } });
-    setState(s);
+    setModal({ type: 'report', data: { events: [...report.events, `PHASE ${nextPhase} STARTED. Markets expanded. Stock Levels Multiplied by ${multiplier}x. Supply Glut detected!`], day: ns.day, tips: getMarketTips(ns) } });
+    setState(ns);
   };
 
   /**
@@ -2848,7 +2867,7 @@ export default function App() {
   const saveHighScore = async (name: string, score: number, days: number) => {
     const newScore = { name, score, days, date: new Date().toLocaleDateString() };
     const currentScores = await loadHighScores();
-    const updated = [...currentScores, newScore].sort((a,b) => b.score - a.score).slice(0, 10);
+    const updated = [...currentScores, newScore].sort((a,b) => b.score - a.score).slice(0, 100);
     localStorage.setItem('sbe_highscores', JSON.stringify(updated));
     if (db) {
         try {
@@ -2878,7 +2897,7 @@ export default function App() {
       if (!state) return;
       const currentNetWorth = getNetWorth(state);
       const scores = state.highScores;
-      const threshold = scores.length < 10 ? 0 : scores[scores.length-1].score;
+      const threshold = scores.length < 100 ? 0 : scores[scores.length-1].score;
       const isHighScore = currentNetWorth > threshold;
       if (isHighScore) {
           setModal({ type: 'endgame', data: { reason: "Legendary Status Achieved (Voluntary Retirement)", netWorth: currentNetWorth, stats: state.stats, isHighScore: true, days: state.day } });
@@ -3306,13 +3325,7 @@ export default function App() {
 
     log(`REMOTE SELL: Sold ${q} ${name} at ${VENUES[vIdx]} for ${formatCurrencyLog(revenue)}.`, profit > 0 ? 'profit' : 'danger');
     SFX.play('coin');
-
-    setTimeout(() => {
-        setModal({ type: 'comms', data: null });
-        setTimeout(() => {
-            setModal({ type: 'none', data: null });
-        }, 5000);
-    }, 2000);
+    // Bypassed swapping to G.I.G.O. comms modal for remote warehouse sales to ensure smoother game flow.
   };
 
   /**
@@ -3409,7 +3422,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.3.8</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.3.9</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -3625,6 +3638,7 @@ export default function App() {
         const sections = [
             { title: "The Rusty Redeemer", icon: Anchor, content: "The RR Firefox 22 'RustyRedeemer' is a decommissioned cargo frigate of the 60/40 class. It consists of 60% oxidation and 40% hope. Originally designed for short-range hauling, its isotope hummers have been modified to handle the stress of phase-shifting market dynamics." },
             { title: "S.H.A.N.E. Protocols", icon: Shield, content: "Sector Health, Allocation, & Network Enforcement (S.H.A.N.E.) governs all trade lanes. They enforce the Galactic Overlord Decree (G.O.D.), which dictates that any trader failing to meet net-worth thresholds within specific time cycles will have their license revoked and their vessel reclaimed by the state." },
+            { title: "D.A.Y. (Depreciating Astrological Yardstick)", icon: Hourglass, content: "The D.A.Y. system is a key tracking framework mandated by the Galactic Overlord Department (G.O.D.). By mapping orbital star alignments against the physical degradation of your ship, the G.O.D. enforces a relentless, depreciating tracking scale. It treats your very existence as a steadily shrinking corporate asset, creating an ominous countdown that squeeze-charges your trade license duration." },
             { title: "Extraction Logic", icon: Zap, content: "Mining lasers (Upgrades Deck) allow for the harvesting of resources from asteroid belts during transit. Higher-tier lasers and 'Overload' toggles increase yield but drastically spike the risk of structural realignment failures or laser burnout. Yield is directly proportional to laser focal integrity." },
             { title: "F.O.M.O. Engineering", icon: Factory, content: "Fabricate Output Management Operations allows captains to synthesize raw materials into high-value commodities. Z@onflex Weave Mesh is critical for cargo bay expansions, while Stim-Packs are in high demand by biological colonies throughout the sector." },
             { title: "Void-Ex Logistics", icon: Truck, content: "Shipping goods across the void via Private or Corporate contracts is the most reliable way to secure multi-million credit payouts. Beware of auto-seizure policies: goods left in third-party warehouses for more than 3 cycles are sold to defray storage costs." }
@@ -3633,7 +3647,7 @@ export default function App() {
         return (
             <div className="flex flex-col h-full bg-slate-900/40 p-4 md:p-8 animate-in fade-in duration-300">
                 <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.3.8</h2>
+                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.3.9</h2>
                     <div className="text-[10px] text-gray-500 font-mono text-right uppercase leading-tight">Neural Reference System <br/>Database: UNRESTRICTED</div>
                 </div>
                 <div className="flex-grow overflow-y-auto custom-scrollbar pr-4 space-y-6">
@@ -3701,7 +3715,7 @@ export default function App() {
                                 <th className="p-2 text-right w-[10%]">Price</th>
                                 <th className="p-2 text-center w-[10%]">Stock</th>
                                 <th className="p-2 text-center w-[10%]">Owned</th>
-                                <th className="p-2 text-center w-[30%]">Action (Buy / Sell)</th>
+                                <th className="p-2 text-center w-[30%]">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-800">
@@ -4207,7 +4221,7 @@ export default function App() {
 
                    <div className="flex-grow flex flex-col overflow-y-auto custom-scrollbar relative pt-10">
                         <div className="absolute top-0 right-0 w-72 text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                            SYSTEM LOG: FABRICATION MATRIX v10.3.8 ACTIVE
+                            SYSTEM LOG: FABRICATION MATRIX v10.3.9 ACTIVE
                         </div>
 
                         <div className="text-center space-y-2 mb-10">
@@ -4325,7 +4339,7 @@ export default function App() {
                        </div>
                        <div className="space-y-6">
                            <h3 className="text-xl font-bold text-white flex items-center border-l-4 border-green-500 pl-4 uppercase tracking-widest">Capital Growth</h3>
-                           {state.investments.length > 0 && (<div className="space-y-3">{state.investments.map(inv => (<div key={inv.id} className="bg-green-900/10 border border-green-500/30 p-5 rounded-2xl flex justify-between items-center shadow-inner animate-pulse"><div className="text-sm"><span className="text-gray-400 block uppercase text-[9px] tracking-widest font-black">Mature In</span><span className="text-green-400 font-black text-xl">{inv.daysRemaining} Days</span></div><div className="text-right"><span className="text-gray-400 block uppercase text-[9px] tracking-widest font-black">Value</span><PriceDisplay value={inv.maturityValue} size="text-xl"/></div></div>))}</div>)}
+                           {state.investments.length > 0 && (<div className="space-y-3">{state.investments.map(inv => (<div key={inv.id} className="bg-green-900/10 border border-green-500/30 p-5 rounded-2xl flex justify-between items-center shadow-inner animate-pulse"><div className="text-sm"><span className="text-gray-400 block uppercase text-[9px] tracking-widest font-black">Mature In</span><span className="text-green-400 font-black text-xl">{inv.daysRemaining} D.A.Y.s</span></div><div className="text-right"><span className="text-gray-400 block uppercase text-[9px] tracking-widest font-black">Value</span><PriceDisplay value={inv.maturityValue} size="text-xl"/></div></div>))}</div>)}
                            <div className="bg-slate-800/80 p-8 rounded-3xl border border-green-500/20 shadow-xl">
                                <h4 className="text-green-400 font-bold mb-6 text-lg uppercase tracking-tighter">New Term Deposit (CD)</h4>
                                <div className="flex flex-col gap-6 mb-8">
@@ -4339,9 +4353,9 @@ export default function App() {
                                    <div className="space-y-2">
                                        <label className="text-[10px] text-gray-500 uppercase tracking-widest ml-1 font-black">Maturity Window</label>
                                        <select value={bankInvestTerm || '1'} onChange={(e) => setBankInvestTerm(e.target.value)} className="w-full bg-gray-900 text-white p-4 rounded-xl border border-gray-700 focus:border-green-500 outline-none transition-all text-lg font-mono">
-                                           <option value="1">1 Day (5% Yield)</option>
-                                           <option value="2">2 Days (20% Yield)</option>
-                                           <option value="3">3 Days (50% Yield)</option>
+                                          <option value="1">1 D.A.Y. (5% Yield)</option>
+                                          <option value="2">2 D.A.Y.s (20% Yield)</option>
+                                          <option value="3">3 D.A.Y.s (50% Yield)</option>
                                        </select>
                                    </div>
                                </div>
@@ -4399,7 +4413,31 @@ export default function App() {
                               return (
                               <div key={stock.name} className="bg-slate-800/60 p-5 rounded-2xl border border-slate-700 relative">
                                 <div className="flex justify-between items-start mb-2">
-                                  <span className="text-white font-black text-lg">{stock.name}</span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-white font-black text-lg">{stock.name}</span>
+                                    {/* Inline Stock Trend Sparkline */}
+                                    {stock.history && stock.history.length > 1 && (
+                                      <span className="w-12 h-6 flex items-center inline-block" title="Individual Stock Price Trend Pattern">
+                                        <svg viewBox="0 0 100 50" className="w-full h-full">
+                                          <polyline
+                                            fill="none"
+                                            stroke={stock.price >= (stock.history[stock.history.length - 2] || stock.price) ? "#22c55e" : "#ef4444"}
+                                            strokeWidth="4"
+                                            points={
+                                              stock.history.slice(-5).map((price, i, arr) => {
+                                                const x = (i / (arr.length - 1)) * 100;
+                                                const max = Math.max(...arr);
+                                                const min = Math.min(...arr);
+                                                const range = max - min || 1;
+                                                const y = 45 - ((price - min) / range) * 40;
+                                                return `${x},${y}`;
+                                              }).join(' ')
+                                            }
+                                          />
+                                        </svg>
+                                      </span>
+                                    )}
+                                  </div>
                                   <PriceDisplay value={stock.price} size="text-lg"/>
                                 </div>
                                 <div className="text-sm text-gray-400 mb-4">Risk: <span className={`font-bold ${stock.risk === 'high' ? 'text-red-500' : stock.risk === 'medium' ? 'text-yellow-500' : 'text-green-500'}`}>{stock.risk}</span></div>
@@ -4841,6 +4879,7 @@ export default function App() {
         const sections = [
             { title: "The Rusty Redeemer", icon: Anchor, content: "The RR Firefox 22 'RustyRedeemer' is a decommissioned cargo frigate of the 60/40 class. It consists of 60% oxidation and 40% hope. Originally designed for short-range hauling, its isotope hummers have been modified to handle the stress of phase-shifting market dynamics." },
             { title: "S.H.A.N.E. Protocols", icon: Shield, content: "Sector Health, Allocation, & Network Enforcement (S.H.A.N.E.) governs all trade lanes. They enforce the Galactic Overlord Decree (G.O.D.), which dictates that any trader failing to meet net-worth thresholds within specific time cycles will have their license revoked and their vessel reclaimed by the state." },
+            { title: "D.A.Y. (Depreciating Astrological Yardstick)", icon: Hourglass, content: "The D.A.Y. system is a key tracking framework mandated by the Galactic Overlord Department (G.O.D.). By mapping orbital star alignments against the physical degradation of your ship, the G.O.D. enforces a relentless, depreciating tracking scale. It treats your very existence as a steadily shrinking corporate asset, creating an ominous countdown that squeeze-charges your trade license duration." },
             { title: "Extraction Logic", icon: Zap, content: "Mining lasers (Upgrades Deck) allow for the harvesting of resources from asteroid belts during transit. Higher-tier lasers and 'Overload' toggles increase yield but drastically spike the risk of structural realignment failures or laser burnout. Yield is directly proportional to laser focal integrity." },
             { title: "F.O.M.O. Engineering", icon: Factory, content: "Fabricate Output Management Operations allows captains to synthesize raw materials into high-value commodities. Z@onflex Weave Mesh is critical for cargo bay expansions, while Stim-Packs are in high demand by biological colonies throughout the sector." },
             { title: "Void-Ex Logistics", icon: Truck, content: "Shipping goods across the void via Private or Corporate contracts is the most reliable way to secure multi-million credit payouts. Beware of auto-seizure policies: goods left in third-party warehouses for more than 3 cycles are sold to defray storage costs." }
@@ -4849,7 +4888,7 @@ export default function App() {
         return (
             <div className="flex flex-col h-full bg-slate-900/40 p-4 md:p-8 animate-in fade-in duration-300">
                 <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.3.8</h2>
+                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.3.9</h2>
                     <div className="text-[10px] text-gray-500 font-mono text-right uppercase leading-tight">Neural Reference System <br/>Database: UNRESTRICTED</div>
                 </div>
                 <div className="flex-grow overflow-y-auto custom-scrollbar pr-4 space-y-6">
@@ -5015,7 +5054,7 @@ export default function App() {
                                   </div>
                                   <div className="text-right">
                                       <div className="text-yellow-400 font-mono font-bold text-xl"><PriceDisplay value={s.score} size="text-xl" compact /></div>
-                                      <div className="text-[10px] text-gray-400 uppercase font-black">{s.days} Days Survived</div>
+                                      <div className="text-[10px] text-gray-400 uppercase font-black">{s.days} D.A.Y.s Survived</div>
                                   </div>
                               </div>
                           ))}
@@ -5148,7 +5187,7 @@ export default function App() {
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.3.8</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.3.9</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -5177,7 +5216,7 @@ export default function App() {
 
               <div className="flex flex-col items-center flex-grow md:w-2/4">
                  <div className="flex flex-wrap justify-center items-center gap-3 md:gap-6 text-cyan-300 font-mono text-sm md:text-lg">
-                    <div className="flex flex-col items-center"><span className={state.day >= deadlineLimit ? 'text-red-400 animate-pulse' : 'text-cyan-400'}>Day {state.day}/{deadlineLimit}</span><span className="text-[8px] text-white uppercase font-bold">Cycle Status</span></div>
+                    <div className="flex flex-col items-center"><span className={state.day >= deadlineLimit ? 'text-red-400 animate-pulse' : 'text-cyan-400'}>D.A.Y. {state.day}/{deadlineLimit}</span><span className="text-[8px] text-white uppercase font-bold">Cycle Status</span></div>
                     <div className="flex flex-col items-center"><span className="text-purple-400 font-bold">{state.gamePhase === 4 ? "Final Phase" : `Phase ${state.gamePhase}`}</span><span className="text-[8px] text-white uppercase font-bold">Global Phase</span></div>
                     <div className="flex flex-col items-center border-x border-gray-800 px-4"><div className="flex items-center">{state.gamePhase === 4 ? (<>Goal: <span className="text-xl md:text-2xl font-bold mx-1">&infin;</span></>) : (<PriceDisplay value={goalAmt} size="text-sm md:text-lg" compact={state.gamePhase>=2} />)}</div><span className="text-[8px] text-white uppercase font-bold">Phase Goal</span></div>
                     <div className="flex flex-col items-center"><div className="text-yellow-400 font-bold flex items-center"><PriceDisplay value={netWorth} size="text-sm md:text-lg" compact={state.gamePhase>=2} /></div><span className="text-[8px] text-white uppercase font-bold">Net Worth</span></div>
@@ -5239,6 +5278,30 @@ export default function App() {
                modal.type === 'none' || modal.type === 'comms' || modal.type === 'shipping' || modal.type === 'fomo' || modal.type === 'shop' || modal.type === 'banking' ? 'retro-terminal-background' : ''
              }`}>
               {renderTerminalContent()}
+
+              {/*
+                G.I.G.O Live Feed Window:
+                Displays the 2 most recent messages from G.I.G.O logs right inside the main terminal console,
+                allowing remote sales and logs feedback to be viewed dynamically without modal interruptions.
+              */}
+              <div className="bg-black/80 border-t border-cyan-500/20 px-4 py-2.5 font-mono text-xs flex flex-col gap-1 shrink-0 z-40 select-none">
+                  <div className="flex justify-between items-center text-[10px] text-cyan-400 uppercase tracking-widest font-black border-b border-cyan-500/10 pb-1 mb-1">
+                      <span>G.I.G.O. Live Feed Ticker</span>
+                      <span className="animate-pulse flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>LIVE SIGNAL
+                      </span>
+                  </div>
+                  {state.messages && state.messages.length > 0 ? (
+                      state.messages.slice(-2).reverse().map((msg) => (
+                          <div key={msg.id} className={`flex items-start overflow-hidden text-ellipsis whitespace-nowrap leading-tight ${getLogColorClass(msg.type)}`}>
+                              <span className="opacity-40 mr-2 font-bold shrink-0">[{new Date(msg.id).toLocaleTimeString()}]</span>
+                              <span className="truncate">{renderLogMessage(msg.message)}</span>
+                          </div>
+                      ))
+                  ) : (
+                      <div className="text-gray-600 italic">No live G.I.G.O comms signals detected.</div>
+                  )}
+              </div>
            </div>
          </>
        )}
@@ -5327,7 +5390,7 @@ export default function App() {
        )}
 
        {modal.type === 'endgame' && (
-           <div className="absolute inset-0 bg-black z-50 flex flex-col items-center justify-center p-4"><h1 className="text-5xl md:text-7xl font-scifi text-red-600 mb-4 uppercase">{modal.data.isHighScore ? "Legendary Status" : "Neural Link Severed"}</h1><div className="text-2xl text-white mb-2 uppercase font-black">{modal.data.reason}</div><div className="text-4xl text-yellow-400 font-bold mb-8 font-mono"><PriceDisplay value={modal.data.netWorth} size="text-4xl" /></div>{modal.data.isHighScore && (<div className="mb-8 w-full max-w-md"><input type="text" placeholder="Hall of Fame Alias" className="w-full p-4 bg-gray-900 border border-yellow-500 text-white text-xl rounded-xl text-center mb-3 outline-none" value={highScoreName || ''} onChange={e=>setHighScoreName(e.target.value)} maxLength={15} /><button onClick={async ()=>{ if(!highScoreName) return; await postHighScore(highScoreName, modal.data.netWorth, modal.data.days); const updated = await saveHighScore(highScoreName, modal.data.netWorth, modal.data.days); setState(prev => prev ? ({...prev, highScores: updated}) : null); setModal({type:'highscores', data:null}); }} className="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-black py-3 rounded-xl text-lg uppercase shadow-xl">Submit Legacy</button></div>)}<div className="grid grid-cols-2 gap-8 text-center mb-8 text-gray-400"><div><div className="text-[10px] uppercase font-bold tracking-widest mb-1">Days Survived</div><div className="text-3xl text-white font-mono">{modal.data.days}</div></div><div><div className="text-[10px] uppercase font-bold tracking-widest mb-1">Single Win Record</div><div className="text-3xl text-green-400 font-mono"><PriceDisplay value={modal.data.stats.largestSingleWin} size="text-3xl" compact/></div></div></div><div className="flex gap-4"><button onClick={() => { localStorage.removeItem('sbe_savegame'); initGame(false); }} className="bg-emerald-700 hover:bg-emerald-600 text-white font-black py-4 px-10 rounded-xl text-xl uppercase tracking-widest shadow-lg">New License</button><button onClick={() => window.location.reload()} className="bg-red-700 hover:bg-red-600 text-white font-black py-4 px-10 rounded-xl text-xl uppercase tracking-widest shadow-lg">Sever Link</button></div></div>
+           <div className="absolute inset-0 bg-black z-50 flex flex-col items-center justify-center p-4"><h1 className="text-5xl md:text-7xl font-scifi text-red-600 mb-4 uppercase">{modal.data.isHighScore ? "Legendary Status" : "Neural Link Severed"}</h1><div className="text-2xl text-white mb-2 uppercase font-black">{modal.data.reason}</div><div className="text-4xl text-yellow-400 font-bold mb-8 font-mono"><PriceDisplay value={modal.data.netWorth} size="text-4xl" /></div>{modal.data.isHighScore && (<div className="mb-8 w-full max-w-md"><input type="text" placeholder="Hall of Fame Alias" className="w-full p-4 bg-gray-900 border border-yellow-500 text-white text-xl rounded-xl text-center mb-3 outline-none" value={highScoreName || ''} onChange={e=>setHighScoreName(e.target.value)} maxLength={15} /><button onClick={async ()=>{ if(!highScoreName) return; await postHighScore(highScoreName, modal.data.netWorth, modal.data.days); const updated = await saveHighScore(highScoreName, modal.data.netWorth, modal.data.days); setState(prev => prev ? ({...prev, highScores: updated}) : null); setModal({type:'highscores', data:null}); }} className="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-black py-3 rounded-xl text-lg uppercase shadow-xl">Submit Legacy</button></div>)}<div className="grid grid-cols-2 gap-8 text-center mb-8 text-gray-400"><div><div className="text-[10px] uppercase font-bold tracking-widest mb-1">D.A.Y.s Survived</div><div className="text-3xl text-white font-mono">{modal.data.days}</div></div><div><div className="text-[10px] uppercase font-bold tracking-widest mb-1">Single Win Record</div><div className="text-3xl text-green-400 font-mono"><PriceDisplay value={modal.data.stats.largestSingleWin} size="text-3xl" compact/></div></div></div><div className="flex gap-4"><button onClick={() => { localStorage.removeItem('sbe_savegame'); initGame(false); }} className="bg-emerald-700 hover:bg-emerald-600 text-white font-black py-4 px-10 rounded-xl text-xl uppercase tracking-widest shadow-lg">New License</button><button onClick={() => window.location.reload()} className="bg-red-700 hover:bg-red-600 text-white font-black py-4 px-10 rounded-xl text-xl uppercase tracking-widest shadow-lg">Sever Link</button></div></div>
        )}
 
        {modal.type === 'welcome' && (
@@ -5347,7 +5410,7 @@ export default function App() {
                   <div className="flex justify-center gap-8 px-4 w-full max-w-4xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.3.8</p>
+                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.3.9</p>
                </div>
            </div>
        )}
@@ -5368,17 +5431,23 @@ export default function App() {
                    </h3>
                    <p className="text-gray-300 mb-6 text-sm uppercase leading-relaxed font-mono">
                        {modal.data.isProactive
-                           ? `You have commodities in cargo that can be stored to free up space. Would you like to ship them to local storage at ${VENUES[state.currentVenueIndex]} before departure?`
-                           : `Your cargo hold is currently overloaded (${Math.round(state.cargoWeight)}/${state.cargoCapacity}T). You must free up space before departure.`
+                           ? `You have commodities in cargo that can be stored to free up space. Choose an optimized logistics strategy before departure:`
+                           : `Your cargo hold is currently overloaded (${Math.round(state.cargoWeight)}/${state.cargoCapacity}T). Please optimize your cargo hold by auto-shipping commodities to remote storage:`
                        }
                    </p>
                    <div className="bg-black/40 p-4 rounded-xl border border-gray-800 mb-6 text-left text-xs font-mono space-y-2">
                        <div className="text-yellow-400 font-bold uppercase border-b border-gray-800 pb-2 mb-2">Logistics Summary</div>
                        <div>Eligible cargo weight: <span className="text-white font-bold">{Math.round(modal.data.totalWeight)}T</span></div>
                        <div>Excluded cargo weight (Fuel & Hummers): <span className="text-white font-bold">{Math.round(modal.data.excludedWeight)}T</span></div>
-                       <div>Estimated logistics fee: <span className="text-yellow-500 font-bold"><PriceDisplay value={Math.ceil(modal.data.totalWeight * 100)} size="text-xs" compact /></span></div>
+                       <div>Logistics Fee Per Cargo Unit: <span className="text-white font-bold">100 / T</span></div>
+                       <div>Total estimated logistics fee: <span className="text-yellow-500 font-bold"><PriceDisplay value={Math.ceil(modal.data.totalWeight * 100)} size="text-xs" compact /></span></div>
                    </div>
                    <div className="flex flex-col gap-3">
+                       {/*
+                         STRATEGY 1: Auto-Ship to All Destinations.
+                         Ships each commodity directly to its highest-paying venue across the sector.
+                         This is ideal for securing peak sale opportunities upon arrival.
+                       */}
                        <button onClick={() => {
                            const { destIdx, fuel, missingFuel, missingCells, newStateForTravel, eligibleItems, totalWeight, excludedWeight, willBeOverfilledWithOnlyExcluded } = modal.data;
                            const shippingCost = Math.ceil(totalWeight * 100);
@@ -5389,17 +5458,19 @@ export default function App() {
                            ns.cargoWeight = Math.max(0, ns.cargoWeight - totalWeight);
 
                            eligibleItems.forEach(([name, item]: [string, CargoItem]) => {
+                               // Find recommended highest paying venue across the sector
+                               const targetDest = getHighestPayingVenue(name, ns.markets, ns.currentVenueIndex);
                                delete ns.cargo[name];
-                               if (!ns.warehouse[ns.currentVenueIndex]) ns.warehouse[ns.currentVenueIndex] = {};
-                               const existing = ns.warehouse[ns.currentVenueIndex][name];
+                               if (!ns.warehouse[targetDest]) ns.warehouse[targetDest] = {};
+                               const existing = ns.warehouse[targetDest][name];
                                if (existing) {
                                    existing.quantity += item.quantity;
                                    existing.originalAvgCost = ((existing.quantity * existing.originalAvgCost) + (item.quantity * item.averageCost)) / (existing.quantity + item.quantity);
                                } else {
-                                   ns.warehouse[ns.currentVenueIndex][name] = {
+                                   ns.warehouse[targetDest][name] = {
                                        quantity: item.quantity,
                                        originalAvgCost: item.averageCost,
-                                       arrivalDay: ns.day
+                                       arrivalDay: ns.day + 1 // Arrives tomorrow at remote venue
                                    };
                                }
                            });
@@ -5414,9 +5485,73 @@ export default function App() {
                            } else {
                                triggerTravelExecution(destIdx, fuel, missingFuel, missingCells, ns);
                            }
-                       }} className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-4 rounded-xl text-lg shadow-lg action-btn uppercase">
-                           Auto-Ship to Storage & Jump (-<PriceDisplay value={Math.ceil(modal.data.totalWeight * 100)} size="text-sm" compact />)
+                       }} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl text-md shadow-lg action-btn uppercase">
+                           Auto-Ship to All Destinations & Jump (-<PriceDisplay value={Math.ceil(modal.data.totalWeight * 100)} size="text-sm" compact />)
                        </button>
+
+                       {/*
+                         STRATEGY 2: Auto-Ship to Most Profit.
+                         Ships commodities with positive profit margins directly to their most profitable venue across the sector.
+                         For any items that would incur a loss or have negative margin, falls back to local storage (0-day transit lag) to hold them.
+                       */}
+                       <button onClick={() => {
+                           const { destIdx, fuel, missingFuel, missingCells, newStateForTravel, eligibleItems, totalWeight, excludedWeight, willBeOverfilledWithOnlyExcluded } = modal.data;
+                           const shippingCost = Math.ceil(totalWeight * 100);
+
+                           const baseState = newStateForTravel || state;
+                           const ns = JSON.parse(JSON.stringify(baseState));
+                           ns.cash -= shippingCost;
+                           ns.cargoWeight = Math.max(0, ns.cargoWeight - totalWeight);
+
+                           eligibleItems.forEach(([name, item]: [string, CargoItem]) => {
+                               // Calculate highest profit venue across all OTHER venues
+                               let bestVenueIdx = ns.currentVenueIndex;
+                               let maxProfit = -99999999;
+
+                               ns.markets.forEach((m: Market, index: number) => {
+                                   if (index === ns.currentVenueIndex) return;
+                                   const sellPrice = m[name]?.price || 0;
+                                   const profitPerUnit = sellPrice - item.averageCost;
+                                   if (profitPerUnit > maxProfit) {
+                                       maxProfit = profitPerUnit;
+                                       bestVenueIdx = index;
+                                   }
+                               });
+
+                               // If the highest profit is positive, ship to that remote venue.
+                               // Otherwise, fallback to the local venue (current venue's local storage) to avoid cross-sector transit.
+                               const finalTargetDest = maxProfit > 0 ? bestVenueIdx : ns.currentVenueIndex;
+                               const arrivalOffset = finalTargetDest === ns.currentVenueIndex ? 0 : 1;
+
+                               delete ns.cargo[name];
+                               if (!ns.warehouse[finalTargetDest]) ns.warehouse[finalTargetDest] = {};
+                               const existing = ns.warehouse[finalTargetDest][name];
+                               if (existing) {
+                                   existing.quantity += item.quantity;
+                                   existing.originalAvgCost = ((existing.quantity * existing.originalAvgCost) + (item.quantity * item.averageCost)) / (existing.quantity + item.quantity);
+                               } else {
+                                   ns.warehouse[finalTargetDest][name] = {
+                                       quantity: item.quantity,
+                                       originalAvgCost: item.averageCost,
+                                       arrivalDay: ns.day + arrivalOffset
+                                   };
+                               }
+                           });
+
+                           if (willBeOverfilledWithOnlyExcluded) {
+                               setModal({
+                                   type: 'message',
+                                   data: `CARGO OVERFILL BLOCK: Even after auto-shipping eligible cargo, your remaining Hot Isotope Hummers and Spice Fuel alone weigh ${Math.round(excludedWeight)}T, exceeding your cargo capacity of ${ns.cargoCapacity}T. You must manually ship or sell these commodities until your cargo weight is under capacity before you can depart!`,
+                                   color: 'text-red-500'
+                               });
+                               SFX.play('error');
+                           } else {
+                               triggerTravelExecution(destIdx, fuel, missingFuel, missingCells, ns);
+                           }
+                       }} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl text-md shadow-lg action-btn uppercase">
+                           Auto-Ship to Most Profit Venues & Jump (-<PriceDisplay value={Math.ceil(modal.data.totalWeight * 100)} size="text-sm" compact />)
+                       </button>
+
                        <button onClick={() => {
                            const { destIdx, fuel, missingFuel, missingCells, newStateForTravel, isProactive } = modal.data;
                            if (isProactive) {
