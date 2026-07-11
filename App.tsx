@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v10.3.7 Abductable // Updated version to 10.3.7 Abductable
+ * VERSION: v10.3.8 Abductable // Updated version to 10.3.8 Abductable
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -45,6 +45,7 @@ import {
 import { GameState, Market, LoanOffer, LogEntry, DailyReport, Commodity, HighScore, CargoItem, EquipmentItem, Encounter, ActiveLoan, Contract, WarehouseItem, PendingTrade, Warehouse, MarketItem, Stock } from './types';
 import Starfield from './Starfield';
 import { Building2, Rocket, XCircle, Trophy, Zap, Truck, Shield, Wrench, Fuel, Crosshair, Heart, Swords, Skull, Box, AlertTriangle, Radar, ClipboardList, Radio, HelpCircle, Warehouse as WarehouseIcon, RefreshCw, Factory, Map as MapIcon, BarChart3, PowerOff, Droplets, Pill, Save, Volume2, VolumeX, Menu, Anchor, Cpu, Hourglass, ToggleLeft, ToggleRight, Info, LineChart, ChevronUp, ChevronDown, Circle, CheckCircle2, BookOpen, Lock } from 'lucide-react';
+import { subscribeToLeaderboard, postHighScore } from './src/services/scores';
 
 // --- BLOCK 1: EXTERNAL SERVICES (FIREBASE & AUDIO) --------------------------
 // This block handles the integration of external services, specifically Firebase for data persistence
@@ -852,11 +853,14 @@ export default function App() {
   const [bankingTab, setBankingTab] = useState<'loans' | 'stocks'>('loans');
   const [stockBuyQuantities, setStockBuyQuantities] = useState<Record<string, string>>({});
   const [stockSellQuantities, setStockSellQuantities] = useState<Record<string, string>>({});
+  const [expandedCommodityPrices, setExpandedCommodityPrices] = useState<Record<string, boolean>>({});
   const [countdown, setCountdown] = useState(0);
+  const [universalLeaderboard, setUniversalLeaderboard] = useState<any[]>([]);
   
   const consoleScrollRef = useRef<HTMLDivElement>(null);
   const [consoleScrollPosition, setConsoleScrollPosition] = useState(0);
   const localAssetsScrollRef = useRef<HTMLDivElement>(null);
+  const leaderboardScrollRef = useRef<HTMLDivElement>(null);
 
   // C. TRAVEL CONFIGURATION STATE
   // Manages the player's choices for the next travel action.
@@ -946,8 +950,52 @@ export default function App() {
    * @param cargoWeight The initial cargo weight.
    * @returns The initial game state object.
    */
+  function initializeStocks(s: GameState) {
+    // Combine all firms from loan and contract lists to create the full list of publicly traded companies.
+    const allFirms = [...LOAN_FIRMS, ...CONTRACT_FIRMS];
+    const initialStocks = allFirms.map((firm, index) => {
+      // Determine the firm's name, whether it's a string or an object.
+      const name = typeof firm === 'string' ? firm : firm.name;
+
+      // Assign a risk level based on a random tier.
+      const riskTier = Math.random();
+      let risk: 'low' | 'medium' | 'high';
+      let price: number;
+
+      if (riskTier < 0.33) {
+        risk = 'low';
+        price = 2500 + Math.random() * (15000 - 2500);
+      } else if (riskTier < 0.66) {
+        risk = 'medium';
+        price = 5000 + Math.random() * (50000 - 5000);
+      } else {
+        risk = 'high';
+        price = 7 + Math.random() * (70000 - 7);
+      }
+
+      // Lower prestige (higher index) results in more shares. This creates a market with varied capitalizations.
+      const prestigeMultiplier = allFirms.length - index;
+      const totalShares = 100000 * prestigeMultiplier;
+
+      // Return the newly created stock object.
+      return {
+        name,
+        price,
+        quantity: 0, // Player starts with 0 shares.
+        risk,
+        averageCost: 0,
+        history: [price], // Initialize price history for sparkline charts.
+        totalShares,
+        availableQuantity: Math.floor(totalShares * 0.5) // Ensure available shares are populated!
+      };
+    });
+
+    // Update the stocks directly in the passed state to prevent async overwriting bugs
+    s.stocks = initialStocks;
+  }
+
   const getInitialState = (startingCash: number, startIdx: number, markets: Market[], initialLoan: any, initialCargo: any, cargoWeight: number) => {
-    return {
+    const s = {
         day: 1,
         cash: startingCash,
         currentVenueIndex: startIdx,
@@ -967,7 +1015,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v10.3.7 Abductable ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v10.3.8 Abductable ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -992,6 +1040,8 @@ export default function App() {
         optimalVenueToday: -1,
         hasSpokenOptimalVenue: false,
     } as GameState;
+    initializeStocks(s);
+    return s;
   };
 
   /**
@@ -999,7 +1049,7 @@ export default function App() {
    * This function sets the initial public offering (IPO) price and total shares for each company.
    * Prices are randomized, and total shares are assigned based on the firm's prestige.
    */
-  const initializeStocks = (s: GameState) => {
+  const initializeStocks_DEPRECATED = (s: GameState) => {
     // Combine all firms from loan and contract lists to create the full list of publicly traded companies.
     const allFirms = [...LOAN_FIRMS, ...CONTRACT_FIRMS];
     const initialStocks = allFirms.map((firm, index) => {
@@ -1129,6 +1179,14 @@ export default function App() {
   // Runs the tutorial check when the day changes or a modal is closed.
   // Calls runTutorialCheck.
   useEffect(() => { runTutorialCheck(); }, [state?.day, modal.type]);
+
+  // Subscribes to the real-time universal leaderboard
+  useEffect(() => {
+    const unsubscribe = subscribeToLeaderboard((scores) => {
+      setUniversalLeaderboard(scores);
+    });
+    return () => unsubscribe();
+  }, []);
 
   // Auto-closes certain success modals after a short delay.
   useEffect(() => {
@@ -2863,11 +2921,19 @@ export default function App() {
     if (activeOnly.length >= limitAmt) { SFX.play('error'); return setModal({type:'message', data: `Contract limit reached (${limitAmt}).`}); }
     
     const newAvail = state.availableContracts.filter(con => con.id !== c.id);
-    const newActive = [...state.activeContracts, { ...c, status: 'active' as const }];
+    const acceptedContract = { ...c, status: 'active' as const };
+    const newActive = [...state.activeContracts, acceptedContract];
     
     setState(prev => prev ? ({ ...prev, availableContracts: newAvail, activeContracts: newActive }) : null);
     log(`CONTRACT: Accepted ${c.firm} contract.`, 'contract');
     SFX.play('click');
+
+    setStagedContract(acceptedContract);
+    setLogisticsTab('shipping');
+    setHighlightShippingItem(c.commodity);
+    setShippingQuantities(prev => ({ ...prev, [c.commodity]: c.quantity.toString() }));
+    setShippingDestinations(prev => ({ ...prev, [c.commodity]: c.destinationIndex.toString() }));
+    setModal({ type: 'shipping', data: null });
   };
 
   /**
@@ -2968,23 +3034,43 @@ export default function App() {
     const commodity = COMMODITIES.find(c => c.name === commodityName);
     if (!commodity) return;
 
+    const cargoQty = state.cargo[commodityName]?.quantity || 0;
     const totalWarehouseStock = Object.values(state.warehouse).reduce((total, venue) => {
         return total + (venue[commodityName]?.quantity || 0);
     }, 0);
-    const totalSectorStock = (state.cargo[commodityName]?.quantity || 0) + totalWarehouseStock;
+    const totalSectorStock = cargoQty + totalWarehouseStock;
     const unitWeight = commodity.unitWeight;
     const totalWeight = totalSectorStock * unitWeight;
-    const logisticsFee = totalWeight * 100;
+    const logisticsFee = Math.ceil(totalWeight * 100);
+
+    if (state.cash < logisticsFee) {
+        SFX.play('error');
+        setModal({ type: 'message', data: `Insufficient funds. Omni-Ship fee is ${formatCurrencyLog(logisticsFee)}.` });
+        return;
+    }
 
     setState(prev => {
-      const newState = { ...prev! };
+      if (!prev) return null;
+      const prevCargoQty = prev.cargo[commodityName]?.quantity || 0;
+      const prevCargoAvgCost = prev.cargo[commodityName]?.averageCost || 0;
+
+      const totalWarehouseStock = Object.values(prev.warehouse).reduce((total, venue) => {
+          return total + (venue[commodityName]?.quantity || 0);
+      }, 0);
+      const totalSectorStock = prevCargoQty + totalWarehouseStock;
+      const unitWeight = commodity.unitWeight;
+      const totalWeight = totalSectorStock * unitWeight;
+      const logisticsFee = Math.ceil(totalWeight * 100);
+
+      const newState = { ...prev };
       newState.cash -= logisticsFee;
 
       const newWarehouse: Warehouse = JSON.parse(JSON.stringify(newState.warehouse));
       // Remove from all warehouses
       Object.keys(newWarehouse).forEach(vIdx => {
-        if(newWarehouse[parseInt(vIdx)][commodityName]) {
-          delete newWarehouse[parseInt(vIdx)][commodityName];
+        const vIdxInt = parseInt(vIdx);
+        if (newWarehouse[vIdxInt] && newWarehouse[vIdxInt][commodityName]) {
+          delete newWarehouse[vIdxInt][commodityName];
         }
       });
 
@@ -2992,16 +3078,20 @@ export default function App() {
       if (!newWarehouse[destinationIndex]) newWarehouse[destinationIndex] = {};
       newWarehouse[destinationIndex][commodityName] = {
         quantity: totalSectorStock,
-        originalAvgCost: state.cargo[commodityName]?.averageCost || 0,
-        arrivalDay: state.day + 1
+        originalAvgCost: prevCargoAvgCost,
+        arrivalDay: prev.day + 1 // 1-day shipping
       };
 
       const newCargo = { ...newState.cargo };
       delete newCargo[commodityName];
 
+      const weightLost = prevCargoQty * unitWeight;
+      newState.cargoWeight = Math.max(0, newState.cargoWeight - weightLost);
+
       return { ...newState, cargo: newCargo, warehouse: newWarehouse };
     });
 
+    SFX.play('warp');
     log(`OMNI-SHIP: Moving ${totalSectorStock} ${commodityName} to ${VENUES[destinationIndex]}. Fee: ${formatCurrencyLog(logisticsFee)}`, 'buy');
   };
 
@@ -3319,7 +3409,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.3.7</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.3.8</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -3543,7 +3633,7 @@ export default function App() {
         return (
             <div className="flex flex-col h-full bg-slate-900/40 p-4 md:p-8 animate-in fade-in duration-300">
                 <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.3.7</h2>
+                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.3.8</h2>
                     <div className="text-[10px] text-gray-500 font-mono text-right uppercase leading-tight">Neural Reference System <br/>Database: UNRESTRICTED</div>
                 </div>
                 <div className="flex-grow overflow-y-auto custom-scrollbar pr-4 space-y-6">
@@ -3641,12 +3731,25 @@ export default function App() {
                                 if (relativePrice >= 0.66) priceColorClass = 'text-red-400';
 
                                 return (
-                                    <tr key={c.name} className="hover:bg-gray-800/50 transition-colors">
-                                        <td className="p-2">
-                                            <div className="font-bold text-gray-200 flex items-center text-lg"><span className="mr-2 text-2xl">{c.icon === 'metal-lump' ? '🌑' : c.icon}</span> {c.name}</div>
-                                            <div className="text-sm text-gray-500 mt-1 flex items-center">{c.unitWeight} T | Range: <PriceDisplay value={dMin} size="text-sm ml-1" compact /> - <PriceDisplay value={dMax} size="text-sm" compact /></div>
-                                        </td>
-                                        <td className="p-2 text-sm text-gray-500 align-top pt-3 text-left">
+                                    <React.Fragment key={c.name}>
+                                        <tr className="hover:bg-gray-800/50 transition-colors">
+                                            <td className="p-2">
+                                                <div className="font-bold text-gray-200 flex items-center text-lg">
+                                                    <span className="mr-2 text-2xl">{c.icon === 'metal-lump' ? '🌑' : c.icon}</span>
+                                                    {c.name}
+                                                    <button
+                                                        onClick={() => {
+                                                            SFX.play('click');
+                                                            setExpandedCommodityPrices(prev => ({ ...prev, [c.name]: !prev[c.name] }));
+                                                        }}
+                                                        className="ml-3 text-[10px] bg-cyan-950 hover:bg-cyan-900 border border-cyan-700 text-cyan-300 px-2 py-0.5 rounded font-black tracking-tighter"
+                                                    >
+                                                        {expandedCommodityPrices[c.name] ? '▲ INTEL' : '▼ INTEL'}
+                                                    </button>
+                                                </div>
+                                                <div className="text-sm text-gray-500 mt-1 flex items-center">{c.unitWeight} T | Range: <PriceDisplay value={dMin} size="text-sm ml-1" compact /> - <PriceDisplay value={dMax} size="text-sm" compact /></div>
+                                            </td>
+                                            <td className="p-2 text-sm text-gray-500 align-top pt-3 text-left">
                                             {activeContract ? (
                                                 isCovered ? (
                                                     <><div className="text-green-400 font-bold mb-1 flex items-center">READY TO FULFILL <span className="text-lg ml-1">✓</span></div><div className="text-green-400 flex items-center text-xs opacity-70">Low: <PriceDisplay value={minP} size="text-xs mx-1" compact /> @ {minV}</div><div className="text-red-400 flex items-center text-xs opacity-70">High: <PriceDisplay value={maxP} size="text-xs mx-1" compact /> @ {maxV}</div></>
@@ -3747,6 +3850,38 @@ export default function App() {
                                             </div>
                                         </td>
                                     </tr>
+                                    {expandedCommodityPrices[c.name] && (
+                                        <tr className="bg-slate-900/50">
+                                            <td colSpan={6} className="p-4 border-b border-gray-800">
+                                                <div className="p-4 bg-black/40 rounded-2xl border border-slate-700/50 grid grid-cols-2 md:grid-cols-5 gap-3 text-xs font-mono">
+                                                    {VENUES.map((venueName, vIdx) => {
+                                                        const price = state.markets[vIdx][c.name]?.price || 0;
+                                                        const isLowest = price === minP;
+                                                        const isHighest = price === maxP;
+                                                        let prefix = "";
+                                                        let styleClass = "border border-slate-800 bg-slate-900/20 text-gray-400";
+                                                        if (isLowest) {
+                                                            prefix = "Buy: ";
+                                                            styleClass = "border-2 border-green-500 bg-green-950/30 text-green-400 font-bold shadow-[0_0_15px_rgba(34,197,94,0.1)]";
+                                                        } else if (isHighest) {
+                                                            prefix = "Sell: ";
+                                                            styleClass = "border-2 border-red-500 bg-red-950/30 text-red-400 font-bold shadow-[0_0_15px_rgba(239,68,68,0.1)]";
+                                                        }
+                                                        return (
+                                                            <div key={vIdx} className={`p-3 rounded-xl flex flex-col justify-between ${styleClass} transition-all hover:scale-[1.02]`}>
+                                                                <span className="text-[10px] uppercase text-slate-500 truncate font-sans font-semibold mb-1">{venueName}</span>
+                                                                <span className="text-sm flex items-center gap-0.5 mt-auto font-black">
+                                                                    {prefix}
+                                                                    <PriceDisplay value={price} size="text-sm" compact />
+                                                                </span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </React.Fragment>
                                 );
                             })}
                         </tbody>
@@ -4072,7 +4207,7 @@ export default function App() {
 
                    <div className="flex-grow flex flex-col overflow-y-auto custom-scrollbar relative pt-10">
                         <div className="absolute top-0 right-0 w-72 text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                            SYSTEM LOG: FABRICATION MATRIX v10.3.7 ACTIVE
+                            SYSTEM LOG: FABRICATION MATRIX v10.3.8 ACTIVE
                         </div>
 
                         <div className="text-center space-y-2 mb-10">
@@ -4152,12 +4287,13 @@ export default function App() {
                     </div>
                   </div>
 
-                  {state.gamePhase >= 3 && (
-                    <div className="flex bg-slate-800/50 p-1 rounded-xl mb-4">
-                      <button onClick={() => setBankingTab('loans')} className={`flex-1 px-6 py-2 rounded-lg font-bold text-xs uppercase transition-all ${bankingTab === 'loans' ? 'bg-yellow-600 text-white shadow-md' : 'text-gray-400 hover:bg-slate-700'}`}>Loans & Deposits</button>
-                      <button onClick={() => setBankingTab('stocks')} className={`flex-1 px-6 py-2 rounded-lg font-bold text-xs uppercase transition-all ${bankingTab === 'stocks' ? 'bg-yellow-600 text-white shadow-md' : 'text-gray-400 hover:bg-slate-700'}`}>Stock Market</button>
-                    </div>
-                  )}
+                  <div className="flex bg-slate-800/50 p-1 rounded-xl mb-4">
+                    <button onClick={() => { setBankingTab('loans'); SFX.play('click'); }} className={`flex-1 px-6 py-2 rounded-lg font-bold text-xs uppercase transition-all ${bankingTab === 'loans' ? 'bg-yellow-600 text-white shadow-md' : 'text-gray-400 hover:bg-slate-700'}`}>Loans & Deposits</button>
+                    <button onClick={() => { setBankingTab('stocks'); SFX.play('click'); }} className={`flex-1 px-6 py-2 rounded-lg font-bold text-xs uppercase transition-all ${bankingTab === 'stocks' ? 'bg-yellow-600 text-white shadow-md' : 'text-gray-400 hover:bg-slate-700'} flex items-center justify-center gap-1.5`}>
+                      {state.gamePhase < 3 && <Lock size={12} className="text-gray-500" />}
+                      Stock Market
+                    </button>
+                  </div>
 
                   {bankingTab === 'loans' && (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 flex-grow overflow-y-auto custom-scrollbar">
@@ -4228,8 +4364,16 @@ export default function App() {
                   </div>
                   )}
 
-                  {bankingTab === 'stocks' && state.gamePhase >= 3 && (
-                    <div className="flex flex-col h-full">
+                  {bankingTab === 'stocks' && (
+                    <div className="flex flex-col h-full relative">
+                      {state.gamePhase < 3 && (
+                        <div className="absolute inset-0 bg-slate-950/80 z-50 flex flex-col items-center justify-center p-8 rounded-3xl text-center border border-slate-700">
+                          <Lock size={48} className="text-yellow-500 mb-4 animate-bounce" />
+                          <h3 className="text-2xl font-scifi text-yellow-500 mb-2 uppercase">Stock Market Locked</h3>
+                          <p className="text-gray-400 font-mono text-sm max-w-md uppercase tracking-tight">Access to the Galactic Stock Exchange requires a Phase 3 trading license. Achieve your Phase 2 net worth goals to unlock stock trading.</p>
+                        </div>
+                      )}
+
                       {/* Floating comms panel for stock market news and tips */}
                       <div className="shrink-0 bg-black/50 p-3 rounded-lg border border-cyan-500/30 mb-4 shadow-inner">
                           <div className="font-mono text-xs text-cyan-300 space-y-1 h-[70px] overflow-y-auto custom-scrollbar pr-2">
@@ -4253,7 +4397,7 @@ export default function App() {
                             {state.stocks?.map(stock => {
                               const profitLoss = stock.quantity > 0 && stock.averageCost ? (stock.price - stock.averageCost) * stock.quantity : 0;
                               return (
-                              <div key={stock.name} className="bg-slate-800/60 p-5 rounded-2xl border border-slate-700">
+                              <div key={stock.name} className="bg-slate-800/60 p-5 rounded-2xl border border-slate-700 relative">
                                 <div className="flex justify-between items-start mb-2">
                                   <span className="text-white font-black text-lg">{stock.name}</span>
                                   <PriceDisplay value={stock.price} size="text-lg"/>
@@ -4284,32 +4428,21 @@ export default function App() {
                                   </div>
                                 <div className="flex flex-col space-y-2">
                                   <div className="flex space-x-1 items-center bg-gray-900/50 p-1 rounded">
-                                    <input type="number" min="0" placeholder="Qty" className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={stockBuyQuantities[stock.name]||''} onChange={e=>setStockBuyQuantities({...stockBuyQuantities, [stock.name]: e.target.value})} />
-                                    <button onClick={() => {
+                                    <input type="number" min="0" placeholder="Qty" disabled={state.gamePhase < 3} className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5 disabled:opacity-50" value={stockBuyQuantities[stock.name]||''} onChange={e=>setStockBuyQuantities({...stockBuyQuantities, [stock.name]: e.target.value})} />
+                                    <button disabled={state.gamePhase < 3} onClick={() => {
                                       const maxBuy = Math.floor(state.cash / (stock.price * 1.022));
                                       setStockBuyQuantities({...stockBuyQuantities, [stock.name]: maxBuy.toString()});
-                                    }} className="w-auto px-4 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded font-bold py-1">MAX</button>
-                                    <button onClick={() => handleBuyStock(stock.name)} className="w-auto px-4 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded font-bold py-1 action-btn">BUY</button>
+                                    }} className="w-auto px-4 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded font-bold py-1 disabled:opacity-50">MAX</button>
+                                    <button disabled={state.gamePhase < 3} onClick={() => handleBuyStock(stock.name)} className="w-auto px-4 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded font-bold py-1 action-btn disabled:opacity-50">BUY</button>
                                   </div>
                                   <div className="flex space-x-1 items-center bg-gray-900/50 p-1 rounded">
-                                    <input type="number" min="0" placeholder="Qty" className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={stockSellQuantities[stock.name]||''} onChange={e=>setStockSellQuantities({...stockSellQuantities, [stock.name]: e.target.value})} />
-                                    <button onClick={() => setStockSellQuantities({...stockSellQuantities, [stock.name]: stock.quantity.toString()})} className="w-auto px-4 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded font-bold py-1">MAX</button>
-                                    <button onClick={() => handleSellStock(stock.name)} className="w-auto px-4 bg-green-700 hover:bg-green-600 text-white text-sm rounded font-bold py-1 action-btn">SELL</button>
+                                    <input type="number" min="0" placeholder="Qty" disabled={state.gamePhase < 3} className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5 disabled:opacity-50" value={stockSellQuantities[stock.name]||''} onChange={e=>setStockSellQuantities({...stockSellQuantities, [stock.name]: e.target.value})} />
+                                    <button disabled={state.gamePhase < 3} onClick={() => setStockSellQuantities({...stockSellQuantities, [stock.name]: stock.quantity.toString()})} className="w-auto px-4 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded font-bold py-1 disabled:opacity-50">MAX</button>
+                                    <button disabled={state.gamePhase < 3} onClick={() => handleSellStock(stock.name)} className="w-auto px-4 bg-green-700 hover:bg-green-600 text-white text-sm rounded font-bold py-1 action-btn disabled:opacity-50">SELL</button>
                                   </div>
                                 </div>
                               </div>
                             )})}
-                          </div>
-                          <div className="mt-4">
-                            <button
-                              onClick={() => {
-                                setModal({ type: 'shipping', data: null });
-                                setLogisticsTab('warehouse');
-                              }}
-                              className="w-full flex items-center justify-center gap-2 bg-cyan-700/80 hover:bg-cyan-600/80 text-white font-bold py-3 rounded-lg text-sm transition-all shadow-md"
-                            >
-                              <WarehouseIcon size={16} /> VIEW STORAGE
-                            </button>
                           </div>
                         </div>
                       </div>
@@ -4478,44 +4611,59 @@ export default function App() {
                                <div>
                                    <h3 className="text-white font-bold mb-4 uppercase tracking-widest text-sm border-l-2 border-purple-500 pl-4">Queue</h3>
                                    <div className="space-y-4">
-                                       {stagedContract && (
-                                           <div className="p-5 rounded-2xl border-2 border-purple-500 bg-purple-900/60 shadow-xl animate-in zoom-in-95">
-                                               <div className="flex justify-between items-center mb-2">
-                                                   <span className="text-white font-black text-lg uppercase">Staged Fulfillment</span>
-                                                   <button onClick={() => setStagedContract(null)} className="text-red-400 hover:text-red-300"><XCircle size={18}/></button>
-                                               </div>
-                                               <div className="text-xs text-purple-100 mb-6 bg-purple-950/40 p-4 rounded-xl border border-purple-400/30 font-mono leading-relaxed">
-                                                   Deliver <span className="font-black text-white">{stagedContract.quantity} {stagedContract.commodity}</span> to <span className="font-black text-white">{VENUES[stagedContract.destinationIndex]}</span>.
-                                               </div>
-                                               <button onClick={() => {
-                                                   const nameVal = stagedContract.commodity;
-                                                   const qtyInt = stagedContract.quantity;
-                                                   const destInt = stagedContract.destinationIndex;
-                                                   const itemOwned = state.cargo[nameVal];
-                                                   if (!itemOwned || itemOwned.quantity < qtyInt) return setModal({type:'message', data: `Insufficient ${nameVal}.`});
-                                                   
-                                                   const cData = COMMODITIES.find(x=>x.name===nameVal)!;
-                                                   const totalWeightVal = qtyInt * cData.unitWeight;
-                                                   const costVal = Math.ceil(totalWeightVal * 100); 
-                                                   if (state.cash < costVal) return setModal({type:'message', data: `Insufficient funds: ${formatCurrencyLog(costVal)}`});
+                                       {stagedContract && (() => {
+                                           const nameVal = stagedContract.commodity;
+                                           const qtyInt = stagedContract.quantity;
+                                           const destInt = stagedContract.destinationIndex;
+                                           const itemOwned = state.cargo[nameVal];
+                                           const hasEnoughStock = itemOwned && itemOwned.quantity >= qtyInt;
 
-                                                   const newCargoDict = {...state.cargo};
-                                                   newCargoDict[nameVal].quantity -= qtyInt;
-                                                   if(newCargoDict[nameVal].quantity<=0) delete newCargoDict[nameVal];
-                                                   const newWarehouseDict: Warehouse = {...state.warehouse};
-                                                   if(!newWarehouseDict[destInt]) newWarehouseDict[destInt] = {};
-                                                   const existingWare = newWarehouseDict[destInt][nameVal];
-                                                   let newArrivalDay = state.day + 1; 
-                                                   let newAvgCostVal = itemOwned.averageCost;
-                                                   let newQtyVal = qtyInt;
-                                                   if (existingWare) { newArrivalDay = Math.max(existingWare.arrivalDay, newArrivalDay); newAvgCostVal = ((existingWare.quantity * existingWare.originalAvgCost) + (qtyInt * itemOwned.averageCost)) / (existingWare.quantity + qtyInt); newQtyVal += existingWare.quantity; }
-                                                   newWarehouseDict[destInt][nameVal] = { quantity: newQtyVal, originalAvgCost: newAvgCostVal, arrivalDay: newArrivalDay, isContractReserved: true };
-                                                   
-                                                   setState(prev => prev ? ({ ...prev, cash: prev.cash - costVal, cargo: newCargoDict, cargoWeight: prev.cargoWeight - totalWeightVal, warehouse: newWarehouseDict }) : null);
-                                                   setStagedContract(null); setHighlightShippingItem(null); SFX.play('warp');
-                                               }} className="w-full bg-purple-600 hover:bg-purple-500 text-white font-black py-5 rounded-2xl shadow-xl uppercase action-btn">Fulfill contract</button>
-                                           </div>
-                                       )}
+                                           return (
+                                               <div className={`p-5 rounded-2xl border-2 shadow-xl animate-in zoom-in-95 transition-all ${hasEnoughStock ? 'border-purple-500 bg-purple-900/60' : 'border-red-900/50 bg-red-950/10 opacity-70'}`}>
+                                                   <div className="flex justify-between items-center mb-2">
+                                                       <span className="text-white font-black text-lg uppercase">Staged Fulfillment</span>
+                                                       <button onClick={() => setStagedContract(null)} className="text-red-400 hover:text-red-300"><XCircle size={18}/></button>
+                                                   </div>
+                                                   <div className="text-xs text-purple-100 mb-6 bg-purple-950/40 p-4 rounded-xl border border-purple-400/30 font-mono leading-relaxed">
+                                                       Deliver <span className="font-black text-white">{stagedContract.quantity} {stagedContract.commodity}</span> to <span className="font-black text-white">{VENUES[stagedContract.destinationIndex]}</span>.
+                                                       {!hasEnoughStock && (
+                                                           <div className="text-red-400 font-bold font-mono text-[10px] mt-2 uppercase tracking-wide flex items-center gap-1 animate-pulse">
+                                                               ⚠ Insufficient stock on hand to fulfill (Need {stagedContract.quantity}, have {itemOwned?.quantity || 0})
+                                                           </div>
+                                                       )}
+                                                   </div>
+                                                   <button
+                                                       disabled={!hasEnoughStock}
+                                                       onClick={() => {
+                                                           if (!itemOwned || itemOwned.quantity < qtyInt) return setModal({type:'message', data: `Insufficient ${nameVal}.`});
+
+                                                           const cData = COMMODITIES.find(x=>x.name===nameVal)!;
+                                                           const totalWeightVal = qtyInt * cData.unitWeight;
+                                                           const costVal = Math.ceil(totalWeightVal * 100);
+                                                           if (state.cash < costVal) return setModal({type:'message', data: `Insufficient funds: ${formatCurrencyLog(costVal)}`});
+
+                                                           const newCargoDict = {...state.cargo};
+                                                           newCargoDict[nameVal].quantity -= qtyInt;
+                                                           if(newCargoDict[nameVal].quantity<=0) delete newCargoDict[nameVal];
+                                                           const newWarehouseDict: Warehouse = {...state.warehouse};
+                                                           if(!newWarehouseDict[destInt]) newWarehouseDict[destInt] = {};
+                                                           const existingWare = newWarehouseDict[destInt][nameVal];
+                                                           let newArrivalDay = state.day + 1;
+                                                           let newAvgCostVal = itemOwned.averageCost;
+                                                           let newQtyVal = qtyInt;
+                                                           if (existingWare) { newArrivalDay = Math.max(existingWare.arrivalDay, newArrivalDay); newAvgCostVal = ((existingWare.quantity * existingWare.originalAvgCost) + (qtyInt * itemOwned.averageCost)) / (existingWare.quantity + qtyInt); newQtyVal += existingWare.quantity; }
+                                                           newWarehouseDict[destInt][nameVal] = { quantity: newQtyVal, originalAvgCost: newAvgCostVal, arrivalDay: newArrivalDay, isContractReserved: true };
+
+                                                           setState(prev => prev ? ({ ...prev, cash: prev.cash - costVal, cargo: newCargoDict, cargoWeight: prev.cargoWeight - totalWeightVal, warehouse: newWarehouseDict }) : null);
+                                                           setStagedContract(null); setHighlightShippingItem(null); SFX.play('warp');
+                                                       }}
+                                                       className={`w-full font-black py-5 rounded-2xl shadow-xl uppercase action-btn transition-all ${hasEnoughStock ? 'bg-purple-600 hover:bg-purple-500 text-white' : 'bg-gray-800 border border-gray-700 text-gray-500 cursor-not-allowed opacity-50'}`}
+                                                   >
+                                                       {hasEnoughStock ? "Fulfill contract" : "Insufficient Stock"}
+                                                   </button>
+                                               </div>
+                                           );
+                                       })()}
                                        {(() => {
                                            const remoteItemSourceName = Object.keys(shippingSource).find(name => shippingSource[name]?.type === 'warehouse');
                                            if (!remoteItemSourceName || !state) return null;
@@ -4701,7 +4849,7 @@ export default function App() {
         return (
             <div className="flex flex-col h-full bg-slate-900/40 p-4 md:p-8 animate-in fade-in duration-300">
                 <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.3.7</h2>
+                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.3.8</h2>
                     <div className="text-[10px] text-gray-500 font-mono text-right uppercase leading-tight">Neural Reference System <br/>Database: UNRESTRICTED</div>
                 </div>
                 <div className="flex-grow overflow-y-auto custom-scrollbar pr-4 space-y-6">
@@ -4812,31 +4960,75 @@ export default function App() {
       }
 
       if (modal.type === 'highscores') {
+          const displayScores = universalLeaderboard.length > 0 ? universalLeaderboard : state.highScores;
+
           return (
               <div className="flex flex-col h-full bg-slate-900/40 p-4 md:p-8 animate-in fade-in duration-300">
-                  <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-                      <h2 className="text-3xl font-scifi text-yellow-500 uppercase tracking-widest">Galactic Legends</h2>
-                      <div className="text-[10px] text-gray-500 font-mono text-right uppercase">Neural Archives</div>
+                  <div className="flex flex-col md:flex-row justify-between md:items-center mb-6 border-b border-gray-700 pb-4 gap-4">
+                      <div>
+                          <h2 className="text-3xl font-scifi text-yellow-500 uppercase tracking-widest">Universal Legends</h2>
+                          <div className="text-[10px] text-gray-500 font-mono uppercase mt-1 tracking-wider">Top 100 Real-Time Sync Registry (G.O.D. Monitored)</div>
+                      </div>
+
+                      {/* Real-time sync status indicator */}
+                      <div className="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-full border border-yellow-500/20 self-start">
+                          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                          <span className="text-[9px] text-green-400 font-mono uppercase font-black tracking-wider">UPLINK ACTIVE</span>
+                      </div>
                   </div>
-                  <div className="flex-grow overflow-y-auto custom-scrollbar pr-4 space-y-3 mb-8">
-                      {state.highScores.map((s, i) => (
-                          <div key={i} className="flex justify-between items-center bg-black/40 p-4 rounded-xl border border-gray-800 group hover:border-yellow-500/50 transition-all">
-                              <div className="flex items-center gap-6">
-                                  <span className={`font-mono text-xl w-8 text-center ${i < 3 ? 'text-yellow-400 font-black animate-pulse' : 'text-gray-600'}`}>{i + 1}</span>
-                                  <div className="flex flex-col">
-                                      <span className="text-white font-bold text-lg uppercase tracking-tighter">{s.name}</span>
-                                      <span className="text-[10px] text-gray-500 font-mono">{s.date}</span>
+
+                  <div className="flex gap-4 flex-grow overflow-hidden relative">
+                      {/* Left: Scroll buttons */}
+                      <div className="flex flex-col justify-center gap-4 shrink-0 pr-2">
+                          <button
+                              onClick={() => {
+                                  SFX.play('click');
+                                  leaderboardScrollRef.current?.scrollBy({ top: -180, behavior: 'smooth' });
+                              }}
+                              className="bg-yellow-600/20 hover:bg-yellow-600/40 border border-yellow-500/40 p-4 rounded-xl text-yellow-500 transition-all active:scale-95 shadow-md flex items-center justify-center"
+                              title="Scroll Up"
+                          >
+                              <ChevronUp size={24} />
+                          </button>
+                          <button
+                              onClick={() => {
+                                  SFX.play('click');
+                                  leaderboardScrollRef.current?.scrollBy({ top: 180, behavior: 'smooth' });
+                              }}
+                              className="bg-yellow-600/20 hover:bg-yellow-600/40 border border-yellow-500/40 p-4 rounded-xl text-yellow-500 transition-all active:scale-95 shadow-md flex items-center justify-center"
+                              title="Scroll Down"
+                          >
+                              <ChevronDown size={24} />
+                          </button>
+                      </div>
+
+                      {/* Leaderboard entries */}
+                      <div ref={leaderboardScrollRef} className="flex-grow overflow-y-auto custom-scrollbar pr-2 space-y-3">
+                          {displayScores.map((s, i) => (
+                              <div key={s.id || i} className="flex justify-between items-center bg-black/40 p-4 rounded-xl border border-gray-800 group hover:border-yellow-500/50 transition-all">
+                                  <div className="flex items-center gap-6">
+                                      <span className={`font-mono text-xl w-8 text-center ${i < 3 ? 'text-yellow-400 font-black animate-pulse' : 'text-gray-600'}`}>{i + 1}</span>
+                                      <div className="flex flex-col">
+                                          <span className="text-white font-bold text-lg uppercase tracking-tighter">{s.name}</span>
+                                          <span className="text-[10px] text-gray-500 font-mono">{s.date}</span>
+                                      </div>
+                                  </div>
+                                  <div className="text-right">
+                                      <div className="text-yellow-400 font-mono font-bold text-xl"><PriceDisplay value={s.score} size="text-xl" compact /></div>
+                                      <div className="text-[10px] text-gray-400 uppercase font-black">{s.days} Days Survived</div>
                                   </div>
                               </div>
-                              <div className="text-right">
-                                  <div className="text-yellow-400 font-mono font-bold text-xl"><PriceDisplay value={s.score} size="text-xl" compact /></div>
-                                  <div className="text-[10px] text-gray-400 uppercase font-black">{s.days} Days</div>
-                              </div>
-                          </div>
-                      ))}
-                      {state.highScores.length === 0 && <div className="py-20 text-center text-gray-600 italic">No legends recorded.</div>}
+                          ))}
+                          {displayScores.length === 0 && (
+                              <div className="py-20 text-center text-gray-600 italic">No legends recorded in the Galactic Registry.</div>
+                          )}
+                      </div>
                   </div>
-                  <button onClick={attemptVoluntaryRestart} className="w-full bg-red-900/30 hover:bg-red-900/50 border border-red-900 text-red-400 font-black py-4 rounded-xl text-sm uppercase tracking-widest transition-all">Relinquish Command</button>
+
+                  <div className="mt-6 flex gap-4 shrink-0">
+                      <button onClick={attemptVoluntaryRestart} className="flex-1 bg-red-950/20 hover:bg-red-900/30 border border-red-900/50 text-red-400 font-black py-4 rounded-xl text-sm uppercase tracking-widest transition-all">Relinquish Command</button>
+                      <button onClick={() => { setModal({ type: 'none', data: null }); SFX.play('click'); }} className="px-8 bg-slate-800 hover:bg-slate-700 text-white font-bold py-4 rounded-xl text-sm uppercase tracking-widest transition-all font-scifi">Back</button>
+                  </div>
               </div>
           );
       }
@@ -4956,7 +5148,7 @@ export default function App() {
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.3.7</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.3.8</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -5135,7 +5327,7 @@ export default function App() {
        )}
 
        {modal.type === 'endgame' && (
-           <div className="absolute inset-0 bg-black z-50 flex flex-col items-center justify-center p-4"><h1 className="text-5xl md:text-7xl font-scifi text-red-600 mb-4 uppercase">{modal.data.isHighScore ? "Legendary Status" : "Neural Link Severed"}</h1><div className="text-2xl text-white mb-2 uppercase font-black">{modal.data.reason}</div><div className="text-4xl text-yellow-400 font-bold mb-8 font-mono"><PriceDisplay value={modal.data.netWorth} size="text-4xl" /></div>{modal.data.isHighScore && (<div className="mb-8 w-full max-w-md"><input type="text" placeholder="Hall of Fame Alias" className="w-full p-4 bg-gray-900 border border-yellow-500 text-white text-xl rounded-xl text-center mb-3 outline-none" value={highScoreName || ''} onChange={e=>setHighScoreName(e.target.value)} maxLength={15} /><button onClick={async ()=>{ if(!highScoreName) return; const updated = await saveHighScore(highScoreName, modal.data.netWorth, modal.data.days); setState(prev => prev ? ({...prev, highScores: updated}) : null); setModal({type:'highscores', data:null}); }} className="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-black py-3 rounded-xl text-lg uppercase shadow-xl">Submit Legacy</button></div>)}<div className="grid grid-cols-2 gap-8 text-center mb-8 text-gray-400"><div><div className="text-[10px] uppercase font-bold tracking-widest mb-1">Days Survived</div><div className="text-3xl text-white font-mono">{modal.data.days}</div></div><div><div className="text-[10px] uppercase font-bold tracking-widest mb-1">Single Win Record</div><div className="text-3xl text-green-400 font-mono"><PriceDisplay value={modal.data.stats.largestSingleWin} size="text-3xl" compact/></div></div></div><div className="flex gap-4"><button onClick={() => { localStorage.removeItem('sbe_savegame'); initGame(false); }} className="bg-emerald-700 hover:bg-emerald-600 text-white font-black py-4 px-10 rounded-xl text-xl uppercase tracking-widest shadow-lg">New License</button><button onClick={() => window.location.reload()} className="bg-red-700 hover:bg-red-600 text-white font-black py-4 px-10 rounded-xl text-xl uppercase tracking-widest shadow-lg">Sever Link</button></div></div>
+           <div className="absolute inset-0 bg-black z-50 flex flex-col items-center justify-center p-4"><h1 className="text-5xl md:text-7xl font-scifi text-red-600 mb-4 uppercase">{modal.data.isHighScore ? "Legendary Status" : "Neural Link Severed"}</h1><div className="text-2xl text-white mb-2 uppercase font-black">{modal.data.reason}</div><div className="text-4xl text-yellow-400 font-bold mb-8 font-mono"><PriceDisplay value={modal.data.netWorth} size="text-4xl" /></div>{modal.data.isHighScore && (<div className="mb-8 w-full max-w-md"><input type="text" placeholder="Hall of Fame Alias" className="w-full p-4 bg-gray-900 border border-yellow-500 text-white text-xl rounded-xl text-center mb-3 outline-none" value={highScoreName || ''} onChange={e=>setHighScoreName(e.target.value)} maxLength={15} /><button onClick={async ()=>{ if(!highScoreName) return; await postHighScore(highScoreName, modal.data.netWorth, modal.data.days); const updated = await saveHighScore(highScoreName, modal.data.netWorth, modal.data.days); setState(prev => prev ? ({...prev, highScores: updated}) : null); setModal({type:'highscores', data:null}); }} className="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-black py-3 rounded-xl text-lg uppercase shadow-xl">Submit Legacy</button></div>)}<div className="grid grid-cols-2 gap-8 text-center mb-8 text-gray-400"><div><div className="text-[10px] uppercase font-bold tracking-widest mb-1">Days Survived</div><div className="text-3xl text-white font-mono">{modal.data.days}</div></div><div><div className="text-[10px] uppercase font-bold tracking-widest mb-1">Single Win Record</div><div className="text-3xl text-green-400 font-mono"><PriceDisplay value={modal.data.stats.largestSingleWin} size="text-3xl" compact/></div></div></div><div className="flex gap-4"><button onClick={() => { localStorage.removeItem('sbe_savegame'); initGame(false); }} className="bg-emerald-700 hover:bg-emerald-600 text-white font-black py-4 px-10 rounded-xl text-xl uppercase tracking-widest shadow-lg">New License</button><button onClick={() => window.location.reload()} className="bg-red-700 hover:bg-red-600 text-white font-black py-4 px-10 rounded-xl text-xl uppercase tracking-widest shadow-lg">Sever Link</button></div></div>
        )}
 
        {modal.type === 'welcome' && (
@@ -5155,7 +5347,7 @@ export default function App() {
                   <div className="flex justify-center gap-8 px-4 w-full max-w-4xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.3.7</p>
+                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.3.8</p>
                </div>
            </div>
        )}
