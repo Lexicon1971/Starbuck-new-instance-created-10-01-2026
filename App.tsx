@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v10.3.9 Base
+ * VERSION: v10.4.0 Collision
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -1015,7 +1015,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v10.3.9 Base ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v10.4.0 Collision ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -2929,7 +2929,58 @@ export default function App() {
   };
 
   /**
+   * Directly and immediately fulfills an active contract from the player's cargo.
+   * Awards the contract reward immediately, removes cargo, updates weight, and marks contract completed.
+   * This implements the direct fulfillment system, avoiding any express shipping costs/delays.
+   * @param c The contract to fulfill.
+   */
+  const directFulfillContract = (c: Contract) => {
+    if (!state) return;
+
+    const nameVal = c.commodity;
+    const qtyInt = c.quantity;
+    const itemOwned = state.cargo[nameVal];
+
+    if (!itemOwned || itemOwned.quantity < qtyInt) {
+        SFX.play('error');
+        setModal({type:'message', data: `Insufficient ${nameVal} to fulfill contract.`});
+        return;
+    }
+
+    const cData = COMMODITIES.find(x => x.name === nameVal)!;
+    const totalWeightVal = qtyInt * cData.unitWeight;
+
+    // Build the new cargo dictionary by deducting the required goods
+    const newCargoDict = { ...state.cargo };
+    newCargoDict[nameVal].quantity -= qtyInt;
+    if (newCargoDict[nameVal].quantity <= 0) delete newCargoDict[nameVal];
+
+    // Mark contract as completed in activeContracts immediately
+    const newActive = state.activeContracts.map(ac => {
+        if (ac.id === c.id) return { ...ac, status: 'completed' as const, dayCompleted: state.day };
+        return ac;
+    });
+
+    setState(prev => prev ? ({
+        ...prev,
+        cash: prev.cash + c.reward,
+        cargo: newCargoDict,
+        cargoWeight: Math.max(0, prev.cargoWeight - totalWeightVal),
+        activeContracts: newActive,
+        stats: { ...prev.stats, largestSingleWin: Math.max(prev.stats.largestSingleWin, c.reward) }
+    }) : null);
+
+    SFX.play('kaching');
+    setTimeout(() => SFX.play('kaching'), 150);
+    const fulfillmentMsg = `CONTRACT: Direct fulfillment of ${c.firm} contract. Reward: ${formatCurrencyLog(c.reward)}`;
+    log(fulfillmentMsg, 'profit');
+    speakRetro(`The contract for ${c.firm} consignment of ${c.commodity} has been completed and fully fulfilled directly. Capital reward received.`);
+  };
+
+  /**
    * Accepts a new contract.
+   * If stock is on hand, immediately completes the contract and awards rewards on the spot.
+   * Otherwise, stages the contract and sets up the shipping parameters.
    * Calls log and SFX.play.
    * @param c The contract to accept.
    */
@@ -2941,8 +2992,40 @@ export default function App() {
     
     const newAvail = state.availableContracts.filter(con => con.id !== c.id);
     const acceptedContract = { ...c, status: 'active' as const };
-    const newActive = [...state.activeContracts, acceptedContract];
     
+    // Check if player has the stock on hand to auto-fulfill immediately!
+    const itemOwned = state.cargo[c.commodity];
+    if (itemOwned && itemOwned.quantity >= c.quantity) {
+        const qtyInt = c.quantity;
+        const cData = COMMODITIES.find(x => x.name === c.commodity)!;
+        const totalWeightVal = qtyInt * cData.unitWeight;
+
+        const newCargoDict = { ...state.cargo };
+        newCargoDict[c.commodity].quantity -= qtyInt;
+        if (newCargoDict[c.commodity].quantity <= 0) delete newCargoDict[c.commodity];
+
+        const completedContract = { ...acceptedContract, status: 'completed' as const, dayCompleted: state.day };
+        const newActive = [...state.activeContracts, completedContract];
+
+        setState(prev => prev ? ({
+            ...prev,
+            availableContracts: newAvail,
+            activeContracts: newActive,
+            cash: prev.cash + c.reward,
+            cargo: newCargoDict,
+            cargoWeight: Math.max(0, prev.cargoWeight - totalWeightVal),
+            stats: { ...prev.stats, largestSingleWin: Math.max(prev.stats.largestSingleWin, c.reward) }
+        }) : null);
+
+        SFX.play('kaching');
+        setTimeout(() => SFX.play('kaching'), 150);
+        const fulfillmentMsg = `CONTRACT: Accepted & Auto-fulfilled ${c.firm} contract immediately. Reward: ${formatCurrencyLog(c.reward)}`;
+        log(fulfillmentMsg, 'profit');
+        speakRetro(`The contract for ${c.firm} has been accepted and auto-fulfilled immediately with stock on hand. Capital reward received.`);
+        return; // Avoid redirecting to shipping!
+    }
+
+    const newActive = [...state.activeContracts, acceptedContract];
     setState(prev => prev ? ({ ...prev, availableContracts: newAvail, activeContracts: newActive }) : null);
     log(`CONTRACT: Accepted ${c.firm} contract.`, 'contract');
     SFX.play('click');
@@ -2957,7 +3040,8 @@ export default function App() {
 
   /**
    * Handles the fulfillment of a contract from the player's cargo.
-   * Calls autoFulfillContract and SFX.play.
+   * Directly completes the contract without any intermediate shipping steps.
+   * Calls directFulfillContract and SFX.play.
    * @param c The contract to fulfill.
    */
   const handleFulfill = (c: Contract) => {
@@ -2969,7 +3053,7 @@ export default function App() {
         return;
     }
     setPulsingContractId(c.id);
-    autoFulfillContract(c);
+    directFulfillContract(c);
     setTimeout(() => {
         setPulsingContractId(null);
         setModal({type: 'none', data: null});
@@ -3422,7 +3506,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.3.9</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.4.0</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -3637,17 +3721,22 @@ export default function App() {
       if (modal.type === 'wiki') {
         const sections = [
             { title: "The Rusty Redeemer", icon: Anchor, content: "The RR Firefox 22 'RustyRedeemer' is a decommissioned cargo frigate of the 60/40 class. It consists of 60% oxidation and 40% hope. Originally designed for short-range hauling, its isotope hummers have been modified to handle the stress of phase-shifting market dynamics." },
+            { title: "The Starbucks Conglomerate", icon: Building2, content: "Underneath the glossy emerald corporate facade lies the ultimate hyper-capitalist machine. Operating under S.H.A.N.E. guidelines, the Conglomerate turns entire solar systems into drive-thru retail outlets. Their main mission is clear: absolute dominance of the space lanes, converting every planetary body into a standardized franchise." },
+            { title: "The Espresso Bandits", icon: Skull, content: "A rogue syndicate of caffeine-deprived outlaws who terrorize the trade lanes. Led by the notorious 'Double-Shot' Barnaby, they target cargo vessels carrying high-value stimulants or synthetic materials. Installing sturdy kinetic cannons and defensive shields is the only proven method to deter their relentless boarding maneuvers." },
+            { title: "The Great Coffee Wars", icon: Swords, content: "A devastating sector-wide conflict that lasted over forty cycles. Fought between the elite Coffee Cartels and the synthetic Tea Alliance over the rights to fertile agricultural belts on Nexus Prime. The war concluded with the historic 'Mocha Accord,' establishing the current trade venue system and cementing Starbucks dominance across the galaxy." },
             { title: "S.H.A.N.E. Protocols", icon: Shield, content: "Sector Health, Allocation, & Network Enforcement (S.H.A.N.E.) governs all trade lanes. They enforce the Galactic Overlord Decree (G.O.D.), which dictates that any trader failing to meet net-worth thresholds within specific time cycles will have their license revoked and their vessel reclaimed by the state." },
             { title: "D.A.Y. (Depreciating Astrological Yardstick)", icon: Hourglass, content: "The D.A.Y. system is a key tracking framework mandated by the Galactic Overlord Department (G.O.D.). By mapping orbital star alignments against the physical degradation of your ship, the G.O.D. enforces a relentless, depreciating tracking scale. It treats your very existence as a steadily shrinking corporate asset, creating an ominous countdown that squeeze-charges your trade license duration." },
             { title: "Extraction Logic", icon: Zap, content: "Mining lasers (Upgrades Deck) allow for the harvesting of resources from asteroid belts during transit. Higher-tier lasers and 'Overload' toggles increase yield but drastically spike the risk of structural realignment failures or laser burnout. Yield is directly proportional to laser focal integrity." },
             { title: "F.O.M.O. Engineering", icon: Factory, content: "Fabricate Output Management Operations allows captains to synthesize raw materials into high-value commodities. Z@onflex Weave Mesh is critical for cargo bay expansions, while Stim-Packs are in high demand by biological colonies throughout the sector." },
-            { title: "Void-Ex Logistics", icon: Truck, content: "Shipping goods across the void via Private or Corporate contracts is the most reliable way to secure multi-million credit payouts. Beware of auto-seizure policies: goods left in third-party warehouses for more than 3 cycles are sold to defray storage costs." }
+            { title: "Void-Ex Logistics", icon: Truck, content: "Shipping goods across the void via Private or Corporate contracts is the most reliable way to secure multi-million credit payouts. Beware of auto-seizure policies: goods left in third-party warehouses for more than 3 cycles are sold to defray storage costs." },
+            { title: "Void-Sickness", icon: Info, content: "Hauling massive cargo loads across unmapped dark systems often induces Void-Sickness. Affected crew members report hearing the faint, chilling voices of ancient marketing executives whispering long-forgotten quarterly sales targets in their minds. It is recommended to administer high-potency Stim-Packs to any crew showing signs of auditory advertising hallucinations." },
+            { title: "Temporal Phase Shifts", icon: Rocket, content: "Advancing through Phase 1, Phase 2, and Phase 3 is not just a commercial progression—it is a literal spatial-temporal shift. The S.H.A.N.E. network employs quantum algorithms that rewrite the physics of trade: spiking fuel costs, increasing pirate encounter frequencies, and creating highly volatile stock market dynamics." }
         ];
 
         return (
             <div className="flex flex-col h-full bg-slate-900/40 p-4 md:p-8 animate-in fade-in duration-300">
                 <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.3.9</h2>
+                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.4.0 Collision</h2>
                     <div className="text-[10px] text-gray-500 font-mono text-right uppercase leading-tight">Neural Reference System <br/>Database: UNRESTRICTED</div>
                 </div>
                 <div className="flex-grow overflow-y-auto custom-scrollbar pr-4 space-y-6">
@@ -4221,7 +4310,7 @@ export default function App() {
 
                    <div className="flex-grow flex flex-col overflow-y-auto custom-scrollbar relative pt-10">
                         <div className="absolute top-0 right-0 w-72 text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                            SYSTEM LOG: FABRICATION MATRIX v10.3.9 ACTIVE
+                            SYSTEM LOG: FABRICATION MATRIX v10.4.0 Collision ACTIVE
                         </div>
 
                         <div className="text-center space-y-2 mb-10">
@@ -4677,23 +4766,33 @@ export default function App() {
 
                                                            const cData = COMMODITIES.find(x=>x.name===nameVal)!;
                                                            const totalWeightVal = qtyInt * cData.unitWeight;
-                                                           const costVal = Math.ceil(totalWeightVal * 100);
-                                                           if (state.cash < costVal) return setModal({type:'message', data: `Insufficient funds: ${formatCurrencyLog(costVal)}`});
 
                                                            const newCargoDict = {...state.cargo};
                                                            newCargoDict[nameVal].quantity -= qtyInt;
                                                            if(newCargoDict[nameVal].quantity<=0) delete newCargoDict[nameVal];
-                                                           const newWarehouseDict: Warehouse = {...state.warehouse};
-                                                           if(!newWarehouseDict[destInt]) newWarehouseDict[destInt] = {};
-                                                           const existingWare = newWarehouseDict[destInt][nameVal];
-                                                           let newArrivalDay = state.day + 1;
-                                                           let newAvgCostVal = itemOwned.averageCost;
-                                                           let newQtyVal = qtyInt;
-                                                           if (existingWare) { newArrivalDay = Math.max(existingWare.arrivalDay, newArrivalDay); newAvgCostVal = ((existingWare.quantity * existingWare.originalAvgCost) + (qtyInt * itemOwned.averageCost)) / (existingWare.quantity + qtyInt); newQtyVal += existingWare.quantity; }
-                                                           newWarehouseDict[destInt][nameVal] = { quantity: newQtyVal, originalAvgCost: newAvgCostVal, arrivalDay: newArrivalDay, isContractReserved: true };
 
-                                                           setState(prev => prev ? ({ ...prev, cash: prev.cash - costVal, cargo: newCargoDict, cargoWeight: prev.cargoWeight - totalWeightVal, warehouse: newWarehouseDict }) : null);
-                                                           setStagedContract(null); setHighlightShippingItem(null); SFX.play('warp');
+                                                           // Directly complete the contract and award the cash immediately with no shipping fee!
+                                                           const newActive = state.activeContracts.map(ac => {
+                                                               if (ac.id === stagedContract.id) return { ...ac, status: 'completed' as const, dayCompleted: state.day };
+                                                               return ac;
+                                                           });
+
+                                                           setState(prev => prev ? ({
+                                                               ...prev,
+                                                               cash: prev.cash + stagedContract.reward,
+                                                               cargo: newCargoDict,
+                                                               cargoWeight: Math.max(0, prev.cargoWeight - totalWeightVal),
+                                                               activeContracts: newActive,
+                                                               stats: { ...prev.stats, largestSingleWin: Math.max(prev.stats.largestSingleWin, stagedContract.reward) }
+                                                           }) : null);
+
+                                                           setStagedContract(null);
+                                                           setHighlightShippingItem(null);
+                                                           SFX.play('kaching');
+                                                           setTimeout(() => SFX.play('kaching'), 150);
+                                                           const fulfillmentMsg = `CONTRACT: Direct fulfillment of ${stagedContract.firm} contract from Queue. Reward: ${formatCurrencyLog(stagedContract.reward)}`;
+                                                           log(fulfillmentMsg, 'profit');
+                                                           speakRetro(`The contract for ${stagedContract.firm} has been completed and fully fulfilled directly. Capital reward received.`);
                                                        }}
                                                        className={`w-full font-black py-5 rounded-2xl shadow-xl uppercase action-btn transition-all ${hasEnoughStock ? 'bg-purple-600 hover:bg-purple-500 text-white' : 'bg-gray-800 border border-gray-700 text-gray-500 cursor-not-allowed opacity-50'}`}
                                                    >
@@ -4878,17 +4977,22 @@ export default function App() {
       if (modal.type === 'wiki') {
         const sections = [
             { title: "The Rusty Redeemer", icon: Anchor, content: "The RR Firefox 22 'RustyRedeemer' is a decommissioned cargo frigate of the 60/40 class. It consists of 60% oxidation and 40% hope. Originally designed for short-range hauling, its isotope hummers have been modified to handle the stress of phase-shifting market dynamics." },
+            { title: "The Starbucks Conglomerate", icon: Building2, content: "Underneath the glossy emerald corporate facade lies the ultimate hyper-capitalist machine. Operating under S.H.A.N.E. guidelines, the Conglomerate turns entire solar systems into drive-thru retail outlets. Their main mission is clear: absolute dominance of the space lanes, converting every planetary body into a standardized franchise." },
+            { title: "The Espresso Bandits", icon: Skull, content: "A rogue syndicate of caffeine-deprived outlaws who terrorize the trade lanes. Led by the notorious 'Double-Shot' Barnaby, they target cargo vessels carrying high-value stimulants or synthetic materials. Installing sturdy kinetic cannons and defensive shields is the only proven method to deter their relentless boarding maneuvers." },
+            { title: "The Great Coffee Wars", icon: Swords, content: "A devastating sector-wide conflict that lasted over forty cycles. Fought between the elite Coffee Cartels and the synthetic Tea Alliance over the rights to fertile agricultural belts on Nexus Prime. The war concluded with the historic 'Mocha Accord,' establishing the current trade venue system and cementing Starbucks dominance across the galaxy." },
             { title: "S.H.A.N.E. Protocols", icon: Shield, content: "Sector Health, Allocation, & Network Enforcement (S.H.A.N.E.) governs all trade lanes. They enforce the Galactic Overlord Decree (G.O.D.), which dictates that any trader failing to meet net-worth thresholds within specific time cycles will have their license revoked and their vessel reclaimed by the state." },
             { title: "D.A.Y. (Depreciating Astrological Yardstick)", icon: Hourglass, content: "The D.A.Y. system is a key tracking framework mandated by the Galactic Overlord Department (G.O.D.). By mapping orbital star alignments against the physical degradation of your ship, the G.O.D. enforces a relentless, depreciating tracking scale. It treats your very existence as a steadily shrinking corporate asset, creating an ominous countdown that squeeze-charges your trade license duration." },
             { title: "Extraction Logic", icon: Zap, content: "Mining lasers (Upgrades Deck) allow for the harvesting of resources from asteroid belts during transit. Higher-tier lasers and 'Overload' toggles increase yield but drastically spike the risk of structural realignment failures or laser burnout. Yield is directly proportional to laser focal integrity." },
             { title: "F.O.M.O. Engineering", icon: Factory, content: "Fabricate Output Management Operations allows captains to synthesize raw materials into high-value commodities. Z@onflex Weave Mesh is critical for cargo bay expansions, while Stim-Packs are in high demand by biological colonies throughout the sector." },
-            { title: "Void-Ex Logistics", icon: Truck, content: "Shipping goods across the void via Private or Corporate contracts is the most reliable way to secure multi-million credit payouts. Beware of auto-seizure policies: goods left in third-party warehouses for more than 3 cycles are sold to defray storage costs." }
+            { title: "Void-Ex Logistics", icon: Truck, content: "Shipping goods across the void via Private or Corporate contracts is the most reliable way to secure multi-million credit payouts. Beware of auto-seizure policies: goods left in third-party warehouses for more than 3 cycles are sold to defray storage costs." },
+            { title: "Void-Sickness", icon: Info, content: "Hauling massive cargo loads across unmapped dark systems often induces Void-Sickness. Affected crew members report hearing the faint, chilling voices of ancient marketing executives whispering long-forgotten quarterly sales targets in their minds. It is recommended to administer high-potency Stim-Packs to any crew showing signs of auditory advertising hallucinations." },
+            { title: "Temporal Phase Shifts", icon: Rocket, content: "Advancing through Phase 1, Phase 2, and Phase 3 is not just a commercial progression—it is a literal spatial-temporal shift. The S.H.A.N.E. network employs quantum algorithms that rewrite the physics of trade: spiking fuel costs, increasing pirate encounter frequencies, and creating highly volatile stock market dynamics." }
         ];
 
         return (
             <div className="flex flex-col h-full bg-slate-900/40 p-4 md:p-8 animate-in fade-in duration-300">
                 <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.3.9</h2>
+                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.4.0 Collision</h2>
                     <div className="text-[10px] text-gray-500 font-mono text-right uppercase leading-tight">Neural Reference System <br/>Database: UNRESTRICTED</div>
                 </div>
                 <div className="flex-grow overflow-y-auto custom-scrollbar pr-4 space-y-6">
@@ -5187,7 +5291,7 @@ export default function App() {
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.3.9</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.4.0 Collision</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -5410,7 +5514,7 @@ export default function App() {
                   <div className="flex justify-center gap-8 px-4 w-full max-w-4xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.3.9</p>
+                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.4.0 Collision</p>
                </div>
            </div>
        )}
