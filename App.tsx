@@ -721,6 +721,7 @@ export default function App() {
   // `state` holds the entire game state object.
   // `modal` controls which modal window is currently displayed.
   const [state, setState] = useState<GameState | null>(null);
+  const [preWelcomeClicked, setPreWelcomeClicked] = useState(false);
 
   /**
    * Helper function to calculate corporate synergy perks based on stock ownership.
@@ -791,6 +792,31 @@ export default function App() {
         window.removeEventListener('speech-state-change', handleSpeechStateChange);
     };
   }, []);
+
+  useEffect(() => {
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      const reason = event.reason;
+      if (reason) {
+        // Gracefully capture and suppress Firestore/Firebase background sync rejections
+        // (such as permission denied, domain restriction, or network blocks)
+        const isFirebaseError =
+          reason.name === 'FirebaseError' ||
+          (reason.code && (reason.code === 403 || reason.code === 'permission-denied' || reason.code === 'auth/operation-not-allowed')) ||
+          (reason.message && (reason.message.includes('Firebase') || reason.message.includes('Firestore') || reason.message.includes('permission_denied') || reason.message.includes('restricted')));
+
+        if (isFirebaseError) {
+          console.warn("Handled third-party database connection rejection gracefully:", reason);
+          event.preventDefault(); // Supresses browser global unhandled promise rejection errors
+        }
+      }
+    };
+
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    return () => {
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, []);
+
   const [hasSave, setHasSave] = useState(false);
   
   // B. UI & INPUT STATE
@@ -4148,9 +4174,11 @@ export default function App() {
                                    })}
                                </div>
                                <div>
-                                   <h3 className="text-white font-bold mb-4 uppercase tracking-widest text-sm border-l-2 border-blue-500 pl-4">Active Operations</h3>
-                                   {state.activeContracts.length === 0 && <div className="p-10 border border-dashed border-gray-700 rounded-3xl text-gray-500 text-center italic">No active contracts.</div>}
-                                   {state.activeContracts.map(c => {
+                                   <h3 className="text-white font-bold mb-4 uppercase tracking-widest text-sm border-l-2 border-blue-500 pl-4">
+                                       Active Operations ({state.activeContracts.filter(c => c.status === 'active').length})
+                                   </h3>
+                                   {state.activeContracts.filter(c => c.status === 'active').length === 0 && <div className="p-10 border border-dashed border-gray-700 rounded-3xl text-gray-500 text-center italic">No active contracts.</div>}
+                                   {state.activeContracts.filter(c => c.status === 'active').map(c => {
                                        const wh = state.warehouse[c.destinationIndex];
                                        const hasItems = wh && wh[c.commodity] && wh[c.commodity].quantity >= c.quantity;
                                        const isReady = c.status === 'active' && hasItems && wh[c.commodity].arrivalDay <= state.day;
@@ -4619,6 +4647,45 @@ export default function App() {
       return null;
   };
 
+  if (!preWelcomeClicked) {
+    return (
+      <div className="fixed inset-0 bg-black z-[9999] flex flex-col items-center justify-center p-4">
+        <Starfield />
+        <div className="text-center space-y-8 max-w-xl p-8 bg-slate-900/80 rounded-3xl border-2 border-yellow-500/50 shadow-[0_0_50px_rgba(234,179,8,0.15)] relative z-50 animate-in zoom-in-95 duration-500">
+          <h1 className="text-5xl md:text-6xl font-scifi text-white font-black tracking-widest uppercase animate-pulse">STAR BUCKS</h1>
+          <p className="text-yellow-500 font-mono text-sm tracking-widest uppercase font-bold">GALAXY TRADE EMPIRE</p>
+          <div className="text-gray-300 text-sm md:text-base leading-relaxed space-y-4">
+            <p>
+              This experience utilizes browser Speech Synthesis and the Web Audio API for immersive, voice-narrated retro computer reports and ambient effects.
+            </p>
+            <p className="text-xs text-cyan-400 font-mono">
+              [RECOMMENDED: Enable sound to receive critical market intel and crew updates]
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              // Initialize SFX audio engine
+              SFX.init();
+              // Pre-unlock speech synthesis with a silent utterance to bypass browser autoplay policies
+              try {
+                if ('speechSynthesis' in window) {
+                  const utterance = new SpeechSynthesisUtterance("");
+                  window.speechSynthesis.speak(utterance);
+                }
+              } catch (e) {
+                console.warn("Failed to pre-unlock speech synthesis:", e);
+              }
+              setPreWelcomeClicked(true);
+            }}
+            className="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-black py-4 px-6 rounded-xl text-lg md:text-xl shadow-[0_0_30px_rgba(234,179,8,0.4)] transition-all uppercase border-b-4 border-yellow-900 active:scale-95"
+          >
+            Connect Neural Uplink
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="app-viewport flex flex-col p-2 md:p-4 space-y-4 no-scrollbar custom-scrollbar overflow-y-auto bg-transparent">
        <Starfield />
@@ -4780,8 +4847,24 @@ export default function App() {
                <div className="bg-slate-900 border border-blue-500 p-10 rounded-2xl max-sm w-full sci-fi-box text-center shadow-2xl">
                    <div className="flex justify-center mb-6 text-green-400 animate-pulse"><Save size={64} /></div>
                    <h2 className="text-3xl font-black text-white mb-2 uppercase tracking-tighter">Save Successful</h2>
-                   <p className="text-gray-200 mb-10 font-bold text-lg uppercase tracking-widest animate-pulse">See you soon, captain.</p>
-                   <button onClick={() => window.location.reload()} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-5 rounded-xl text-2xl shadow-lg action-btn uppercase">Disconnecting Neural Link...</button>
+                   <p className="text-gray-200 mb-10 font-bold text-lg uppercase tracking-widest animate-pulse">Neural State Secured.</p>
+                   <div className="flex flex-col gap-3">
+                       <button
+                           onClick={() => {
+                               setModal({ type: 'none', data: null });
+                               SFX.play('click');
+                           }}
+                           className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl text-xl shadow-lg action-btn uppercase"
+                       >
+                           Return to Console
+                       </button>
+                       <button
+                           onClick={() => window.location.reload()}
+                           className="w-full bg-red-700 hover:bg-red-600 text-white font-black py-4 rounded-xl text-xl shadow-lg action-btn uppercase"
+                       >
+                           Leave Ship (Disconnect)
+                       </button>
+                   </div>
                </div>
            </div>
        )}
