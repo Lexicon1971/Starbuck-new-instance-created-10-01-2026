@@ -157,6 +157,38 @@
         }
       }
 
+      .credits-container {
+        display: flex;
+        justify-content: center;
+        position: relative;
+        height: 100%;
+        width: 100%;
+        overflow: hidden;
+        background: black;
+      }
+
+      .credits-content {
+        position: absolute;
+        top: 100%;
+        width: 80%;
+        max-width: 600px;
+        text-align: center;
+        animation: credits-anim 40s linear infinite;
+        color: #d1fae5;
+        text-shadow: 0 0 5px #000, 0 0 10px #000;
+      }
+
+      @keyframes credits-anim {
+        0% {
+          top: 100%;
+          transform: translateY(0);
+        }
+        100% {
+          top: -160%;
+          transform: translateY(-160%);
+        }
+      }
+
       #root {
           width: 100vw;
           height: 100vh;
