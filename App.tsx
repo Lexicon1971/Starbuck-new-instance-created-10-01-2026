@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v10.4.2 Enterprise
+ * VERSION: v10.4.3
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -953,6 +953,26 @@ export default function App() {
    * @param cargoWeight The initial cargo weight.
    * @returns The initial game state object.
    */
+  /**
+   * Helper function to calculate a new daily purchase limit for a stock
+   * based on its risk/volatility level (Enhancement 131).
+   * Percentages: Low: 1-10%, Medium: 5-20%, High: 10-25% of total shares.
+   */
+  const calculateDailyStockLimit = (stock: any): number => {
+    const total = stock.totalShares ?? 1000000;
+    let minPct = 0.01;
+    let maxPct = 0.10;
+    if (stock.risk === 'medium') {
+      minPct = 0.05;
+      maxPct = 0.20;
+    } else if (stock.risk === 'high') {
+      minPct = 0.10;
+      maxPct = 0.25;
+    }
+    const pct = minPct + Math.random() * (maxPct - minPct);
+    return Math.max(1, Math.round(total * pct));
+  };
+
   function initializeStocks(s: GameState) {
     // Combine all firms from loan and contract lists to create the full list of publicly traded companies.
     const allFirms = [...LOAN_FIRMS, ...CONTRACT_FIRMS];
@@ -980,8 +1000,7 @@ export default function App() {
       const prestigeMultiplier = allFirms.length - index;
       const totalShares = 100000 * prestigeMultiplier;
 
-      // Return the newly created stock object.
-      return {
+      const stockObj = {
         name,
         price,
         quantity: 0, // Player starts with 0 shares.
@@ -989,8 +1008,14 @@ export default function App() {
         averageCost: 0,
         history: [price], // Initialize price history for sparkline charts.
         totalShares,
-        availableQuantity: Math.floor(totalShares * 0.5) // Ensure available shares are populated!
+        availableQuantity: Math.floor(totalShares * 0.5), // Ensure available shares are populated!
+        dailyBuyLimitRemaining: 0
       };
+
+      // Calculate and assign the initial day buy limit
+      stockObj.dailyBuyLimitRemaining = calculateDailyStockLimit(stockObj);
+
+      return stockObj;
     });
 
     // Update the stocks directly in the passed state to prevent async overwriting bugs
@@ -1018,7 +1043,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v10.4.2 Enterprise ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v10.4.3 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -2416,6 +2441,22 @@ export default function App() {
   }, [modal.type, state?.optimalVenueToday, state?.hasSpokenOptimalVenue]);
 
   /**
+   * Helper function to calculate the current maximum range price of a given commodity c.
+   * This respects the game's active phase multiplier, custom price overrides,
+   * and special multipliers for biological commodities such as H2O and Nutri-Paste.
+   */
+  const getCommodityMaxPrice = (s: GameState, c: Commodity): number => {
+    const key = c.name;
+    const phaseMultiplierVal = 1 + ((s.gamePhase - 1) * 0.25);
+    const h2oPasteMaxMult = Math.pow(1.10, s.day);
+    let rangeMax = s.commodityPriceOverrides?.[key]?.max || c.maxPrice * phaseMultiplierVal;
+    if (key === H2O_NAME || key === NUTRI_PASTE_NAME) {
+        rangeMax = c.maxPrice * h2oPasteMaxMult;
+    }
+    return Math.round(rangeMax);
+  };
+
+  /**
    * Processes the end of a day, updating loans, investments, contracts, and other daily events.
    * Calls speakRetro, evolveMarkets, generateLoanOffers, and generateContracts.
    * @param s The current game state.
@@ -2634,7 +2675,18 @@ export default function App() {
         }
 
         const newHistory = [...(stock.history || []), newPrice].slice(-5);
-        return { ...stock, price: newPrice, quantity: newQuantity, availableQuantity: newAvailableQuantity, history: newHistory };
+
+        // Calculate new volatility-dependent daily purchase limit for the new day
+        const limitRemaining = calculateDailyStockLimit({ ...stock, price: newPrice, quantity: newQuantity, availableQuantity: newAvailableQuantity });
+
+        return {
+          ...stock,
+          price: newPrice,
+          quantity: newQuantity,
+          availableQuantity: newAvailableQuantity,
+          history: newHistory,
+          dailyBuyLimitRemaining: limitRemaining
+        };
       }).sort((a, b) => a.name.localeCompare(b.name));
 
       if (Math.random() < 0.22) {
@@ -2652,6 +2704,133 @@ export default function App() {
     s.hasTradedStocksToday = false;
 
     s.markets = evolveMarkets(s);
+
+    // ============================================================================
+    // COMMODITY REBALANCING SYSTEM (Enhancement 131)
+    // Checks each commodity individually at day transition. If a commodity is at
+    // max price in 3 or more venues, it means there is a galaxy-wide shortage.
+    // We:
+    // 1) Expand its maximum price override ceiling by 5%.
+    // 2) Select 2 random venues from those currently at the ceiling price limit.
+    // 3) Inject a huge amount of stock into the first venue and half of that first amount in the second.
+    // 4) Recalculate commodity prices iteratively based on new supply to satisfy supply-demand formulas.
+    // 5) Repeat/loop until at most one venue is left at the maximum price.
+    // ============================================================================
+    COMMODITIES.forEach(c => {
+        let iterations = 0;
+        const maxIterations = 10; // Guard against potential infinite loops
+        let isTriggered = false; // Track if rebalancing was triggered by >= 3 sites at max
+        while (iterations < maxIterations) {
+            // Determine current max standard price limit for this commodity
+            const currentMaxPrice = getCommodityMaxPrice(s, c);
+
+            // Find all venues where the commodity price is at or exceeds the ceiling
+            const maxPriceVenues: number[] = [];
+            s.markets.forEach((m, idx) => {
+                if (m[c.name] && m[c.name].price >= currentMaxPrice) {
+                    maxPriceVenues.push(idx);
+                }
+            });
+
+            // If not triggered yet, check if we meet the 3-site trigger threshold.
+            // If already triggered, continue rebalancing until only 1 or 0 venues remain at max price.
+            if (!isTriggered) {
+                if (maxPriceVenues.length >= 3) {
+                    isTriggered = true;
+                } else {
+                    break;
+                }
+            } else {
+                if (maxPriceVenues.length <= 1) {
+                    break;
+                }
+            }
+
+            // Perform 5% range expansion
+            const phaseMultiplierVal = 1 + ((s.gamePhase - 1) * 0.25);
+            const defaultMin = c.minPrice * phaseMultiplierVal;
+            const defaultMax = c.maxPrice * phaseMultiplierVal;
+
+            const existingMin = s.commodityPriceOverrides?.[c.name]?.min ?? defaultMin;
+            const existingMax = s.commodityPriceOverrides?.[c.name]?.max ?? defaultMax;
+            const newMaxOverride = existingMax * 1.05;
+
+            if (!s.commodityPriceOverrides) {
+                s.commodityPriceOverrides = {};
+            }
+            s.commodityPriceOverrides[c.name] = {
+                min: existingMin,
+                max: newMaxOverride
+            };
+
+            // Randomly pick exactly 2 of the sites that are at max price
+            const shuffledVenues = [...maxPriceVenues].sort(() => Math.random() - 0.5);
+            const v1 = shuffledVenues[0];
+            const v2 = shuffledVenues[1];
+
+            // Quantities injected are scaled by current phase stock multipliers for proper game balancing
+            const stockMult = s.gamePhase === 1 ? 1 : (s.gamePhase === 2 ? 5 : (s.gamePhase === 3 ? 10 : 20));
+            const hugeAmt = Math.round(1000 * stockMult);
+            const halfAmt = Math.round(hugeAmt / 2);
+
+            s.markets[v1][c.name].quantity += hugeAmt;
+            s.markets[v2][c.name].quantity += halfAmt;
+
+            // Log rebalancing event to player's terminal report feed
+            report.events.push(`REBALANCE: ${c.name} reached peak demand globally. Shipped emergency supply to ${VENUES[v1]} (+${hugeAmt}) and ${VENUES[v2]} (+${halfAmt}). Price ceiling expanded +5%.`);
+
+            // Recalculate commodity prices across all markets to reflect the newly injected stock quantities
+            const globalStocks: Record<string, number> = {};
+            COMMODITIES.forEach(com => {
+                let total = 0;
+                s.markets.forEach(m => total += m[com.name]?.quantity || 0);
+                globalStocks[com.name] = total / s.markets.length;
+            });
+
+            const h2oPasteMinMult = Math.pow(1.05, s.day);
+            const h2oPasteMaxMult = Math.pow(1.10, s.day);
+
+            s.markets.forEach((m, mIdx) => {
+                const item = m[c.name];
+                if (!item) return;
+
+                const adjustedStdQty = item.standardQuantity * stockMult;
+                const effectiveRatio = (item.quantity + 1) / adjustedStdQty;
+
+                let rMin = s.commodityPriceOverrides?.[c.name]?.min || c.minPrice * phaseMultiplierVal;
+                let rMax = s.commodityPriceOverrides?.[c.name]?.max || c.maxPrice * phaseMultiplierVal;
+
+                if (c.name === H2O_NAME || c.name === NUTRI_PASTE_NAME) {
+                    rMin = c.minPrice * h2oPasteMinMult;
+                    rMax = c.maxPrice * h2oPasteMaxMult;
+                }
+
+                let newPrice = 0;
+                if (s.fixedCommodity?.name === c.name) {
+                    newPrice = s.fixedCommodity.venuePrices[mIdx];
+                } else if (c.name === 'Spacetime Tea') {
+                    const logMin = Math.log(rMin);
+                    const logMax = Math.log(rMax);
+                    const scale = logMin + (logMax - logMin) * Math.random();
+                    newPrice = Math.round(Math.exp(scale));
+                    const avgStock = globalStocks[c.name] || 1;
+                    const relativeRatio = avgStock / (item.quantity + 1);
+                    const swing = Math.min(1.25, Math.max(0.75, relativeRatio));
+                    newPrice = Math.round(newPrice * swing);
+                    newPrice = Math.round(Math.min(rMax, Math.max(rMin, newPrice)));
+                } else {
+                    const mid = (rMin + rMax) / 2;
+                    newPrice = mid / Math.sqrt(effectiveRatio);
+                    newPrice = Math.round(Math.min(rMax, Math.max(rMin, newPrice)));
+                }
+
+                m[c.name].price = newPrice;
+            });
+
+            iterations++;
+        }
+    });
+
     s.loanOffers = generateLoanOffers(s.gamePhase, s.day);
     s.availableContracts = generateContracts(s.currentVenueIndex, s.day, s.gamePhase, s.venueTradeBans, s.availableContracts, s.activeContracts);
     s.loanTakenToday = false;
@@ -2671,6 +2850,13 @@ export default function App() {
     if (stockIndex === -1) return;
 
     const stock = state.stocks[stockIndex];
+
+    // Enhancement 131: Check daily purchase limits dependent on volatility
+    const limitRemaining = stock.dailyBuyLimitRemaining !== undefined ? stock.dailyBuyLimitRemaining : calculateDailyStockLimit(stock);
+    if (qty > limitRemaining) {
+      setModal({ type: 'message', data: `Regulatory Block: Today's purchase limit is ${limitRemaining.toLocaleString()} shares for ${stockName}.` });
+      return;
+    }
 
     // A. "Liquidity Lock" Fix: Check against available market quantity.
     if (qty > (stock.availableQuantity ?? 0)) {
@@ -2706,6 +2892,9 @@ export default function App() {
 
     // A. Decrement available quantity from the global state.
     updatedStock.availableQuantity = (updatedStock.availableQuantity ?? 0) - qty;
+
+    // Enhancement 131: Decrement the remaining daily buy limit for this stock
+    updatedStock.dailyBuyLimitRemaining = Math.max(0, limitRemaining - qty);
 
     newStocks[stockIndex] = updatedStock;
 
@@ -3688,7 +3877,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.4.2</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.4.3</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -3767,7 +3956,7 @@ export default function App() {
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v10.4.2 Enterprise // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v10.4.3 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -3967,7 +4156,7 @@ export default function App() {
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                          <p className="text-gray-500 font-mono text-[10px] uppercase">v10.4.2 Enterprise</p>
+                          <p className="text-gray-500 font-mono text-[10px] uppercase">v10.4.3</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -4800,7 +4989,7 @@ export default function App() {
 
                    <div className="flex-grow flex flex-col overflow-y-auto custom-scrollbar relative pt-10">
                         <div className="absolute top-0 right-0 w-72 text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                            SYSTEM LOG: FABRICATION MATRIX v10.4.2 Enterprise ACTIVE
+                            SYSTEM LOG: FABRICATION MATRIX v10.4.3 ACTIVE
                         </div>
 
                         <div className="text-center space-y-2 mb-10">
@@ -4985,6 +5174,10 @@ export default function App() {
                               <PriceDisplay value={state.jackpot ? state.jackpot * 10 : 0} size="text-2xl" />
                             </div>
                             <p className="text-xs text-gray-400 mb-2">2.2% of every transaction is added to the jackpot. You have a 22% chance to win 10x the pool each day you trade stocks.</p>
+                            <div className="border-t border-slate-700/60 mt-3 pt-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 text-xs">
+                              <span className="text-gray-400 uppercase tracking-wider font-bold">Total Galaxy Corporate Shares Outstanding (Held Universally):</span>
+                              <span className="text-cyan-400 font-mono font-black text-sm">{(state.stocks?.reduce((acc, stock) => acc + (stock.totalShares || 0), 0) || 0).toLocaleString()} shares</span>
+                            </div>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-20">
                             {state.stocks?.map(stock => {
@@ -5019,8 +5212,11 @@ export default function App() {
                                   </div>
                                   <PriceDisplay value={stock.price} size="text-lg"/>
                                 </div>
-                                <div className="text-sm text-gray-400 mb-4">Risk: <span className={`font-bold ${stock.risk === 'high' ? 'text-red-500' : stock.risk === 'medium' ? 'text-yellow-500' : 'text-green-500'}`}>{stock.risk}</span></div>
-                                <div className="text-sm text-gray-400 mb-4">Owned: {stock.quantity}</div>
+                                <div className="text-sm text-gray-400 mb-1">Risk: <span className={`font-bold ${stock.risk === 'high' ? 'text-red-500' : stock.risk === 'medium' ? 'text-yellow-500' : 'text-green-500'}`}>{stock.risk}</span></div>
+                                <div className="text-sm text-gray-400 mb-1">Owned: {stock.quantity}</div>
+                                <div className="text-sm text-gray-400 mb-1">Global Total Shares: {stock.totalShares?.toLocaleString() ?? "N/A"}</div>
+                                <div className="text-sm text-gray-400 mb-1">Market Float Available: {stock.availableQuantity?.toLocaleString() ?? "N/A"}</div>
+                                <div className="text-sm text-cyan-400 mb-4 font-semibold">Today's Purchase Limit: {stock.dailyBuyLimitRemaining !== undefined ? stock.dailyBuyLimitRemaining.toLocaleString() : "N/A"} shares</div>
                                 {stock.quantity > 0 && (
                                     <div className="text-sm text-gray-400 mb-4">P/L: <PriceDisplay value={profitLoss} colored size="text-sm" /></div>
                                   )}
@@ -5648,7 +5844,7 @@ export default function App() {
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v10.4.2 Enterprise</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v10.4.3</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -5778,7 +5974,7 @@ export default function App() {
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.4.2 Enterprise</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.4.3</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -6002,7 +6198,7 @@ export default function App() {
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                     <button onClick={()=>{setModal({type:'credits', data:null}); SFX.play('click');}} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(37,99,235,0.5)] action-btn border-4 border-blue-400 uppercase tracking-widest">Roll Credits</button>
                   </div>
-                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.4.2 Enterprise</p>
+                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.4.3</p>
                </div>
            </div>
        )}
