@@ -47,6 +47,9 @@ import Starfield from './Starfield';
 import { Building2, Rocket, XCircle, Trophy, Zap, Truck, Shield, Wrench, Fuel, Crosshair, Heart, Swords, Skull, Box, AlertTriangle, Radar, ClipboardList, Radio, HelpCircle, Warehouse as WarehouseIcon, RefreshCw, Factory, Map as MapIcon, BarChart3, PowerOff, Droplets, Pill, Save, Volume2, VolumeX, Menu, Anchor, Cpu, Hourglass, ToggleLeft, ToggleRight, Info, LineChart, ChevronUp, ChevronDown, Circle, CheckCircle2, BookOpen, Lock } from 'lucide-react';
 import { subscribeToLeaderboard, postHighScore } from './src/services/scores';
 
+// Resolve path to intro_ship.png correctly for Vite environment (including GitHub Pages base path)
+const introShip = new URL('./intro_ship.png', import.meta.url).href;
+
 // --- BLOCK 1: EXTERNAL SERVICES (FIREBASE & AUDIO) --------------------------
 // This block handles the integration of external services, specifically Firebase for data persistence
 // and the Web Audio API for sound effects and speech synthesis.
@@ -3631,7 +3634,8 @@ export default function App() {
       { id: 'commodities', label: "Commodities Guide", icon: Box },
       { id: 'banks', label: "Banks & Stocks", icon: BarChart3 },
       { id: 'broadcasts', label: "Neural Intercepts", icon: Radio },
-      { id: 'acronyms', label: "Acronym Directory", icon: HelpCircle }
+      { id: 'acronyms', label: "Acronym Directory", icon: HelpCircle },
+      { id: 'credits', label: "Credits", icon: Heart }
     ];
 
     const sections = [
@@ -3872,6 +3876,78 @@ export default function App() {
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {currentTab === 'credits' && (
+            <div className="flex-grow flex items-center justify-center relative overflow-hidden h-[50vh] bg-black border border-gray-800 rounded-2xl">
+              <div className="credits-container">
+                  <div className="credits-content space-y-12 pb-24 text-center">
+                      <div className="space-y-3">
+                          <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
+                          <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
+                          <p className="text-gray-500 font-mono text-[10px] uppercase">v10.4.2 Enterprise</p>
+                      </div>
+
+                      <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
+                          <p className="text-yellow-500 text-[10px] font-mono uppercase tracking-widest font-black">--- LEAD DESIGN & ARCHITECTURE ---</p>
+                          <p className="text-white text-2xl font-black font-scifi">Jules</p>
+                      </div>
+
+                      <div className="border-b border-gray-800 pb-6 my-10 space-y-2">
+                          <p className="text-yellow-500 text-[10px] font-mono uppercase tracking-widest font-black">--- CO-ENGINE & INTELLIGENCE ---</p>
+                          <p className="text-white text-2xl font-black font-scifi">Gemini</p>
+                      </div>
+
+                      <div className="space-y-6">
+                          <p className="text-yellow-500 text-[10px] font-mono uppercase tracking-widest font-black">--- SPECIAL THANKS TO THE BANKS & CREDITORS ---</p>
+                          <div className="space-y-3 text-base font-mono">
+                              <p className="text-white font-bold">Starfleet Credit Union</p>
+                              <p className="text-white font-bold">Tyrell Corporation Finance</p>
+                              <p className="text-white font-bold">Weyland-Yutani Trust</p>
+                              <p className="text-white font-bold">The Great Barter Bank</p>
+                              <p className="text-white font-bold">The Hutt Cartel Lending</p>
+                          </div>
+                      </div>
+
+                      <div className="space-y-6 pt-6">
+                          <p className="text-yellow-500 text-[10px] font-mono uppercase tracking-widest font-black">--- WITH APPRECIATION TO THE CONGLOMERATES & CORPORATIONS ---</p>
+                          <div className="space-y-3 text-base font-mono">
+                              <p className="text-white font-bold">Choam Corp</p>
+                              <p className="text-white font-bold">Cyberdyne Systems</p>
+                              <p className="text-white font-bold">Tyrell Corporation</p>
+                              <p className="text-white font-bold">Weyland-Yutani Logistics</p>
+                              <p className="text-white font-bold">Void-Ex Logistics</p>
+                          </div>
+                      </div>
+
+                      <div className="space-y-6 pt-6">
+                          <p className="text-yellow-500 text-[10px] font-mono uppercase tracking-widest font-black">--- HONORABLE SECTOR ENTITIES & REGULATORS ---</p>
+                          <div className="space-y-3 text-base font-mono">
+                              <p className="text-white font-bold">Galactic Overlord Department (G.O.D.)</p>
+                              <p className="text-white font-bold">V.I.S.A. Checkpoint Control</p>
+                              <p className="text-white font-bold">S.C.A.M. Customs Board</p>
+                              <p className="text-white font-bold">Federation Supply Hub</p>
+                              <p className="text-white font-bold">Sector Health, Allocation, & Network Enforcement</p>
+                          </div>
+                      </div>
+
+                      <div className="space-y-6 pt-6">
+                          <p className="text-yellow-500 text-[10px] font-mono uppercase tracking-widest font-black">--- RIVAL SYNDICATES & THREATS ---</p>
+                          <div className="space-y-3 text-base font-mono">
+                              <p className="text-white font-bold">The Crimson Fleet</p>
+                              <p className="text-white font-bold">The Espresso Bandits</p>
+                              <p className="text-white font-bold">The Void-Sickness Whispers</p>
+                              <p className="text-white font-bold">The Sentient Rust Rats</p>
+                          </div>
+                      </div>
+
+                      <div className="pt-16 pb-20 space-y-4">
+                          <p className="text-yellow-500 text-xs font-mono uppercase tracking-widest font-black">--- FINAL COGNITIVE DOCKING TRANSMISSION ---</p>
+                          <p className="text-white text-2xl font-scifi font-black animate-pulse leading-snug">Love S.H.A.N.E.</p>
+                      </div>
+                  </div>
+              </div>
             </div>
           )}
         </div>
@@ -5460,6 +5536,94 @@ export default function App() {
           );
       }
 
+      if (modal.type === 'credits') {
+          return (
+              <div className="flex flex-col h-full bg-black p-4 md:p-8 animate-in fade-in duration-500 relative">
+                  <Starfield />
+
+                  {/* Floating HUD Back Button */}
+                  <div className="absolute top-4 right-4 z-50">
+                      <button
+                          onClick={() => { setModal({ type: 'none', data: null }); SFX.play('click'); }}
+                          className="bg-slate-800 hover:bg-slate-700 text-white font-bold px-6 py-2.5 rounded-xl text-xs uppercase tracking-widest transition-all border border-gray-700 shadow-md font-scifi flex items-center gap-1.5"
+                      >
+                          <XCircle size={14} /> Close Credits
+                      </button>
+                  </div>
+
+                  <div className="flex-grow flex items-center justify-center relative overflow-hidden h-[70vh]">
+                      <div className="credits-container">
+                          <div className="credits-content space-y-12 pb-24">
+                              <div className="space-y-3">
+                                  <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
+                                  <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v10.4.2 Enterprise</p>
+                              </div>
+
+                              <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
+                                  <p className="text-yellow-500 text-xs font-mono uppercase tracking-widest font-black">--- LEAD DESIGN & ARCHITECTURE ---</p>
+                                  <p className="text-white text-3xl font-black font-scifi">Jules</p>
+                              </div>
+
+                              <div className="border-b border-gray-800 pb-6 my-10 space-y-2">
+                                  <p className="text-yellow-500 text-xs font-mono uppercase tracking-widest font-black">--- CO-ENGINE & INTELLIGENCE ---</p>
+                                  <p className="text-white text-3xl font-black font-scifi">Gemini</p>
+                              </div>
+
+                              <div className="space-y-6">
+                                  <p className="text-yellow-500 text-xs font-mono uppercase tracking-widest font-black">--- SPECIAL THANKS TO THE BANKS & CREDITORS ---</p>
+                                  <div className="space-y-3 text-lg font-mono">
+                                      <p className="text-white font-bold">Starfleet Credit Union</p>
+                                      <p className="text-white font-bold">Tyrell Corporation Finance</p>
+                                      <p className="text-white font-bold">Weyland-Yutani Trust</p>
+                                      <p className="text-white font-bold">The Great Barter Bank</p>
+                                      <p className="text-white font-bold">The Hutt Cartel Lending</p>
+                                  </div>
+                              </div>
+
+                              <div className="space-y-6 pt-6">
+                                  <p className="text-yellow-500 text-xs font-mono uppercase tracking-widest font-black">--- WITH APPRECIATION TO THE CONGLOMERATES & CORPORATIONS ---</p>
+                                  <div className="space-y-3 text-lg font-mono">
+                                      <p className="text-white font-bold">Choam Corp</p>
+                                      <p className="text-white font-bold">Cyberdyne Systems</p>
+                                      <p className="text-white font-bold">Tyrell Corporation</p>
+                                      <p className="text-white font-bold">Weyland-Yutani Logistics</p>
+                                      <p className="text-white font-bold">Void-Ex Logistics</p>
+                                  </div>
+                              </div>
+
+                              <div className="space-y-6 pt-6">
+                                  <p className="text-yellow-500 text-xs font-mono uppercase tracking-widest font-black">--- HONORABLE SECTOR ENTITIES & REGULATORS ---</p>
+                                  <div className="space-y-3 text-lg font-mono">
+                                      <p className="text-white font-bold">Galactic Overlord Department (G.O.D.)</p>
+                                      <p className="text-white font-bold">V.I.S.A. Checkpoint Control</p>
+                                      <p className="text-white font-bold">S.C.A.M. Customs Board</p>
+                                      <p className="text-white font-bold">Federation Supply Hub</p>
+                                      <p className="text-white font-bold">Sector Health, Allocation, & Network Enforcement</p>
+                                  </div>
+                              </div>
+
+                              <div className="space-y-6 pt-6">
+                                  <p className="text-yellow-500 text-xs font-mono uppercase tracking-widest font-black">--- RIVAL SYNDICATES & THREATS ---</p>
+                                  <div className="space-y-3 text-lg font-mono">
+                                      <p className="text-white font-bold">The Crimson Fleet</p>
+                                      <p className="text-white font-bold">The Espresso Bandits</p>
+                                      <p className="text-white font-bold">The Void-Sickness Whispers</p>
+                                      <p className="text-white font-bold">The Sentient Rust Rats</p>
+                                  </div>
+                              </div>
+
+                              <div className="pt-16 pb-20 space-y-4">
+                                  <p className="text-yellow-500 text-sm font-mono uppercase tracking-widest font-black">--- FINAL COGNITIVE DOCKING TRANSMISSION ---</p>
+                                  <p className="text-white text-3xl font-scifi font-black animate-pulse leading-snug">Love S.H.A.N.E.</p>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          );
+      }
+
       return null;
   };
 
@@ -5473,63 +5637,11 @@ export default function App() {
 
           {/* Detailed retro sci-fi illustration of RR Firefox 22 RustyRedeemer */}
           <div className="border border-cyan-500/30 p-2 rounded-xl bg-black/40 shadow-inner">
-            <svg viewBox="0 0 800 360" className="w-full h-auto opacity-90 my-2" xmlns="http://www.w3.org/2000/svg">
-              {/* Radar Grid and Crosshairs */}
-              <g stroke="#0891b2" strokeWidth="0.5" strokeDasharray="4,4" opacity="0.3">
-                <line x1="50" y1="180" x2="750" y2="180" />
-                <line x1="400" y1="30" x2="400" y2="330" />
-                <circle cx="400" cy="180" r="80" fill="none" />
-                <circle cx="400" cy="180" r="140" fill="none" />
-              </g>
-
-              <g transform="translate(40, -10)">
-                {/* Engines / Hot Isotope Hummers (Glowing Cyan) */}
-                <path d="M100,140 L140,140 L140,220 L100,242 Z" fill="#0891b2" opacity="0.6" filter="blur(2px)" />
-                <path d="M110,150 L130,150 L130,210 L110,210 Z" fill="#22d3ee" />
-                {/* Thruster exhaust plumes */}
-                <polygon points="40,160 100,145 100,175" fill="#22d3ee" opacity="0.7" />
-                <polygon points="40,200 100,185 100,215" fill="#22d3ee" opacity="0.7" />
-                <polygon points="30,180 100,165 100,195" fill="#06b6d4" opacity="0.9" />
-
-                {/* Main Hull - Decommissioned Cargo Frigate (60% Oxidation - burnt orange, 40% Hope - grey steel) */}
-                {/* Steel grey plates (Hope) */}
-                <polygon points="140,130 250,110 360,120 480,130 480,230 360,240 250,250 140,230" fill="#475569" stroke="#64748b" strokeWidth="2.5" />
-                <polygon points="480,150 620,160 660,180 620,200 480,210" fill="#334155" stroke="#475569" strokeWidth="2" />
-                {/* Rusty Nose Cone (60% Oxidation) */}
-                <polygon points="660,175 740,180 660,185" fill="#ea580c" stroke="#c2410c" strokeWidth="2" />
-
-                {/* Rusted / Oxidized Plating Details (60% Oxidation) */}
-                <rect x="180" y="125" width="55" height="40" fill="#9a3412" stroke="#7c2d12" strokeWidth="1" />
-                <rect x="290" y="130" width="75" height="35" fill="#c2410c" stroke="#9a3412" strokeWidth="1" />
-                <rect x="220" y="195" width="70" height="45" fill="#ea580c" stroke="#c2410c" strokeWidth="1" />
-                <rect x="390" y="140" width="60" height="70" fill="#7c2d12" stroke="#9a3412" strokeWidth="1" />
-                <rect x="150" y="170" width="45" height="30" fill="#9a3412" stroke="#ea580c" strokeWidth="1" />
-
-                {/* Exposed Space Cables & Pipes */}
-                <path d="M260,110 C280,90 330,90 350,120" fill="none" stroke="#ea580c" strokeWidth="3" />
-                <path d="M140,230 C160,260 200,260 220,240" fill="none" stroke="#0891b2" strokeWidth="2" strokeDasharray="3,3" />
-                <path d="M480,130 L550,145" fill="none" stroke="#ea580c" strokeWidth="2" />
-                <path d="M480,230 L550,215" fill="none" stroke="#334155" strokeWidth="2" />
-
-                {/* Crew Command Bridge / Cockpit HUD (Glowing Cyan glass) */}
-                <polygon points="590,165 630,170 630,190 590,195" fill="#22d3ee" stroke="#0891b2" strokeWidth="1.5" opacity="0.8" />
-
-                {/* Modular Cargo Pods (oxidized / steel combination) */}
-                <rect x="200" y="150" width="45" height="40" rx="3" fill="#64748b" stroke="#ea580c" strokeWidth="1.5" />
-                <rect x="260" y="150" width="45" height="40" rx="3" fill="#ea580c" stroke="#9a3412" strokeWidth="1.5" />
-                <rect x="320" y="150" width="45" height="40" rx="3" fill="#475569" stroke="#0891b2" strokeWidth="1.5" />
-
-                {/* Antenna Arrays */}
-                <line x1="250" y1="110" x2="250" y2="60" stroke="#64748b" strokeWidth="2" />
-                <polygon points="240,60 260,60 250,40" fill="#9a3412" />
-                <line x1="360" y1="240" x2="360" y2="290" stroke="#64748b" strokeWidth="2" />
-                <polygon points="350,290 370,290 360,310" fill="#ea580c" />
-              </g>
-
-              {/* Hull Technical Callouts */}
-              <text x="50" y="340" fill="#22d3ee" fontFamily="monospace" fontSize="10" letterSpacing="1" opacity="0.8">SYSTEM STATUS: 60% OXIDIZED / 40% HOPE</text>
-              <text x="560" y="340" fill="#ea580c" fontFamily="monospace" fontSize="10" letterSpacing="1" opacity="0.8">REGISTRY: RR-FIREFOX-22</text>
-            </svg>
+            <img
+              src={introShip}
+              alt="RR Firefox 22 RustyRedeemer"
+              className="w-full h-auto max-h-[360px] object-contain opacity-90 my-2 rounded"
+            />
           </div>
 
           <div className="text-gray-300 text-sm md:text-base leading-relaxed space-y-3">
@@ -5597,6 +5709,13 @@ export default function App() {
                                 className={`w-9 h-9 rounded-full bg-gray-800/80 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-lg border ${hasSave ? 'border-green-900/50 text-green-500 hover:border-green-500' : 'border-red-900/50 text-red-500 hover:border-red-500'}`} 
                                 title="Save Neural State">
                             <Save size={18} />
+                        </button>
+
+                        {/* Credits */}
+                        <button onClick={()=>{setModal({type:'credits', data:null}); SFX.play('click');}}
+                                className="w-9 h-9 rounded-full bg-gray-800/80 border border-gray-700 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-lg text-red-400 hover:text-red-300"
+                                title="Roll Credits">
+                            <Heart size={18} />
                         </button>
                     </div>
                  </div>
@@ -5778,7 +5897,7 @@ export default function App() {
        )}
 
        {modal.type === 'endgame' && (
-           <div className="absolute inset-0 bg-black z-50 flex flex-col items-center justify-center p-4"><h1 className="text-5xl md:text-7xl font-scifi text-red-600 mb-4 uppercase">{modal.data.isHighScore ? "Legendary Status" : "Neural Link Severed"}</h1><div className="text-2xl text-white mb-2 uppercase font-black">{modal.data.reason}</div><div className="text-4xl text-yellow-400 font-bold mb-8 font-mono"><PriceDisplay value={modal.data.netWorth} size="text-4xl" /></div>{modal.data.isHighScore && (<div className="mb-8 w-full max-w-md"><input type="text" placeholder="Hall of Fame Alias" className="w-full p-4 bg-gray-900 border border-yellow-500 text-white text-xl rounded-xl text-center mb-3 outline-none" value={highScoreName || ''} onChange={e=>setHighScoreName(e.target.value)} maxLength={15} /><button onClick={async ()=>{ if(!highScoreName) return; await postHighScore(highScoreName, modal.data.netWorth, modal.data.days); const updated = await saveHighScore(highScoreName, modal.data.netWorth, modal.data.days); setState(prev => prev ? ({...prev, highScores: updated}) : null); setModal({type:'highscores', data:null}); }} className="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-black py-3 rounded-xl text-lg uppercase shadow-xl">Submit Legacy</button></div>)}<div className="grid grid-cols-2 gap-8 text-center mb-8 text-gray-400"><div><div className="text-[10px] uppercase font-bold tracking-widest mb-1">D.A.Y.s Survived</div><div className="text-3xl text-white font-mono">{modal.data.days}</div></div><div><div className="text-[10px] uppercase font-bold tracking-widest mb-1">Single Win Record</div><div className="text-3xl text-green-400 font-mono"><PriceDisplay value={modal.data.stats.largestSingleWin} size="text-3xl" compact/></div></div></div><div className="flex gap-4"><button onClick={() => { localStorage.removeItem('sbe_savegame'); initGame(false); }} className="bg-emerald-700 hover:bg-emerald-600 text-white font-black py-4 px-10 rounded-xl text-xl uppercase tracking-widest shadow-lg">New License</button><button onClick={() => window.location.reload()} className="bg-red-700 hover:bg-red-600 text-white font-black py-4 px-10 rounded-xl text-xl uppercase tracking-widest shadow-lg">Sever Link</button></div></div>
+           <div className="absolute inset-0 bg-black z-50 flex flex-col items-center justify-center p-4"><h1 className="text-5xl md:text-7xl font-scifi text-red-600 mb-4 uppercase">{modal.data.isHighScore ? "Legendary Status" : "Neural Link Severed"}</h1><div className="text-2xl text-white mb-2 uppercase font-black">{modal.data.reason}</div><div className="text-4xl text-yellow-400 font-bold mb-8 font-mono"><PriceDisplay value={modal.data.netWorth} size="text-4xl" /></div>{modal.data.isHighScore && (<div className="mb-8 w-full max-w-md"><input type="text" placeholder="Hall of Fame Alias" className="w-full p-4 bg-gray-900 border border-yellow-500 text-white text-xl rounded-xl text-center mb-3 outline-none" value={highScoreName || ''} onChange={e=>setHighScoreName(e.target.value)} maxLength={15} /><button onClick={async ()=>{ if(!highScoreName) return; await postHighScore(highScoreName, modal.data.netWorth, modal.data.days); const updated = await saveHighScore(highScoreName, modal.data.netWorth, modal.data.days); setState(prev => prev ? ({...prev, highScores: updated}) : null); setModal({type:'highscores', data:null}); }} className="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-black py-3 rounded-xl text-lg uppercase shadow-xl">Submit Legacy</button></div>)}<div className="grid grid-cols-2 gap-8 text-center mb-8 text-gray-400"><div><div className="text-[10px] uppercase font-bold tracking-widest mb-1">D.A.Y.s Survived</div><div className="text-3xl text-white font-mono">{modal.data.days}</div></div><div><div className="text-[10px] uppercase font-bold tracking-widest mb-1">Single Win Record</div><div className="text-3xl text-green-400 font-mono"><PriceDisplay value={modal.data.stats.largestSingleWin} size="text-3xl" compact/></div></div></div><div className="flex flex-wrap gap-4 justify-center"><button onClick={() => { localStorage.removeItem('sbe_savegame'); initGame(false); }} className="bg-emerald-700 hover:bg-emerald-600 text-white font-black py-4 px-8 rounded-xl text-lg uppercase tracking-widest shadow-lg">New License</button><button onClick={() => { setModal({ type: 'credits', data: null }); SFX.play('click'); }} className="bg-blue-700 hover:bg-blue-600 text-white font-black py-4 px-8 rounded-xl text-lg uppercase tracking-widest shadow-lg">Watch Credits</button><button onClick={() => window.location.reload()} className="bg-red-700 hover:bg-red-600 text-white font-black py-4 px-8 rounded-xl text-lg uppercase tracking-widest shadow-lg">Sever Link</button></div></div>
        )}
 
        {modal.type === 'welcome' && (
@@ -5797,6 +5916,7 @@ export default function App() {
                <div className="h-[30%] w-full flex flex-col items-center justify-center bg-gradient-to-t from-black via-black/50 to-transparent z-[100]">
                   <div className="flex justify-center gap-8 px-4 w-full max-w-4xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
+                    <button onClick={()=>{setModal({type:'credits', data:null}); SFX.play('click');}} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(37,99,235,0.5)] action-btn border-4 border-blue-400 uppercase tracking-widest">Roll Credits</button>
                   </div>
                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.4.2 Enterprise</p>
                </div>
