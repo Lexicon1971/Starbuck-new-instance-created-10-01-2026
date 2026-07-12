@@ -3137,6 +3137,87 @@ export default function App() {
    */
 
   /**
+   * Automates shipping the full warehouse storage amount of a commodity from a source
+   * venue to a destination venue with 1-day express shipping (100 credits/T).
+   * If there is an active contract at the destination, it is set to contract-reserved.
+   * It handles all checks and balances, followed by returning to the console screen.
+   * @param commodityName Name of the commodity to ship.
+   * @param sourceIndex The source warehouse venue index.
+   * @param destinationIndex The destination venue index.
+   */
+  const automateStorageShipment = (commodityName: string, sourceIndex: number, destinationIndex: number) => {
+    if (!state) return;
+    const commodity = COMMODITIES.find(c => c.name === commodityName);
+    if (!commodity) return;
+
+    const whItem = state.warehouse[sourceIndex]?.[commodityName];
+    if (!whItem || whItem.quantity <= 0) {
+      SFX.play('error');
+      setModal({ type: 'message', data: `No ${commodityName} in storage at ${VENUES[sourceIndex]} to ship.` });
+      return;
+    }
+
+    const qtyOwned = whItem.quantity;
+    const avgCost = whItem.originalAvgCost;
+    const totalWeight = qtyOwned * commodity.unitWeight;
+    const shippingFee = Math.ceil(totalWeight * 100); // 1-day express shipping is 100 per T
+
+    if (state.cash < shippingFee) {
+      SFX.play('error');
+      setModal({ type: 'message', data: `Insufficient funds. Express shipping fee is ${formatCurrencyLog(shippingFee)}.` });
+      return;
+    }
+
+    const newWarehouseDict: Warehouse = JSON.parse(JSON.stringify(state.warehouse));
+    // Remove from source warehouse
+    delete newWarehouseDict[sourceIndex][commodityName];
+    if (Object.keys(newWarehouseDict[sourceIndex]).length === 0) {
+      delete newWarehouseDict[sourceIndex];
+    }
+
+    // Check if there is an active contract for this commodity at the destination index
+    const hasActiveContract = state.activeContracts.some(
+      ac => ac.commodity === commodityName && ac.destinationIndex === destinationIndex && ac.status === 'active'
+    );
+
+    // Add to destination warehouse
+    if (!newWarehouseDict[destinationIndex]) newWarehouseDict[destinationIndex] = {};
+    const existingWare = newWarehouseDict[destinationIndex][commodityName];
+
+    let newArrivalDay = state.day + 1; // 1-day shipping
+    let newAvgCostVal = avgCost;
+    let newQtyVal = qtyOwned;
+
+    if (existingWare) {
+      newArrivalDay = Math.max(existingWare.arrivalDay, newArrivalDay);
+      newAvgCostVal = ((existingWare.quantity * existingWare.originalAvgCost) + (qtyOwned * avgCost)) / (existingWare.quantity + qtyOwned);
+      newQtyVal += existingWare.quantity;
+    }
+
+    newWarehouseDict[destinationIndex][commodityName] = {
+      quantity: newQtyVal,
+      originalAvgCost: newAvgCostVal,
+      arrivalDay: newArrivalDay,
+      isContractReserved: hasActiveContract || existingWare?.isContractReserved || false
+    };
+
+    setState(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        cash: prev.cash - shippingFee,
+        warehouse: newWarehouseDict
+      };
+    });
+
+    SFX.play('warp');
+    log(`LOGISTICS: Automated express 1-day shipment of stored ${qtyOwned} ${commodityName} from ${VENUES[sourceIndex]} to ${VENUES[destinationIndex]}. Fee: ${formatCurrencyLog(shippingFee)} paid.`, 'buy');
+
+    // Return to the console screen
+    setModal({ type: 'none', data: null });
+  };
+
+  /**
    * Automates shipping the full cargo amount of a commodity to a specific destination
    * venue with 1-day express shipping (100 credits/T).
    * It handles all checks and balances, followed by returning to the console screen.
@@ -4123,6 +4204,16 @@ export default function App() {
                                                 className="text-[10px] bg-red-600 hover:bg-red-500 border border-red-400 text-white px-2 py-1 rounded font-black shrink-0"
                                             >
                                                 SELL
+                                            </button>
+                                        ) : source === 'storage' ? (
+                                            <button
+                                                disabled={!((state.warehouse[venueIndex!]?.[name]?.quantity || 0) > 0)}
+                                                onClick={() => {
+                                                    automateStorageShipment(name, venueIndex!, i);
+                                                }}
+                                                className="text-[10px] bg-cyan-900 hover:bg-cyan-800 disabled:bg-gray-700 border border-cyan-500 disabled:border-gray-600 text-cyan-300 disabled:text-gray-500 px-2 py-1 rounded font-black shrink-0"
+                                            >
+                                                SET DESTINATION
                                             </button>
                                         ) : (
                                             <button
@@ -5709,13 +5800,6 @@ export default function App() {
                                 className={`w-9 h-9 rounded-full bg-gray-800/80 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-lg border ${hasSave ? 'border-green-900/50 text-green-500 hover:border-green-500' : 'border-red-900/50 text-red-500 hover:border-red-500'}`} 
                                 title="Save Neural State">
                             <Save size={18} />
-                        </button>
-
-                        {/* Credits */}
-                        <button onClick={()=>{setModal({type:'credits', data:null}); SFX.play('click');}}
-                                className="w-9 h-9 rounded-full bg-gray-800/80 border border-gray-700 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-lg text-red-400 hover:text-red-300"
-                                title="Roll Credits">
-                            <Heart size={18} />
                         </button>
                     </div>
                  </div>
