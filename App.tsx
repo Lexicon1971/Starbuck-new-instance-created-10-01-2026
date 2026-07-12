@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v10.4.1 Departure
+ * VERSION: v10.4.2 Enterprise
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -1015,7 +1015,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v10.4.1 Departure ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v10.4.2 Enterprise ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -3133,6 +3133,76 @@ export default function App() {
    * @param c The contract to settle.
    */
 
+  /**
+   * Automates shipping the full cargo amount of a commodity to a specific destination
+   * venue with 1-day express shipping (100 credits/T).
+   * It handles all checks and balances, followed by returning to the console screen.
+   * @param commodityName Name of the commodity to ship.
+   * @param destinationIndex The destination venue index.
+   */
+  const automateCargoShipment = (commodityName: string, destinationIndex: number) => {
+    if (!state) return;
+    const commodity = COMMODITIES.find(c => c.name === commodityName);
+    if (!commodity) return;
+
+    const qtyOwned = state.cargo[commodityName]?.quantity || 0;
+    if (qtyOwned <= 0) {
+      SFX.play('error');
+      setModal({ type: 'message', data: `No ${commodityName} in cargo to ship.` });
+      return;
+    }
+
+    const totalWeight = qtyOwned * commodity.unitWeight;
+    const shippingFee = Math.ceil(totalWeight * 100); // 1-day express shipping is 100 per T
+
+    if (state.cash < shippingFee) {
+      SFX.play('error');
+      setModal({ type: 'message', data: `Insufficient funds. Express shipping fee is ${formatCurrencyLog(shippingFee)}.` });
+      return;
+    }
+
+    const newCargoDict = { ...state.cargo };
+    const avgCost = newCargoDict[commodityName].averageCost;
+    delete newCargoDict[commodityName];
+
+    const newWarehouseDict: Warehouse = JSON.parse(JSON.stringify(state.warehouse));
+    if (!newWarehouseDict[destinationIndex]) newWarehouseDict[destinationIndex] = {};
+    const existingWare = newWarehouseDict[destinationIndex][commodityName];
+
+    let newArrivalDay = state.day + 1; // 1-day shipping
+    let newAvgCostVal = avgCost;
+    let newQtyVal = qtyOwned;
+
+    if (existingWare) {
+      newArrivalDay = Math.max(existingWare.arrivalDay, newArrivalDay);
+      newAvgCostVal = ((existingWare.quantity * existingWare.originalAvgCost) + (qtyOwned * avgCost)) / (existingWare.quantity + qtyOwned);
+      newQtyVal += existingWare.quantity;
+    }
+
+    newWarehouseDict[destinationIndex][commodityName] = {
+      quantity: newQtyVal,
+      originalAvgCost: newAvgCostVal,
+      arrivalDay: newArrivalDay
+    };
+
+    setState(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        cash: prev.cash - shippingFee,
+        cargo: newCargoDict,
+        cargoWeight: Math.max(0, prev.cargoWeight - totalWeight),
+        warehouse: newWarehouseDict
+      };
+    });
+
+    SFX.play('warp');
+    log(`LOGISTICS: Automated express 1-day shipment of ${qtyOwned} ${commodityName} to ${VENUES[destinationIndex]}. Fee: ${formatCurrencyLog(shippingFee)} paid.`, 'buy');
+
+    // Return to the console screen
+    setModal({ type: 'none', data: null });
+  };
+
   const omniShip = (commodityName: string, destinationIndex: number) => {
     if (!state) return;
     const commodity = COMMODITIES.find(c => c.name === commodityName);
@@ -3197,6 +3267,7 @@ export default function App() {
 
     SFX.play('warp');
     log(`OMNI-SHIP: Moving ${totalSectorStock} ${commodityName} to ${VENUES[destinationIndex]}. Fee: ${formatCurrencyLog(logisticsFee)}`, 'buy');
+    setModal({ type: 'none', data: null });
   };
 
   const instantSell = (commodityName: string, venueIndex: number) => {
@@ -3325,9 +3396,22 @@ export default function App() {
     }) : null);
 
     log(`FABRICATION: Used ${h2oNeeded} ${H2O_NAME}, ${oreNeeded} Titanium Ore, and ${clothNeeded} Synthetic Cloth to produce ${q} units of ${MESH_NAME}.`, 'mining');
-    setModal({ type: 'none', data: null });
     setFomoQty('');
     SFX.play('success');
+
+    const stimsAvailable = !state.fomoDailyUse.stims;
+    if (stimsAvailable) {
+      setModal({
+        type: 'fabrication_prompt',
+        data: {
+          name: MESH_NAME,
+          quantity: q,
+          remainingName: 'Stim-Packs'
+        }
+      });
+    } else {
+      setModal({ type: 'fabrication_success', data: { quantity: q, name: MESH_NAME } });
+    }
   };
 
   /**
@@ -3375,9 +3459,22 @@ export default function App() {
     }) : null);
 
     log(`FABRICATION: Used ${h2oNeeded} ${H2O_NAME}, ${pasteNeeded} ${NUTRI_PASTE_NAME}, and ${medKitsNeeded} Medical Kits to produce ${q} Stim-Packs.`, 'mining');
-    setModal({ type: 'none', data: null });
     setFomoStimQty('');
     SFX.play('success');
+
+    const meshAvailable = !state.fomoDailyUse.mesh;
+    if (meshAvailable) {
+      setModal({
+        type: 'fabrication_prompt',
+        data: {
+          name: 'Stim-Packs',
+          quantity: q,
+          remainingName: MESH_NAME
+        }
+      });
+    } else {
+      setModal({ type: 'fabrication_success', data: { quantity: q, name: 'Stim-Packs' } });
+    }
   };
 
   /**
@@ -3507,7 +3604,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.4.1</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.4.2</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -3518,6 +3615,269 @@ export default function App() {
   const totalDebt = state.activeLoans.reduce((a,b)=>a+b.currentDebt,0);
   const totalInv = state.investments.reduce((a,b)=>a+b.amount,0);
   const isOverfilled = state.cargoWeight > state.cargoCapacity;
+
+  /**
+   * Renders the tabbed, reworked, and highly interactive Sector Codex (Wiki).
+   * Contains Lore, Trading Venues, Commodities, Banks & Stocks, Neural Intercepts, and Acronym Directory.
+   */
+  const renderSectorCodex = () => {
+    if (!state) return null;
+
+    const currentTab = wikiTab === 'General' ? 'lore' : wikiTab;
+
+    const codexTabs = [
+      { id: 'lore', label: "Lore & History", icon: BookOpen },
+      { id: 'venues', label: "Trading Venues", icon: Building2 },
+      { id: 'commodities', label: "Commodities Guide", icon: Box },
+      { id: 'banks', label: "Banks & Stocks", icon: BarChart3 },
+      { id: 'broadcasts', label: "Neural Intercepts", icon: Radio },
+      { id: 'acronyms', label: "Acronym Directory", icon: HelpCircle }
+    ];
+
+    const sections = [
+      { title: "The Rusty Redeemer", icon: Anchor, content: "The RR Firefox 22 'RustyRedeemer' is a decommissioned cargo frigate of the 60/40 class. It consists of 60% oxidation and 40% hope. Originally designed for short-range hauling, its isotope hummers have been modified to handle the stress of phase-shifting market dynamics." },
+      { title: "The Starbucks Conglomerate", icon: Building2, content: "Underneath the glossy emerald corporate facade lies the ultimate hyper-capitalist machine. Operating under S.H.A.N.E. guidelines, the Conglomerate turns entire solar systems into drive-thru retail outlets. Their main mission is clear: absolute dominance of the space lanes, converting every planetary body into a standardized franchise." },
+      { title: "The Espresso Bandits", icon: Skull, content: "A rogue syndicate of caffeine-deprived outlaws who terrorize the trade lanes. Led by the notorious 'Double-Shot' Barnaby, they target cargo vessels carrying high-value stimulants or synthetic materials. Installing sturdy kinetic cannons and defensive shields is the only proven method to deter their relentless boarding maneuvers." },
+      { title: "The Great Coffee Wars", icon: Swords, content: "A devastating sector-wide conflict that lasted over forty cycles. Fought between the elite Coffee Cartels and the synthetic Tea Alliance over the rights to fertile agricultural belts on Nexus Prime. The war concluded with the historic 'Mocha Accord,' establishing the current trade venue system and cementing Starbucks dominance across the galaxy." },
+      { title: "S.H.A.N.E. Protocols", icon: Shield, content: "Sector Health, Allocation, & Network Enforcement (S.H.A.N.E.) governs all trade lanes. They enforce the Galactic Overlord Decree (G.O.D.), which dictates that any trader failing to meet net-worth thresholds within specific time cycles will have their license revoked and their vessel reclaimed by the state." },
+      { title: "D.A.Y. (Depreciating Astrological Yardstick)", icon: Hourglass, content: "The D.A.Y. system is a key tracking framework mandated by the Galactic Overlord Department (G.O.D.). By mapping orbital star alignments against the physical degradation of your ship, the G.O.D. enforces a relentless, depreciating tracking scale. It treats your very existence as a steadily shrinking corporate asset, creating an ominous countdown that squeeze-charges your trade license duration." },
+      { title: "Extraction Logic", icon: Zap, content: "Mining lasers (Upgrades Deck) allow for the harvesting of resources from asteroid belts during transit. Higher-tier lasers and 'Overload' toggles increase yield but drastically spike the risk of structural realignment failures or laser burnout. Yield is directly proportional to laser focal integrity." },
+      { title: "F.O.M.O. Engineering", icon: Factory, content: "Fabricate Output Management Operations allows captains to synthesize raw materials into high-value commodities. Z@onflex Weave Mesh is critical for cargo bay expansions, while Stim-Packs are in high demand by biological colonies throughout the sector." },
+      { title: "Void-Ex Logistics", icon: Truck, content: "Shipping goods across the void via Private or Corporate contracts is the most reliable way to secure multi-million credit payouts. Beware of auto-seizure policies: goods left in third-party warehouses for more than 3 cycles are sold to defray storage costs." },
+      { title: "Void-Sickness", icon: Info, content: "Hauling massive cargo loads across unmapped dark systems often induces Void-Sickness. Affected crew members report hearing the faint, chilling voices of ancient marketing executives whispering long-forgotten quarterly sales targets in their minds. It is recommended to administer high-potency Stim-Packs to any crew showing signs of auditory advertising hallucinations." },
+      { title: "Temporal Phase Shifts", icon: Rocket, content: "Advancing through Phase 1, Phase 2, and Phase 3 is not just a commercial progression—it is a literal spatial-temporal shift. The S.H.A.N.E. network employs quantum algorithms that rewrite the physics of trade: spiking fuel costs, increasing pirate encounter frequencies, and creating highly volatile stock market dynamics." }
+    ];
+
+    const venueDetails = [
+      { name: "Deep Space 9 1/2", desc: "A cozy waystation on the edge of civilized space. Halfway to everywhere, but mostly serves mediocre synthetic espresso." },
+      { name: "Trantor Promenade", desc: "The sprawling economic heart of the core worlds. High density, fast-paced trading, and aggressive tax collectors." },
+      { name: "Serenity Valley", desc: "A quiet, rust-belt agricultural colony. Great prices on H2O and Nutri-Paste, but local outlaws frequently target high-value cargo." },
+      { name: "Corellia Shipyards", desc: "The ultimate industrial hub of the sector. Heavily guarded by planetary defense forces, specializing in heavy metal refinement." },
+      { name: "High Charity", desc: "A massive, levitating space cathedral. Home to spiritual relic traders and highly volatile crystal speculations." },
+      { name: "Giedi Plaza", desc: "A dark, smog-choked corporate syndicate. High risk, high reward, with zero oversight on high-volume mining transactions." },
+      { name: "New Babylon", desc: "A luxurious botanical garden station. Frequently hosts diplomatic summits, leading to extreme fluctuations in luxury goods." },
+      { name: "Acheron LV-426", desc: "A dangerous, wind-swept mining outpost on a hostile world. High risk of natural disasters and pirate ambushes, but rich in Dark Matter." },
+      { name: "Cantina Mos Eisley", desc: "A wretched hive of scum and villainy. Perfect for off-the-books transactions, illegal stim smuggling, and high-interest Hutt loans." },
+      { name: "Centauri Prime", desc: "An ancient, aristocratic cultural capital. High demand for luxury Spacetime Teas and advanced PC electronics." }
+    ];
+
+    const acronymsList = [
+      { term: "S.H.A.N.E.", exp: "Sector Health, Allocation, & Network Enforcement", desc: "The primary automated diagnostic and compliance matrix onboard the Redeemer. It monitors ship health, handles emergency overrides, and reports net worth directly to the sector government. (Named in honor of S.H.A.N.E., the Captain)." },
+      { term: "D.A.Y.", exp: "Depreciating Astrological Yardstick", desc: "A mandatory celestial progress tracker implemented by G.O.D. It measures physical ship degradation against local solar rotations to construct a steadily shrinking operational deadline for your trade license." },
+      { term: "G.O.D.", exp: "Galactic Overlord Department / Galactic Overlord Decree", desc: "The supreme judicial and regulatory agency of the trade sector. They dictate phase guidelines, enforce net-worth requirements, and impose trade bans on non-compliant traders." },
+      { term: "C.A.T.", exp: "Customs, Audits, & Tariffs", desc: "The law enforcement branch responsible for scanning cargo holds, imposing transaction taxes on frequent trading, auditing corporate records, and tracking high-risk cargo across warp lanes." },
+      { term: "F.O.M.O.", exp: "Fabricate Output Management Operations", desc: "The ship's automated crafting unit. Utilizing atomic restructuring, it synthesizes advanced components such as expansion mesh or biological stimulants from basic inventory resources." },
+      { term: "G.I.G.O.", exp: "Garbage In, Garbage Out", desc: "The ship's main real-time communication antenna and system logging device. It captures live market volatility reports, event feed summaries, and wacky neural network broadcasts." },
+      { term: "T.O.N.S.", exp: "Tactical Orbital Navigation & Storage", desc: "The standard metric unit (T) of mass used to measure cargo weight capacity and shipping logistics limits across all interstellar freighters." },
+      { term: "I.B.A.N.K.", exp: "Interstellar Banking, Assets, & Net-worth Keepers", desc: "The centralized financial server that manages micro-loans, secure investment lockups, and real-time high-score Sync Registries." }
+    ];
+
+    const broadcastTypes = Object.keys(QUIRKY_MESSAGES_DB) as Array<keyof typeof QUIRKY_MESSAGES_DB>;
+
+    return (
+      <div className="flex flex-col h-full bg-slate-900/60 p-4 md:p-6 animate-in fade-in duration-300">
+        {/* Codex Header */}
+        <div className="flex justify-between items-center mb-6 border-b border-gray-700 pb-3 shrink-0">
+          <div className="flex items-center gap-3">
+            <BookOpen className="text-orange-500 animate-pulse" size={28} />
+            <div>
+              <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v10.4.2 Enterprise // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+            </div>
+          </div>
+          <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
+            <XCircle size={28} />
+          </button>
+        </div>
+
+        {/* Tab Selection Row */}
+        <div className="flex flex-wrap gap-2 mb-6 shrink-0 bg-black/40 p-2 rounded-xl border border-gray-800">
+          {codexTabs.map(tab => {
+            const TabIcon = tab.icon;
+            const isActive = currentTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => { setWikiTab(tab.id); SFX.play('click'); }}
+                className={`px-3 py-1.5 rounded-lg border font-scifi text-[10px] md:text-xs transition-all flex items-center gap-2 ${
+                  isActive
+                    ? 'bg-orange-950/70 border-orange-500/80 text-orange-400 shadow-[0_0_8px_rgba(234,88,12,0.3)]'
+                    : 'bg-transparent border-transparent text-gray-400 hover:border-gray-800 hover:text-gray-200'
+                }`}
+              >
+                <TabIcon size={12} />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Content Box */}
+        <div className="flex-grow overflow-y-auto custom-scrollbar pr-2 min-h-0">
+          {currentTab === 'lore' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {sections.map((sec, i) => {
+                const SecIcon = sec.icon;
+                return (
+                  <div key={i} className="bg-black/35 p-5 rounded-2xl border border-gray-800/80 hover:border-orange-500/20 transition-all">
+                    <div className="flex items-center gap-3 mb-3 border-b border-gray-900 pb-2">
+                      <div className="p-2 bg-orange-900/10 rounded-lg text-orange-400"><SecIcon size={18}/></div>
+                      <h3 className="text-md font-black text-white uppercase tracking-wider">{sec.title}</h3>
+                    </div>
+                    <p className="text-gray-400 font-mono text-xs leading-relaxed">{sec.content}</p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {currentTab === 'venues' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {venueDetails.map((v, i) => {
+                const isCurrent = state.currentVenueIndex === i;
+                return (
+                  <div key={i} className={`p-5 rounded-2xl border transition-all ${
+                    isCurrent
+                      ? 'bg-emerald-950/20 border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.1)]'
+                      : 'bg-black/35 border-gray-800/80 hover:border-cyan-500/10'
+                  }`}>
+                    <div className="flex justify-between items-start mb-2 border-b border-gray-900 pb-1.5">
+                      <h3 className="text-md font-bold text-white uppercase tracking-wide flex items-center gap-2">
+                        <span className="text-[10px] text-gray-500 font-mono">[{i}]</span>
+                        {v.name}
+                      </h3>
+                      {isCurrent && <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[8px] font-black uppercase px-1.5 py-0.5 rounded tracking-widest animate-pulse">SHIP HERE</span>}
+                    </div>
+                    <p className="text-gray-400 text-xs font-mono leading-relaxed">{v.desc}</p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {currentTab === 'commodities' && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {COMMODITIES.map((c, i) => {
+                return (
+                  <div key={i} className="bg-black/35 p-5 rounded-2xl border border-gray-800/80 flex gap-4 hover:border-orange-500/10 transition-all">
+                    <div className="text-4xl p-3 bg-slate-900/60 rounded-xl border border-slate-800 flex items-center justify-center shrink-0 w-16 h-16">
+                      {c.icon === 'metal-lump' ? '🌑' : c.icon}
+                    </div>
+                    <div className="flex-grow min-w-0">
+                      <div className="flex justify-between items-baseline border-b border-gray-900 pb-1 mb-1">
+                        <h4 className="text-sm font-black text-white uppercase tracking-wider truncate">{c.name}</h4>
+                        <span className="text-[9px] text-orange-400 font-mono font-bold uppercase bg-orange-400/10 px-1 border border-orange-500/10">Rarity: {Math.round(c.rarity * 100)}%</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-4 text-[10px] font-mono text-gray-500 mb-2">
+                        <div>Weight: <span className="text-gray-300 font-bold">{c.unitWeight}T</span></div>
+                        <div>Range: <span className="text-yellow-500 font-bold">{c.minPrice}-{c.maxPrice}$B</span></div>
+                      </div>
+                      <p className="text-gray-400 text-xs font-mono leading-relaxed italic">"{c.description || 'No direct telemetry available.'}"</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {currentTab === 'banks' && (
+            <div className="space-y-4">
+              <div className="bg-black/35 p-6 rounded-2xl border border-gray-800/80">
+                <h3 className="text-lg font-bold text-white mb-3 uppercase tracking-wider flex items-center gap-2 border-b border-gray-900 pb-2">
+                  <BarChart3 className="text-yellow-400" size={18} />
+                  The I.B.A.N.K. Banking Network
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-gray-400 font-mono leading-relaxed">
+                  <div className="space-y-3">
+                    <p className="font-bold text-white uppercase">1. Micro-Lending Regulations:</p>
+                    <p>Secured from any of the five major lending syndicates (e.g. Starfleet, Weyland-Yutani, Hutt Cartel). Base interest rates vary dynamically from <span className="text-emerald-400 font-bold">1% to 10% daily</span>.</p>
+                    <p>Debt must be paid back within <span className="text-yellow-500 font-bold">5 cycles</span>, or compound interest penalties will rapidly exhaust your liquid capital reserves.</p>
+                  </div>
+                  <div className="space-y-3">
+                    <p className="font-bold text-white uppercase">2. Interest Lockup Deposits:</p>
+                    <p>The network allows locking capital assets inside quantum trust accounts for <span className="text-white font-bold">1, 2, or 3 days</span>.</p>
+                    <p>Upon maturity, guaranteed yields of <span className="text-emerald-400 font-bold">5%, 20%, or 50%</span> are added directly to ship credit accounts. Note: Capital deposits are strictly blocked while holding active micro-loans.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-black/35 p-6 rounded-2xl border border-gray-800/80">
+                <h3 className="text-lg font-bold text-white mb-3 uppercase tracking-wider flex items-center gap-2 border-b border-gray-900 pb-2">
+                  <LineChart className="text-cyan-400" size={18} />
+                  Stock Market & Corporate Synergies (Phase 2+)
+                </h3>
+                <p className="text-xs text-gray-400 font-mono leading-relaxed mb-4">
+                  The stock exchange allows Day-trading in shares of key galactic corporations. Dividends are computed and prices shift heavily during warp jumps.
+                  Risk indices specify volatility bounds: Low Risk (highly stable), Medium Risk (moderate fluctuations), High Risk (extreme delta swings).
+                </p>
+                <div className="bg-slate-900/50 p-4 rounded-xl border border-cyan-500/10 space-y-2 text-xs font-mono">
+                  <p className="text-cyan-400 font-bold uppercase tracking-widest text-[10px] mb-2 border-b border-cyan-900 pb-1">CORPORATE SYNERGY PERKS (OWNERSHIP THRESHOLD: &gt;5% TOTAL SHARES)</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="border border-slate-800 p-3 rounded-lg bg-black/30">
+                      <p className="text-white font-bold mb-1 uppercase">Weyland Corp (Mining Synergy)</p>
+                      <p className="text-gray-400 text-[10px]">Grants 15% discount on all Upgrades Deck prices and hull repair transactions.</p>
+                    </div>
+                    <div className="border border-slate-800 p-3 rounded-lg bg-black/30">
+                      <p className="text-white font-bold mb-1 uppercase">Starfleet (Logistics Synergy)</p>
+                      <p className="text-gray-400 text-[10px]">Bypasses local transaction tax entirely, saving 5% credit on repeated daily deals.</p>
+                    </div>
+                    <div className="border border-slate-800 p-3 rounded-lg bg-black/30">
+                      <p className="text-white font-bold mb-1 uppercase">Hutt Cartel (Credit Synergy)</p>
+                      <p className="text-gray-400 text-[10px]">Lowers base borrowing interest rates by 25% across all loan offers.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {currentTab === 'broadcasts' && (
+            <div className="space-y-4">
+              <div className="bg-black/30 p-4 rounded-xl border border-gray-800 flex justify-between items-center text-xs font-mono">
+                <span className="text-orange-400 uppercase font-bold flex items-center gap-1.5 animate-pulse">
+                  <Radar size={14} className="animate-spin" /> Live Neural Telemetry intercept feed
+                </span>
+                <span className="text-gray-600 text-[10px] uppercase">G.I.G.O Antenna Array // Active</span>
+              </div>
+              <div className="space-y-4 max-h-[50vh] overflow-y-auto custom-scrollbar pr-2">
+                {broadcastTypes.map(category => {
+                  const items = QUIRKY_MESSAGES_DB[category];
+                  return (
+                    <div key={category} className="bg-black/45 p-4 rounded-2xl border border-slate-800/80">
+                      <h4 className="text-xs font-black text-cyan-400 uppercase tracking-widest mb-2 border-b border-gray-900 pb-1">{category} Transmissions</h4>
+                      <ul className="space-y-2 font-mono text-xs text-gray-400 leading-relaxed list-disc list-inside">
+                        {items.map((msg, i) => (
+                          <li key={i} className="hover:text-white transition-colors">
+                            "{msg}"
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {currentTab === 'acronyms' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {acronymsList.map((acr, i) => {
+                return (
+                  <div key={i} className="bg-black/35 p-5 rounded-2xl border border-gray-800/80 hover:border-orange-500/15 transition-all">
+                    <div className="flex justify-between items-baseline mb-2 border-b border-gray-900 pb-1">
+                      <h3 className="text-lg font-black text-orange-400 font-scifi uppercase tracking-wider">{acr.term}</h3>
+                      <span className="text-[10px] text-gray-500 uppercase font-mono font-bold">{acr.exp}</span>
+                    </div>
+                    <p className="text-gray-400 text-xs font-mono leading-relaxed">{acr.desc}</p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   const renderTerminalContent = () => {
       if (!state) return null;
@@ -3690,14 +4050,11 @@ export default function App() {
                                             </button>
                                         ) : (
                                             <button
+                                                disabled={!((state.cargo[name]?.quantity || 0) > 0)}
                                                 onClick={() => {
-                                                    setShippingDestinations({ ...shippingDestinations, [name]: i.toString() });
-                                                    setLogisticsTab('shipping');
-                                                    setModal({ type: 'shipping', data: null });
-                                                    setHighlightShippingItem(name);
-                                                    SFX.play('click');
+                                                    automateCargoShipment(name, i);
                                                 }}
-                                                className="text-[10px] bg-cyan-900 hover:bg-cyan-800 border border-cyan-500 text-cyan-300 px-2 py-1 rounded font-black shrink-0"
+                                                className="text-[10px] bg-cyan-900 hover:bg-cyan-800 disabled:bg-gray-700 border border-cyan-500 disabled:border-gray-600 text-cyan-300 disabled:text-gray-500 px-2 py-1 rounded font-black shrink-0"
                                             >
                                                 SET DESTINATION
                                             </button>
@@ -3720,42 +4077,7 @@ export default function App() {
       }
 
       if (modal.type === 'wiki') {
-        const sections = [
-            { title: "The Rusty Redeemer", icon: Anchor, content: "The RR Firefox 22 'RustyRedeemer' is a decommissioned cargo frigate of the 60/40 class. It consists of 60% oxidation and 40% hope. Originally designed for short-range hauling, its isotope hummers have been modified to handle the stress of phase-shifting market dynamics." },
-            { title: "The Starbucks Conglomerate", icon: Building2, content: "Underneath the glossy emerald corporate facade lies the ultimate hyper-capitalist machine. Operating under S.H.A.N.E. guidelines, the Conglomerate turns entire solar systems into drive-thru retail outlets. Their main mission is clear: absolute dominance of the space lanes, converting every planetary body into a standardized franchise." },
-            { title: "The Espresso Bandits", icon: Skull, content: "A rogue syndicate of caffeine-deprived outlaws who terrorize the trade lanes. Led by the notorious 'Double-Shot' Barnaby, they target cargo vessels carrying high-value stimulants or synthetic materials. Installing sturdy kinetic cannons and defensive shields is the only proven method to deter their relentless boarding maneuvers." },
-            { title: "The Great Coffee Wars", icon: Swords, content: "A devastating sector-wide conflict that lasted over forty cycles. Fought between the elite Coffee Cartels and the synthetic Tea Alliance over the rights to fertile agricultural belts on Nexus Prime. The war concluded with the historic 'Mocha Accord,' establishing the current trade venue system and cementing Starbucks dominance across the galaxy." },
-            { title: "S.H.A.N.E. Protocols", icon: Shield, content: "Sector Health, Allocation, & Network Enforcement (S.H.A.N.E.) governs all trade lanes. They enforce the Galactic Overlord Decree (G.O.D.), which dictates that any trader failing to meet net-worth thresholds within specific time cycles will have their license revoked and their vessel reclaimed by the state." },
-            { title: "D.A.Y. (Depreciating Astrological Yardstick)", icon: Hourglass, content: "The D.A.Y. system is a key tracking framework mandated by the Galactic Overlord Department (G.O.D.). By mapping orbital star alignments against the physical degradation of your ship, the G.O.D. enforces a relentless, depreciating tracking scale. It treats your very existence as a steadily shrinking corporate asset, creating an ominous countdown that squeeze-charges your trade license duration." },
-            { title: "Extraction Logic", icon: Zap, content: "Mining lasers (Upgrades Deck) allow for the harvesting of resources from asteroid belts during transit. Higher-tier lasers and 'Overload' toggles increase yield but drastically spike the risk of structural realignment failures or laser burnout. Yield is directly proportional to laser focal integrity." },
-            { title: "F.O.M.O. Engineering", icon: Factory, content: "Fabricate Output Management Operations allows captains to synthesize raw materials into high-value commodities. Z@onflex Weave Mesh is critical for cargo bay expansions, while Stim-Packs are in high demand by biological colonies throughout the sector." },
-            { title: "Void-Ex Logistics", icon: Truck, content: "Shipping goods across the void via Private or Corporate contracts is the most reliable way to secure multi-million credit payouts. Beware of auto-seizure policies: goods left in third-party warehouses for more than 3 cycles are sold to defray storage costs." },
-            { title: "Void-Sickness", icon: Info, content: "Hauling massive cargo loads across unmapped dark systems often induces Void-Sickness. Affected crew members report hearing the faint, chilling voices of ancient marketing executives whispering long-forgotten quarterly sales targets in their minds. It is recommended to administer high-potency Stim-Packs to any crew showing signs of auditory advertising hallucinations." },
-            { title: "Temporal Phase Shifts", icon: Rocket, content: "Advancing through Phase 1, Phase 2, and Phase 3 is not just a commercial progression—it is a literal spatial-temporal shift. The S.H.A.N.E. network employs quantum algorithms that rewrite the physics of trade: spiking fuel costs, increasing pirate encounter frequencies, and creating highly volatile stock market dynamics." }
-        ];
-
-        return (
-            <div className="flex flex-col h-full bg-slate-900/40 p-4 md:p-8 animate-in fade-in duration-300">
-                <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.4.1 Departure</h2>
-                    <div className="text-[10px] text-gray-500 font-mono text-right uppercase leading-tight">Neural Reference System <br/>Database: UNRESTRICTED</div>
-                </div>
-                <div className="flex-grow overflow-y-auto custom-scrollbar pr-4 space-y-6">
-                    {sections.map((sec, i) => {
-                        const SecIcon = sec.icon;
-                        return (
-                            <div key={i} className="bg-black/30 p-6 rounded-2xl border border-gray-800 group hover:border-orange-500/30 transition-all">
-                                <div className="flex items-center gap-4 mb-4">
-                                    <div className="p-3 bg-orange-900/20 rounded-xl text-orange-400"><SecIcon size={24}/></div>
-                                    <h3 className="text-xl font-black text-white uppercase tracking-tighter">{sec.title}</h3>
-                                </div>
-                                <p className="text-gray-400 font-mono text-sm leading-relaxed">{sec.content}</p>
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-        );
+        return renderSectorCodex();
       }
       
       if (modal.type === 'none') {
@@ -4311,7 +4633,7 @@ export default function App() {
 
                    <div className="flex-grow flex flex-col overflow-y-auto custom-scrollbar relative pt-10">
                         <div className="absolute top-0 right-0 w-72 text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                            SYSTEM LOG: FABRICATION MATRIX v10.4.1 Departure ACTIVE
+                            SYSTEM LOG: FABRICATION MATRIX v10.4.2 Enterprise ACTIVE
                         </div>
 
                         <div className="text-center space-y-2 mb-10">
@@ -4972,42 +5294,7 @@ export default function App() {
       }
 
       if (modal.type === 'wiki') {
-        const sections = [
-            { title: "The Rusty Redeemer", icon: Anchor, content: "The RR Firefox 22 'RustyRedeemer' is a decommissioned cargo frigate of the 60/40 class. It consists of 60% oxidation and 40% hope. Originally designed for short-range hauling, its isotope hummers have been modified to handle the stress of phase-shifting market dynamics." },
-            { title: "The Starbucks Conglomerate", icon: Building2, content: "Underneath the glossy emerald corporate facade lies the ultimate hyper-capitalist machine. Operating under S.H.A.N.E. guidelines, the Conglomerate turns entire solar systems into drive-thru retail outlets. Their main mission is clear: absolute dominance of the space lanes, converting every planetary body into a standardized franchise." },
-            { title: "The Espresso Bandits", icon: Skull, content: "A rogue syndicate of caffeine-deprived outlaws who terrorize the trade lanes. Led by the notorious 'Double-Shot' Barnaby, they target cargo vessels carrying high-value stimulants or synthetic materials. Installing sturdy kinetic cannons and defensive shields is the only proven method to deter their relentless boarding maneuvers." },
-            { title: "The Great Coffee Wars", icon: Swords, content: "A devastating sector-wide conflict that lasted over forty cycles. Fought between the elite Coffee Cartels and the synthetic Tea Alliance over the rights to fertile agricultural belts on Nexus Prime. The war concluded with the historic 'Mocha Accord,' establishing the current trade venue system and cementing Starbucks dominance across the galaxy." },
-            { title: "S.H.A.N.E. Protocols", icon: Shield, content: "Sector Health, Allocation, & Network Enforcement (S.H.A.N.E.) governs all trade lanes. They enforce the Galactic Overlord Decree (G.O.D.), which dictates that any trader failing to meet net-worth thresholds within specific time cycles will have their license revoked and their vessel reclaimed by the state." },
-            { title: "D.A.Y. (Depreciating Astrological Yardstick)", icon: Hourglass, content: "The D.A.Y. system is a key tracking framework mandated by the Galactic Overlord Department (G.O.D.). By mapping orbital star alignments against the physical degradation of your ship, the G.O.D. enforces a relentless, depreciating tracking scale. It treats your very existence as a steadily shrinking corporate asset, creating an ominous countdown that squeeze-charges your trade license duration." },
-            { title: "Extraction Logic", icon: Zap, content: "Mining lasers (Upgrades Deck) allow for the harvesting of resources from asteroid belts during transit. Higher-tier lasers and 'Overload' toggles increase yield but drastically spike the risk of structural realignment failures or laser burnout. Yield is directly proportional to laser focal integrity." },
-            { title: "F.O.M.O. Engineering", icon: Factory, content: "Fabricate Output Management Operations allows captains to synthesize raw materials into high-value commodities. Z@onflex Weave Mesh is critical for cargo bay expansions, while Stim-Packs are in high demand by biological colonies throughout the sector." },
-            { title: "Void-Ex Logistics", icon: Truck, content: "Shipping goods across the void via Private or Corporate contracts is the most reliable way to secure multi-million credit payouts. Beware of auto-seizure policies: goods left in third-party warehouses for more than 3 cycles are sold to defray storage costs." },
-            { title: "Void-Sickness", icon: Info, content: "Hauling massive cargo loads across unmapped dark systems often induces Void-Sickness. Affected crew members report hearing the faint, chilling voices of ancient marketing executives whispering long-forgotten quarterly sales targets in their minds. It is recommended to administer high-potency Stim-Packs to any crew showing signs of auditory advertising hallucinations." },
-            { title: "Temporal Phase Shifts", icon: Rocket, content: "Advancing through Phase 1, Phase 2, and Phase 3 is not just a commercial progression—it is a literal spatial-temporal shift. The S.H.A.N.E. network employs quantum algorithms that rewrite the physics of trade: spiking fuel costs, increasing pirate encounter frequencies, and creating highly volatile stock market dynamics." }
-        ];
-
-        return (
-            <div className="flex flex-col h-full bg-slate-900/40 p-4 md:p-8 animate-in fade-in duration-300">
-                <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-                    <h2 className="text-3xl font-scifi text-orange-400 uppercase tracking-widest">Sector Codex v10.4.1 Departure</h2>
-                    <div className="text-[10px] text-gray-500 font-mono text-right uppercase leading-tight">Neural Reference System <br/>Database: UNRESTRICTED</div>
-                </div>
-                <div className="flex-grow overflow-y-auto custom-scrollbar pr-4 space-y-6">
-                    {sections.map((sec, i) => {
-                        const SecIcon = sec.icon;
-                        return (
-                            <div key={i} className="bg-black/30 p-6 rounded-2xl border border-gray-800 group hover:border-orange-500/30 transition-all">
-                                <div className="flex items-center gap-4 mb-4">
-                                    <div className="p-3 bg-orange-900/20 rounded-xl text-orange-400"><SecIcon size={24}/></div>
-                                    <h3 className="text-xl font-black text-white uppercase tracking-tighter">{sec.title}</h3>
-                                </div>
-                                <p className="text-gray-400 font-mono text-sm leading-relaxed">{sec.content}</p>
-                            </div>
-                        );
-                    })}       
-                   </div>
-              </div>
-          );
+        return renderSectorCodex();
       }
 
       if (modal.type === 'commodity_intel' && state) {
@@ -5288,7 +5575,7 @@ export default function App() {
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.4.1 Departure</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.4.2 Enterprise</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -5511,7 +5798,7 @@ export default function App() {
                   <div className="flex justify-center gap-8 px-4 w-full max-w-4xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.4.1 Departure</p>
+                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.4.2 Enterprise</p>
                </div>
            </div>
        )}
@@ -5687,6 +5974,33 @@ export default function App() {
        {modal.type === 'tax_confirm' && (
            <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 p-4"><div className="bg-slate-900 border border-red-500 p-6 rounded-xl max-sm w-full sci-fi-box relative shadow-2xl"><h3 className="text-red-400 font-bold mb-2 uppercase tracking-widest">Trade Tax</h3><p className="text-gray-300 mb-4 text-sm font-bold uppercase leading-relaxed">Multiple transactions on this commodity today. A 5% tax (<PriceDisplay value={modal.data.tax} size="text-sm"/>) applied.</p><div className="flex gap-2"><button onClick={()=>{ executeTrade(modal.data); }} className="flex-1 bg-red-600 hover:bg-red-500 text-white py-2 rounded-xl font-black shadow-md uppercase">Trade</button><button onClick={()=>{setModal({type:'none', data:null}); SFX.play('click');}} className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-xl uppercase">Cancel</button></div></div></div>
        )}
+
+      {modal.type === 'fabrication_prompt' && (
+        <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+            <div className="bg-slate-900 border border-orange-500 p-8 rounded-2xl max-w-lg w-full sci-fi-box text-center relative shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+                <p className="text-xl font-black mb-4 text-orange-400 font-scifi tracking-wider uppercase">FABRICATION MATRIX ACTIVE</p>
+                <p className="text-lg mb-4 text-gray-200">Successfully created <span className="text-white font-black">{modal.data.quantity}</span> unit(s) of <span className="text-emerald-400 font-black">{modal.data.name}</span>.</p>
+                <div className="bg-black/40 border border-orange-500/20 rounded-xl p-4 mb-6">
+                    <p className="text-xs font-mono text-gray-400 uppercase tracking-widest mb-1">Matrix Status Scan</p>
+                    <p className="text-sm font-bold text-yellow-500 uppercase">{modal.data.remainingName} fabrication is still available and UNLOCKED.</p>
+                </div>
+                <div className="flex flex-col gap-3">
+                     <button
+                        onClick={() => { setModal({ type: 'fomo', data: null }); SFX.play('click'); }}
+                        className="w-full bg-orange-600 hover:bg-orange-500 text-white font-black py-4 rounded-xl text-md shadow-lg action-btn uppercase font-scifi"
+                    >
+                        Remain & Fabricate {modal.data.remainingName}
+                    </button>
+                     <button
+                        onClick={() => { setModal({ type: 'none', data: null }); SFX.play('click'); }}
+                        className="w-full bg-slate-800 hover:bg-slate-700 text-gray-300 font-bold py-3 rounded-xl text-sm transition-all uppercase"
+                    >
+                        Return to Console Screen
+                    </button>
+                </div>
+            </div>
+        </div>
+      )}
 
       {modal.type === 'fabrication_success' && (
         <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
