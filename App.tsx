@@ -1626,7 +1626,11 @@ export default function App() {
     const globalStocks: Record<string, number> = {};
     COMMODITIES.forEach(c => {
         let total = 0;
-        s.markets.forEach(m => total += m[c.name].quantity);
+        s.markets.forEach(m => {
+            if (m && m[c.name]) {
+                total += m[c.name].quantity || 0;
+            }
+        });
         globalStocks[c.name] = total / s.markets.length;
     });
 
@@ -2697,13 +2701,19 @@ export default function App() {
 
     COMMODITIES.forEach(c => {
         let total = 0;
-        s.markets.forEach(m => total += m[c.name].quantity);
+        s.markets.forEach(m => {
+            if (m && m[c.name]) {
+                total += m[c.name].quantity || 0;
+            }
+        });
         const injection = Math.ceil(total * 0.10);
         let remaining = injection;
         while(remaining > 0) {
              const chunk = Math.min(remaining, Math.ceil(injection/10));
              const vIdx = Math.floor(Math.random() * VENUES.length);
-             s.markets[vIdx][c.name].quantity += chunk;
+             if (s.markets[vIdx] && s.markets[vIdx][c.name]) {
+                 s.markets[vIdx][c.name].quantity += chunk;
+             }
              remaining -= chunk;
         }
     });
@@ -3026,7 +3036,9 @@ export default function App() {
                 while (rem > 0) {
                     const randomVenueIdx = Math.floor(Math.random() * s.markets.length);
                     const amt = Math.min(rem, Math.max(1, Math.floor(Math.random() * (rem / 2 + 1))));
-                    s.markets[randomVenueIdx][c.name].quantity += amt;
+                    if (s.markets[randomVenueIdx] && s.markets[randomVenueIdx][c.name]) {
+                        s.markets[randomVenueIdx][c.name].quantity += amt;
+                    }
                     rem -= amt;
                 }
             }
@@ -3035,8 +3047,12 @@ export default function App() {
             const v1Amt = Math.max(1, Math.round(baselineStock * 0.07));
             const v2Amt = Math.max(1, Math.round(baselineStock * 0.05));
 
-            s.markets[v1][c.name].quantity += v1Amt;
-            s.markets[v2][c.name].quantity += v2Amt;
+            if (s.markets[v1] && s.markets[v1][c.name]) {
+                s.markets[v1][c.name].quantity += v1Amt;
+            }
+            if (s.markets[v2] && s.markets[v2][c.name]) {
+                s.markets[v2][c.name].quantity += v2Amt;
+            }
 
             // Log rebalancing event to player's terminal report feed (Enhancement 135)
             report.events.push(`REBALANCE: ${c.name} reached peak demand globally. Price ceiling expanded +5%. Distributed +10% (+${extraStock10} units) of global stock randomly, and shipped emergency supply to ${VENUES[v1]} (+${v1Amt} units, +7%) and ${VENUES[v2]} (+${v2Amt} units, +5%).`);
@@ -3141,7 +3157,9 @@ export default function App() {
             while (remainingToDistribute > 0) {
                 const chunkSize = Math.min(remainingToDistribute, Math.max(1, Math.floor(injectAmount / 10)));
                 const targetIdx = selectWeightedIndex();
-                s.markets[targetIdx][c.name].quantity += chunkSize;
+                if (s.markets[targetIdx] && s.markets[targetIdx][c.name]) {
+                    s.markets[targetIdx][c.name].quantity += chunkSize;
+                }
                 remainingToDistribute -= chunkSize;
             }
 
