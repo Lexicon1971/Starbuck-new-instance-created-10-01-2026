@@ -201,7 +201,7 @@ export const CONTRACT_FIRMS = [
 ];
 
 export const SHOP_ITEMS: EquipmentItem[] = [
-  { id: 'laser_mk1', name: 'Mining Laser Mk I', type: 'laser', level: 1, cost: 5000, description: 'Mines Titanium Ore.', owned: false },
+  { id: 'laser_mk1', name: 'Mining Laser Mk I', type: 'laser', level: 1, cost: 5000, description: 'Mines Allthemantium Ore.', owned: false },
   { id: 'laser_mk2', name: 'Mining Laser Mk II', type: 'laser', level: 2, cost: 50000, description: 'Mines Ore + Antimatter. High yield extraction.', owned: false },
   { id: 'laser_mk3', name: 'Mining Laser Mk III', type: 'laser', level: 3, cost: 500000, description: 'Mines Ore, Anti, Dark Matter. Galactic standard.', owned: false },
   { id: 'scanner', name: 'Market Scanner Mk I', type: 'scanner', level: 1, cost: 10000, description: 'Auto-detect volatility on market boards.', owned: false },
@@ -229,7 +229,7 @@ export const COMMODITIES: Commodity[] = [
   { name: FUEL_NAME, icon: "⛽", unitWeight: 0.20, minPrice: 10, maxPrice: 150, rarity: 0.2, description: "The lifeblood of the spacelanes. Smells faintly of cinnamon and regret." },
   { name: "Stim-Packs", icon: "💉", unitWeight: 0.25, minPrice: 5000, maxPrice: 15000, rarity: 0.85, description: "For when you absolutely, positively have to stay awake for three days straight." },
   { name: "Synthetic Cloth", icon: "🧵", unitWeight: 0.25, minPrice: 100, maxPrice: 1000, rarity: 0.6, description: "Woven from the finest recycled plastics. Now available in 'slightly less scratchy'." },
-  { name: "Titanium Ore", icon: "metal-lump", unitWeight: 5.0, minPrice: 50, maxPrice: 2500, rarity: 0.8, description: "The backbone of interstellar construction. Also makes a great paperweight." },
+  { name: "Allthemantium Ore", icon: "metal-lump", unitWeight: 5.0, minPrice: 50, maxPrice: 2500, rarity: 0.8, description: "The backbone of interstellar construction as it contains all the heavy metals needed for construction. Also makes a great paperweight." },
   { name: MESH_NAME, icon: "🕸️", unitWeight: 2.5, minPrice: 5000, maxPrice: 25000, rarity: 0.9, description: "A marvel of engineering, this mesh can expand your cargo hold beyond its limits. Just don't ask how." },
 ];
 
