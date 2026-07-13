@@ -5068,15 +5068,17 @@ export default function App() {
                         </thead>
                         <tbody className="divide-y divide-gray-800">
                             {COMMODITIES.map(c => {
-                                const mItem = currentMarketLocal[c.name];
+                                const mItem = currentMarketLocal ? currentMarketLocal[c.name] : null;
                                 const owned = state.cargo[c.name] || {quantity:0, averageCost:0};
                                 const activeContract = state.activeContracts.find(con => con.commodity === c.name && con.status === 'active');
                                 const isCovered = activeContract ? isContractCovered(state, activeContract) : false;
                                 const availableContract = !activeContract ? state.availableContracts.find(con => con.commodity === c.name) : null;
                                 let minP=Infinity, maxP=0, minV='', maxV='';
                                 state.markets.forEach((m, i) => {
-                                    if(m[c.name].price < minP) { minP=m[c.name].price; minV=VENUES[i]; }
-                                    if(m[c.name].price > maxP) { maxP=m[c.name].price; maxV=VENUES[i]; }
+                                    if (m && m[c.name]) {
+                                        if (m[c.name].price < minP) { minP = m[c.name].price; minV = VENUES[i]; }
+                                        if (m[c.name].price > maxP) { maxP = m[c.name].price; maxV = VENUES[i]; }
+                                    }
                                 });
                                 const h2oPasteMinMult = Math.pow(1.05, state.day);
                                 const h2oPasteMaxMult = Math.pow(1.10, state.day);
@@ -5099,7 +5101,7 @@ export default function App() {
                                     }
                                 }
                                 const priceRangeAmt = dMax - dMin;
-                                const relativePrice = (mItem.price - dMin) / (priceRangeAmt || 1);
+                                const relativePrice = ((mItem?.price || 0) - dMin) / (priceRangeAmt || 1);
                                 let priceColorClass = 'text-yellow-400';
                                 if (relativePrice <= 0.33) priceColorClass = 'text-green-400';
                                 if (relativePrice >= 0.66) priceColorClass = 'text-red-400';
@@ -5148,10 +5150,10 @@ export default function App() {
                                             )}
                                         </td>
                                         <td className={`p-2 text-right align-middle`}>
-                                            <div className={`flex justify-end font-bold text-xl ${priceColorClass}`}>{Math.round(mItem.price).toLocaleString()} <StarCoin size={20} /></div>
+                                             <div className={`flex justify-end font-bold text-xl ${priceColorClass}`}>{mItem ? Math.round(mItem.price).toLocaleString() : '0'} <StarCoin size={20} /></div>
                                         </td>
                                         <td className="p-2 text-center text-gray-400 text-lg align-middle">
-                                            <div>{mItem.quantity}</div>
+                                             <div>{mItem ? mItem.quantity : 0}</div>
                                             {(() => {
                                                 const stockArrivedElsewhere = Object.entries(state.warehouse).some(([vIdxStr, venueWarehouse]) => {
                                                     const vIdx = parseInt(vIdxStr);
@@ -5190,7 +5192,7 @@ export default function App() {
                                         </td>
                                         <td className="p-2 text-center align-middle">
                                             {owned.quantity > 0 ? (
-                                                <div className="leading-tight flex flex-col items-center"><div className="text-white font-bold text-lg">{owned.quantity}</div><PriceDisplay value={(mItem.price-owned.averageCost)*owned.quantity} colored={true} size="text-sm" compact /></div>
+                                                 <div className="leading-tight flex flex-col items-center"><div className="text-white font-bold text-lg">{owned.quantity}</div><PriceDisplay value={((mItem?.price || 0)-owned.averageCost)*owned.quantity} colored={true} size="text-sm" compact /></div>
                                             ) : <span className="text-gray-700">-</span>}
                                         </td>
                                         <td className="p-2 align-middle">
@@ -5199,16 +5201,16 @@ export default function App() {
                                                     {/* Expanded quantity input for phase 4 values (10 digits + scroll room) */}
                                                     <input type="number" min="0" placeholder="Qty" className="w-[170px] bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={buyQuantities[c.name]||''} onChange={e=>setBuyQuantities({...buyQuantities, [c.name]: e.target.value})} />
                                                     <button
-                                                        onClick={()=>setMaxBuy(c, mItem)}
-                                                        disabled={mItem.quantity === 0}
-                                                        className={`w-auto px-4 bg-gray-700 hover:bg-gray-600 text-sm text-white rounded py-1 action-btn ${mItem.quantity === 0 ? 'opacity-30 pointer-events-none' : ''}`}
+                                                         onClick={()=>mItem && setMaxBuy(c, mItem)}
+                                                         disabled={!mItem || mItem.quantity === 0}
+                                                         className={`w-auto px-4 bg-gray-700 hover:bg-gray-600 text-sm text-white rounded py-1 action-btn ${(!mItem || mItem.quantity === 0) ? 'opacity-30 pointer-events-none' : ''}`}
                                                     >
                                                         MAX
                                                     </button>
                                                     <button
-                                                        onClick={()=>handleTrade('buy', c, mItem, owned)}
-                                                        disabled={mItem.quantity === 0}
-                                                        className={`w-auto px-4 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded font-bold py-1 action-btn ${mItem.quantity === 0 ? 'opacity-30 pointer-events-none' : ''}`}
+                                                         onClick={()=>mItem && handleTrade('buy', c, mItem, owned)}
+                                                         disabled={!mItem || mItem.quantity === 0}
+                                                         className={`w-auto px-4 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded font-bold py-1 action-btn ${(!mItem || mItem.quantity === 0) ? 'opacity-30 pointer-events-none' : ''}`}
                                                     >
                                                         BUY
                                                     </button>
@@ -5222,7 +5224,7 @@ export default function App() {
                                                     {/* Expanded quantity input for phase 4 values (10 digits + scroll room) */}
                                                     <input type="number" min="0" placeholder="Qty" className="w-[170px] bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={sellQuantities[c.name]||''} onChange={e=>setSellQuantities({...sellQuantities, [c.name]: e.target.value})} />
                                                     <button onClick={()=>setSellQuantities({...sellQuantities, [c.name]: owned.quantity.toString()})} disabled={owned.quantity===0} className="w-auto px-4 bg-gray-700 hover:bg-gray-600 disabled:opacity-30 text-sm text-white rounded py-1 action-btn">ALL</button>
-                                                    <button onClick={()=>handleTrade('sell', c, mItem, owned)} disabled={owned.quantity===0} className="w-auto px-4 bg-green-700 hover:bg-green-600 disabled:opacity-30 text-white text-sm rounded font-bold py-1 action-btn">SELL</button>
+                                                     <button onClick={()=>mItem && handleTrade('sell', c, mItem, owned)} disabled={owned.quantity===0} className="w-auto px-4 bg-green-700 hover:bg-green-600 disabled:opacity-30 text-white text-sm rounded font-bold py-1 action-btn">SELL</button>
                                                     <button onClick={() => { const ownedQuantity = state.cargo[c.name]?.quantity || 0; setShippingQuantities(prev => ({ ...prev, [c.name]: ownedQuantity.toString() })); setModal({ type: 'shipping', data: null }); setLogisticsTab('shipping'); setShippingPriorityItem(c.name); }} className="w-auto px-4 bg-cyan-600 hover:bg-cyan-500 text-white text-sm rounded font-bold py-1 action-btn">SHIP</button>
                                                     {activeContract && !isCovered && (
                                                         <button onClick={() => handleFulfill(activeContract)} disabled={owned.quantity < activeContract.quantity || pulsingContractId !== null} className={`w-auto px-4 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 disabled:opacity-50 text-white text-sm rounded font-bold py-1 action-btn ${pulsingContractId === activeContract.id ? 'animate-pulse' : ''}`}>FULFILL</button>
