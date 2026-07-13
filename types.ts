@@ -189,6 +189,7 @@ export interface GameState {
   hasTradedStocksToday?: boolean;
   optimalVenueToday: number;
   hasSpokenOptimalVenue: boolean;
+  dailyDividends?: number;
 }
 
 export interface Stock {
