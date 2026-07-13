@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v10.4.3
+ * VERSION: v10.4.4
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -1043,7 +1043,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v10.4.3 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v10.4.4 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -1252,17 +1252,7 @@ export default function App() {
     }
   }, [modal.type]);
 
-  // Automatically switches to the warehouse tab after a shipment is made.
-  useEffect(() => {
-    if (justShipped) {
-      setLogisticsTab('warehouse');
-      const timer = setTimeout(() => {
-        setModal({ type: 'none', data: null });
-        setJustShipped(false);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [justShipped]);
+  // Automatically switches to the warehouse tab after a shipment is made (Removed in v10.4.4 for direct console return).
 
   // Scrolls the comms/shipping log to the top when the modal is opened.
   useEffect(() => {
@@ -2851,20 +2841,16 @@ export default function App() {
 
     const stock = state.stocks[stockIndex];
 
-    // Enhancement 131: Check daily purchase limits dependent on volatility
-    const limitRemaining = stock.dailyBuyLimitRemaining !== undefined ? stock.dailyBuyLimitRemaining : calculateDailyStockLimit(stock);
-    if (qty > limitRemaining) {
-      setModal({ type: 'message', data: `Regulatory Block: Today's purchase limit is ${limitRemaining.toLocaleString()} shares for ${stockName}.` });
-      return;
-    }
-
-    // A. "Liquidity Lock" Fix: Check against available market quantity.
-    if (qty > (stock.availableQuantity ?? 0)) {
-      setModal({ type: 'message', data: "Market Liquidity Exhausted." });
-      return;
-    }
-
     let transactionPrice = stock.price;
+
+    // Validate that the quantity does not exceed the Market Float Available and the cash balance minus 10% transaction fee buffer.
+    const maxAffordable = Math.floor((state.cash * 0.9) / transactionPrice);
+    const maxAllowed = Math.min(stock.availableQuantity ?? 0, maxAffordable);
+    if (qty > maxAllowed) {
+      setModal({ type: 'message', data: `Transaction Blocked: Maximum purchase amount is ${maxAllowed.toLocaleString()} shares (limited by Market Float Available and cash balance minus 10% buffer).` });
+      return;
+    }
+
     // C. Market Impact Simulation (Slippage) for buying
     if (stock.availableQuantity && qty > stock.availableQuantity * 0.10) {
       const slippagePercent = 1 + (Math.random() * 0.01 + 0.01); // 1-2% increase
@@ -2893,8 +2879,7 @@ export default function App() {
     // A. Decrement available quantity from the global state.
     updatedStock.availableQuantity = (updatedStock.availableQuantity ?? 0) - qty;
 
-    // Enhancement 131: Decrement the remaining daily buy limit for this stock
-    updatedStock.dailyBuyLimitRemaining = Math.max(0, limitRemaining - qty);
+    // Dropped Today's Purchase Limit in v10.4.4
 
     newStocks[stockIndex] = updatedStock;
 
@@ -3877,7 +3862,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.4.3</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.4.4</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -3956,7 +3941,7 @@ export default function App() {
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v10.4.3 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v10.4.4 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -4156,7 +4141,7 @@ export default function App() {
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                          <p className="text-gray-500 font-mono text-[10px] uppercase">v10.4.3</p>
+                          <p className="text-gray-500 font-mono text-[10px] uppercase">v10.4.4</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -4599,7 +4584,8 @@ export default function App() {
                                         <td className="p-2 align-middle">
                                             <div className="flex flex-col space-y-2">
                                                 <div className="flex space-x-1 items-center bg-gray-900/50 p-1 rounded">
-                                                    <input type="number" min="0" placeholder="Qty" className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={buyQuantities[c.name]||''} onChange={e=>setBuyQuantities({...buyQuantities, [c.name]: e.target.value})} />
+                                                    {/* Expanded quantity input for phase 4 values (10 digits + scroll room) */}
+                                                    <input type="number" min="0" placeholder="Qty" className="w-[170px] bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={buyQuantities[c.name]||''} onChange={e=>setBuyQuantities({...buyQuantities, [c.name]: e.target.value})} />
                                                     <button
                                                         onClick={()=>setMaxBuy(c, mItem)}
                                                         disabled={mItem.quantity === 0}
@@ -4621,7 +4607,8 @@ export default function App() {
                                                     )}
                                                 </div>
                                                 <div className="flex space-x-1 items-center bg-gray-900/50 p-1 rounded">
-                                                    <input type="number" min="0" placeholder="Qty" className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={sellQuantities[c.name]||''} onChange={e=>setSellQuantities({...sellQuantities, [c.name]: e.target.value})} />
+                                                    {/* Expanded quantity input for phase 4 values (10 digits + scroll room) */}
+                                                    <input type="number" min="0" placeholder="Qty" className="w-[170px] bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={sellQuantities[c.name]||''} onChange={e=>setSellQuantities({...sellQuantities, [c.name]: e.target.value})} />
                                                     <button onClick={()=>setSellQuantities({...sellQuantities, [c.name]: owned.quantity.toString()})} disabled={owned.quantity===0} className="w-auto px-4 bg-gray-700 hover:bg-gray-600 disabled:opacity-30 text-sm text-white rounded py-1 action-btn">ALL</button>
                                                     <button onClick={()=>handleTrade('sell', c, mItem, owned)} disabled={owned.quantity===0} className="w-auto px-4 bg-green-700 hover:bg-green-600 disabled:opacity-30 text-white text-sm rounded font-bold py-1 action-btn">SELL</button>
                                                     <button onClick={() => { const ownedQuantity = state.cargo[c.name]?.quantity || 0; setShippingQuantities(prev => ({ ...prev, [c.name]: ownedQuantity.toString() })); setModal({ type: 'shipping', data: null }); setLogisticsTab('shipping'); setShippingPriorityItem(c.name); }} className="w-auto px-4 bg-cyan-600 hover:bg-cyan-500 text-white text-sm rounded font-bold py-1 action-btn">SHIP</button>
@@ -4831,7 +4818,8 @@ export default function App() {
                           {state.cargoCapacity >= 250000 && <p className="text-yellow-400 font-bold animate-pulse">Tier 4: <PriceDisplay value={15000} size="text-xs"/> + 5 {MESH_NAME} / 100T</p>}
                       </div>
                       <div className="flex gap-3 items-center">
-                          <input type="number" min="1" className="w-20 bg-gray-900 text-white text-center rounded-lg border border-gray-700 text-lg p-2" value={cargoUpgradeQty || ''} onChange={e=>setCargoUpgradeQty(e.target.value)} />
+                          {/* Expanded quantity input for phase 4 values (10 digits + scroll room) */}
+                          <input type="number" min="1" className="w-[170px] bg-gray-900 text-white text-center rounded-lg border border-gray-700 text-lg p-2" value={cargoUpgradeQty || ''} onChange={e=>setCargoUpgradeQty(e.target.value)} />
                           <button onClick={() => {
                               let upgradeCostAmt = 2000; let meshReqAmt = 1;
                               if (state.cargoCapacity >= 250000) { upgradeCostAmt = 15000; meshReqAmt = 5; }
@@ -4989,7 +4977,7 @@ export default function App() {
 
                    <div className="flex-grow flex flex-col overflow-y-auto custom-scrollbar relative pt-10">
                         <div className="absolute top-0 right-0 w-72 text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                            SYSTEM LOG: FABRICATION MATRIX v10.4.3 ACTIVE
+                            SYSTEM LOG: FABRICATION MATRIX v10.4.4 ACTIVE
                         </div>
 
                         <div className="text-center space-y-2 mb-10">
@@ -5010,7 +4998,8 @@ export default function App() {
                                     </div>
                                 </div>
                                 <div className="flex gap-3">
-                                    <input type="number" placeholder="Qty" className="w-32 bg-gray-900 text-white text-center rounded-xl border border-gray-700 text-2xl font-bold p-3" value={fomoQty || ''} onChange={e=>setFomoQty(e.target.value)} />
+                                    {/* Expanded quantity input for phase 4 values (10 digits + scroll room) */}
+                                    <input type="number" placeholder="Qty" className="w-[190px] bg-gray-900 text-white text-center rounded-xl border border-gray-700 text-lg font-bold p-3" value={fomoQty || ''} onChange={e=>setFomoQty(e.target.value)} />
                                     <button onClick={()=>{
                                         const h2oAmt = state.cargo[H2O_NAME]?.quantity || 0;
                                         const oreAmt = state.cargo['Titanium Ore']?.quantity || 0;
@@ -5035,7 +5024,8 @@ export default function App() {
                                     </div>
                                 </div>
                                 <div className="flex gap-3">
-                                    <input type="number" placeholder="Qty" className="w-32 bg-gray-900 text-white text-center rounded-xl border border-gray-700 text-2xl font-bold p-3" value={fomoStimQty || ''} onChange={e=>setFomoStimQty(e.target.value)} />
+                                    {/* Expanded quantity input for phase 4 values (10 digits + scroll room) */}
+                                    <input type="number" placeholder="Qty" className="w-[190px] bg-gray-900 text-white text-center rounded-xl border border-gray-700 text-lg font-bold p-3" value={fomoStimQty || ''} onChange={e=>setFomoStimQty(e.target.value)} />
                                     <button onClick={()=>{
                                         const h2oAmt = state.cargo[H2O_NAME]?.quantity || 0;
                                         const pasteAmt = state.cargo[NUTRI_PASTE_NAME]?.quantity || 0;
@@ -5114,7 +5104,8 @@ export default function App() {
                                    <div className="space-y-2">
                                        <label className="text-[10px] text-gray-500 uppercase tracking-widest ml-1 font-black">Principal Investment</label>
                                        <div className="flex gap-3">
-                                           <input type="number" value={bankInvestAmount || ''} onChange={(e) => setBankInvestAmount(e.target.value)} min="1" placeholder="Amount..." className="flex-grow bg-gray-900 text-white p-4 rounded-xl border border-gray-700 focus:border-green-500 outline-none transition-all text-xl font-mono" />
+                                           {/* Expanded quantity input for phase 4 values (10 digits + scroll room) */}
+                                           <input type="number" value={bankInvestAmount || ''} onChange={(e) => setBankInvestAmount(e.target.value)} min="1" placeholder="Amount..." className="flex-grow min-w-[180px] bg-gray-900 text-white p-4 rounded-xl border border-gray-700 focus:border-green-500 outline-none transition-all text-xl font-mono" />
                                            <button onClick={() => setBankInvestAmount(Math.floor(Math.max(0, state.cash)).toString())} className="bg-gray-700 hover:bg-gray-600 px-6 rounded-xl text-white font-black text-xs uppercase border border-gray-600 transition-all shadow-md">MAX</button>
                                        </div>
                                    </div>
@@ -5215,22 +5206,24 @@ export default function App() {
                                 <div className="text-sm text-gray-400 mb-1">Risk: <span className={`font-bold ${stock.risk === 'high' ? 'text-red-500' : stock.risk === 'medium' ? 'text-yellow-500' : 'text-green-500'}`}>{stock.risk}</span></div>
                                 <div className="text-sm text-gray-400 mb-1">Owned: {stock.quantity}</div>
                                 <div className="text-sm text-gray-400 mb-1">Global Total Shares: {stock.totalShares?.toLocaleString() ?? "N/A"}</div>
-                                <div className="text-sm text-gray-400 mb-1">Market Float Available: {stock.availableQuantity?.toLocaleString() ?? "N/A"}</div>
-                                <div className="text-sm text-cyan-400 mb-4 font-semibold">Today's Purchase Limit: {stock.dailyBuyLimitRemaining !== undefined ? stock.dailyBuyLimitRemaining.toLocaleString() : "N/A"} shares</div>
+                                <div className="text-sm text-gray-400 mb-4">Market Float Available: {stock.availableQuantity?.toLocaleString() ?? "N/A"}</div>
                                 {stock.quantity > 0 && (
                                     <div className="text-sm text-gray-400 mb-4">P/L: <PriceDisplay value={profitLoss} colored size="text-sm" /></div>
                                   )}
                                 <div className="flex flex-col space-y-2">
                                   <div className="flex space-x-1 items-center bg-gray-900/50 p-1 rounded">
-                                    <input type="number" min="0" placeholder="Qty" disabled={state.gamePhase < 3} className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5 disabled:opacity-50" value={stockBuyQuantities[stock.name]||''} onChange={e=>setStockBuyQuantities({...stockBuyQuantities, [stock.name]: e.target.value})} />
+                                    {/* Expanded quantity input for phase 4 values (10 digits + scroll room) */}
+                                    <input type="number" min="0" placeholder="Qty" disabled={state.gamePhase < 3} className="w-[170px] bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5 disabled:opacity-50" value={stockBuyQuantities[stock.name]||''} onChange={e=>setStockBuyQuantities({...stockBuyQuantities, [stock.name]: e.target.value})} />
                                     <button disabled={state.gamePhase < 3} onClick={() => {
-                                      const maxBuy = Math.floor(state.cash / (stock.price * 1.022));
-                                      setStockBuyQuantities({...stockBuyQuantities, [stock.name]: maxBuy.toString()});
+                                      const maxAffordable = Math.floor((state.cash * 0.9) / stock.price);
+                                      const maxBuy = Math.min(stock.availableQuantity ?? 0, maxAffordable);
+                                      setStockBuyQuantities({...stockBuyQuantities, [stock.name]: Math.max(0, maxBuy).toString()});
                                     }} className="w-auto px-4 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded font-bold py-1 disabled:opacity-50">MAX</button>
                                     <button disabled={state.gamePhase < 3} onClick={() => handleBuyStock(stock.name)} className="w-auto px-4 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded font-bold py-1 action-btn disabled:opacity-50">BUY</button>
                                   </div>
                                   <div className="flex space-x-1 items-center bg-gray-900/50 p-1 rounded">
-                                    <input type="number" min="0" placeholder="Qty" disabled={state.gamePhase < 3} className="w-20 bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5 disabled:opacity-50" value={stockSellQuantities[stock.name]||''} onChange={e=>setStockSellQuantities({...stockSellQuantities, [stock.name]: e.target.value})} />
+                                    {/* Expanded quantity input for phase 4 values (10 digits + scroll room) */}
+                                    <input type="number" min="0" placeholder="Qty" disabled={state.gamePhase < 3} className="w-[170px] bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5 disabled:opacity-50" value={stockSellQuantities[stock.name]||''} onChange={e=>setStockSellQuantities({...stockSellQuantities, [stock.name]: e.target.value})} />
                                     <button disabled={state.gamePhase < 3} onClick={() => setStockSellQuantities({...stockSellQuantities, [stock.name]: stock.quantity.toString()})} className="w-auto px-4 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded font-bold py-1 disabled:opacity-50">MAX</button>
                                     <button disabled={state.gamePhase < 3} onClick={() => handleSellStock(stock.name)} className="w-auto px-4 bg-green-700 hover:bg-green-600 text-white text-sm rounded font-bold py-1 action-btn disabled:opacity-50">SELL</button>
                                   </div>
@@ -5370,7 +5363,8 @@ export default function App() {
                                                       <span className="text-[10px] text-gray-500 font-mono uppercase">Avail: {item.quantity}</span>
                                                    </div>
                                                    <div className="grid grid-cols-3 gap-3 mb-4">
-                                                       <input type="number" placeholder="Qty" className="bg-gray-900 text-white p-3 rounded-xl border border-gray-700 text-lg font-bold outline-none col-span-1" value={qtyValStr || ''} onChange={e=>setShippingQuantities({...shippingQuantities, [name]:e.target.value})} />
+                                                       {/* Expanded quantity input for phase 4 values (10 digits + scroll room) */}
+                                                       <input type="number" placeholder="Qty" className="min-w-[170px] bg-gray-900 text-white p-3 rounded-xl border border-gray-700 text-lg font-bold outline-none col-span-1" value={qtyValStr || ''} onChange={e=>setShippingQuantities({...shippingQuantities, [name]:e.target.value})} />
                                                        <button onClick={()=>setShippingQuantities({...shippingQuantities, [name]: item.quantity.toString()})} className="bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-xl transition-colors">ALL</button>
                                                        <select className="bg-gray-900 text-white p-3 rounded-xl border border-gray-700 font-bold outline-none col-span-1" value={destValStr || ''} onChange={e=>setShippingDestinations({...shippingDestinations, [name]:e.target.value})}>
                                                            <option value="">Dest...</option>
@@ -5410,7 +5404,7 @@ export default function App() {
                                                                 newWarehouseDict[destInt][name] = { quantity: newQtyVal, originalAvgCost: newAvgCostVal, arrivalDay: newArrivalDay };
                                                                 setState(prev => prev ? ({ ...prev, cash: prev.cash - costVal, cargo: newCargoDict, cargoWeight: prev.cargoWeight - totalWeightVal, warehouse: newWarehouseDict }) : null);
                                                                 setShippingQuantities({ ...shippingQuantities, [name]: '' }); setHighlightShippingItem(null); SFX.play('warp');
-                                                                setJustShipped(true);
+                                                                setModal({ type: 'none', data: null }); // Direct Return to Console in v10.4.4
                                                             }} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl shadow-lg action-btn uppercase font-scifi disabled:bg-gray-700 disabled:opacity-50">SHIP</button>
                                                </div>
                                            );
@@ -5520,7 +5514,8 @@ export default function App() {
                                                    </div>
 
                                                     <div className="grid grid-cols-3 gap-3 mb-4">
-                                                        <input type="number" placeholder="Qty" className="bg-gray-900 text-white p-3 rounded-xl border border-gray-700 text-lg font-bold outline-none col-span-2" value={shippingQuantities[name] || ''} onChange={e=>setShippingQuantities({...shippingQuantities, [name]:e.target.value})} />
+                                                        {/* Expanded quantity input for phase 4 values (10 digits + scroll room) */}
+                                                        <input type="number" placeholder="Qty" className="min-w-[170px] bg-gray-900 text-white p-3 rounded-xl border border-gray-700 text-lg font-bold outline-none col-span-2" value={shippingQuantities[name] || ''} onChange={e=>setShippingQuantities({...shippingQuantities, [name]:e.target.value})} />
                                                         <button onClick={()=>setShippingQuantities({...shippingQuantities, [name]: whItem.quantity.toString()})} className="bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-xl transition-colors">MAX</button>
                                                     </div>
 
@@ -5598,6 +5593,7 @@ export default function App() {
                                                            setShippingDestinations({});
                                                            SFX.play('warp');
                                                            log(`LOGISTICS: Forwarded ${qtyInt} ${name} from ${VENUES[vIdx]} to ${VENUES[destInt]}.`, 'buy');
+                                                           setModal({ type: 'none', data: null }); // Direct Return to Console in v10.4.4
                                                        }} className="w-full bg-purple-600 hover:bg-purple-500 text-white font-black py-3 rounded-xl shadow-lg uppercase" disabled={!destValStr || destInt === vIdx}>
                                                             {destInt === vIdx ? 'CANNOT FORWARD TO SOURCE' : 'FORWARD'}
                                                        </button>
@@ -5636,7 +5632,11 @@ export default function App() {
                                                                    </div>
                                                                </div>
                                                                <div className="flex flex-col gap-2">
-                                                                   {arrived && isHere && !item.isContractReserved && (<div className="flex gap-2"><input type="number" placeholder="Qty" className="w-16 bg-gray-900 text-white text-center text-xs rounded-lg border border-gray-700 font-bold" value={claimQuantities[name]||''} onChange={e=>setClaimQuantities({...claimQuantities, [name]:e.target.value})} /><button onClick={()=>{ const qVal = parseInt(claimQuantities[name]); if(!isNaN(qVal) && qVal>0) claimWarehouseItem(vIdxInt, name, qVal); }} className="bg-green-700 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-xs font-black uppercase transition-all shadow-md">CLAIM</button></div>)}
+                                                                   {arrived && isHere && !item.isContractReserved && (<div className="flex gap-2">
+                                                                       {/* Expanded quantity input for phase 4 values (10 digits + scroll room) */}
+                                                                       <input type="number" placeholder="Qty" className="w-[170px] bg-gray-900 text-white text-center text-xs rounded-lg border border-gray-700 font-bold" value={claimQuantities[name]||''} onChange={e=>setClaimQuantities({...claimQuantities, [name]:e.target.value})} />
+                                                                       <button onClick={()=>{ const qVal = parseInt(claimQuantities[name]); if(!isNaN(qVal) && qVal>0) claimWarehouseItem(vIdxInt, name, qVal); }} className="bg-green-700 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-xs font-black uppercase transition-all shadow-md">CLAIM</button>
+                                                                   </div>)}
                                                                     {arrived && !isHere && !item.isContractReserved && (<button onClick={()=>{setHighlightShippingItem(name); setLogisticsTab('shipping'); setShippingSource({ [name]: { type: 'warehouse', venueIdx: vIdxInt } }); setModal({type:'shipping', data:null});}} className="bg-purple-700 hover:bg-purple-600 text-white px-6 py-3 rounded-xl text-sm font-black uppercase transition-all shadow-lg">MANAGE</button>)}
                                                                     {arrived && isHere && !item.isContractReserved && (<button onClick={()=>{setHighlightShippingItem(name); setLogisticsTab('shipping'); setShippingSource({ [name]: { type: 'warehouse', venueIdx: vIdxInt } }); setModal({type:'shipping', data:null});}} className="bg-purple-700/50 hover:bg-purple-600 text-white px-6 py-2 rounded-xl text-xs font-black uppercase transition-all">MANAGE</button>)}
                                                                     {item.isContractReserved && <div className="text-purple-400 font-bold flex items-center"><Lock size={14} className="mr-1"/> CONTRACT</div>}
@@ -5844,7 +5844,7 @@ export default function App() {
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v10.4.3</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v10.4.4</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -5974,7 +5974,7 @@ export default function App() {
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.4.3</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.4.4</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -6194,11 +6194,10 @@ export default function App() {
                   </div>
                </div>
                <div className="h-[30%] w-full flex flex-col items-center justify-center bg-gradient-to-t from-black via-black/50 to-transparent z-[100]">
-                  <div className="flex justify-center gap-8 px-4 w-full max-w-4xl">
-                    <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
-                    <button onClick={()=>{setModal({type:'credits', data:null}); SFX.play('click');}} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(37,99,235,0.5)] action-btn border-4 border-blue-400 uppercase tracking-widest">Roll Credits</button>
+                  <div className="flex justify-center px-4 w-full max-w-2xl">
+                    <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.4.3</p>
+                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.4.4</p>
                </div>
            </div>
        )}
