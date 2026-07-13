@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v10.4.4
+ * VERSION: v10.4.5
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -1008,7 +1008,7 @@ export default function App() {
         averageCost: 0,
         history: [price], // Initialize price history for sparkline charts.
         totalShares,
-        availableQuantity: Math.floor(totalShares * 0.5), // Ensure available shares are populated!
+        availableQuantity: Math.floor(totalShares * 0.60), // Ensure available shares are populated to 60% for takeover opportunities
         dailyBuyLimitRemaining: 0
       };
 
@@ -1043,7 +1043,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v10.4.4 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v10.4.5 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -1067,6 +1067,7 @@ export default function App() {
         hasTradedStocksToday: false,
         optimalVenueToday: -1,
         hasSpokenOptimalVenue: false,
+        dailyDividends: 0,
     } as GameState;
     initializeStocks(s);
     return s;
@@ -1113,7 +1114,7 @@ export default function App() {
         averageCost: 0,
         history: [price], // Initialize price history for sparkline charts.
         totalShares,
-        availableQuantity: Math.floor(totalShares * 0.5) // Ensure available shares are populated!
+        availableQuantity: Math.floor(totalShares * 0.60) // Ensure available shares are populated to 60% for takeover opportunities
       };
     });
 
@@ -2532,6 +2533,12 @@ export default function App() {
         report.events.push(`MAINTENANCE: ${loss} ${POWER_CELL_NAME} found dead and were discarded.`);
     }
 
+    // Process daily dividends from successful corporate takeovers (Enhancement 135)
+    if (s.dailyDividends && s.dailyDividends > 0) {
+        s.cash += s.dailyDividends;
+        report.events.push(`DIVIDENDS: Received +${formatCurrencyLog(s.dailyDividends)} from your corporate acquisitions.`);
+    }
+
     let keepLoans: any[] = [];
     s.activeLoans.forEach(l => {
        l.daysRemaining--;
@@ -2760,14 +2767,35 @@ export default function App() {
 
             // Quantities injected are scaled by current phase stock multipliers for proper game balancing
             const stockMult = s.gamePhase === 1 ? 1 : (s.gamePhase === 2 ? 5 : (s.gamePhase === 3 ? 10 : 20));
-            const hugeAmt = Math.round(1000 * stockMult);
-            const halfAmt = Math.round(hugeAmt / 2);
 
-            s.markets[v1][c.name].quantity += hugeAmt;
-            s.markets[v2][c.name].quantity += halfAmt;
+            // Calculate total global stock of c.name prior to standard injections (Enhancement 135)
+            let totalGlobalStockBefore = 0;
+            s.markets.forEach(m => {
+                totalGlobalStockBefore += m[c.name]?.quantity || 0;
+            });
+            const baselineStock = totalGlobalStockBefore > 0 ? totalGlobalStockBefore : 500 * stockMult;
 
-            // Log rebalancing event to player's terminal report feed
-            report.events.push(`REBALANCE: ${c.name} reached peak demand globally. Shipped emergency supply to ${VENUES[v1]} (+${hugeAmt}) and ${VENUES[v2]} (+${halfAmt}). Price ceiling expanded +5%.`);
+            // Distribute an additional 10% of global stock randomly into the pool (Enhancement 135)
+            const extraStock10 = Math.round(baselineStock * 0.10);
+            if (extraStock10 > 0) {
+                let rem = extraStock10;
+                while (rem > 0) {
+                    const randomVenueIdx = Math.floor(Math.random() * s.markets.length);
+                    const amt = Math.min(rem, Math.max(1, Math.floor(Math.random() * (rem / 2 + 1))));
+                    s.markets[randomVenueIdx][c.name].quantity += amt;
+                    rem -= amt;
+                }
+            }
+
+            // Calculate +7% and +5% of global stock (baseline) for v1 and v2 (Enhancement 135)
+            const v1Amt = Math.max(1, Math.round(baselineStock * 0.07));
+            const v2Amt = Math.max(1, Math.round(baselineStock * 0.05));
+
+            s.markets[v1][c.name].quantity += v1Amt;
+            s.markets[v2][c.name].quantity += v2Amt;
+
+            // Log rebalancing event to player's terminal report feed (Enhancement 135)
+            report.events.push(`REBALANCE: ${c.name} reached peak demand globally. Price ceiling expanded +5%. Distributed +10% (+${extraStock10} units) of global stock randomly, and shipped emergency supply to ${VENUES[v1]} (+${v1Amt} units, +7%) and ${VENUES[v2]} (+${v2Amt} units, +5%).`);
 
             // Recalculate commodity prices across all markets to reflect the newly injected stock quantities
             const globalStocks: Record<string, number> = {};
@@ -2818,6 +2846,104 @@ export default function App() {
             });
 
             iterations++;
+        }
+    });
+
+    // ============================================================================
+    // CRITICAL SHORTAGE DETECTION & INJECTION SYSTEM (Enhancement 135)
+    // If there are more than 3 venues with 0 stock for a commodity, we inject
+    // an additional 10-20% of global stock into the venues, with empty venues
+    // having a 4x higher weighted probability of receiving stock as a remedy.
+    // ============================================================================
+    COMMODITIES.forEach(c => {
+        const emptyMarkets = s.markets.filter(m => (m[c.name]?.quantity || 0) <= 0);
+        if (emptyMarkets.length > 3) {
+            // Calculate total global stock of c.name
+            let globalStock = 0;
+            s.markets.forEach(m => {
+                globalStock += m[c.name]?.quantity || 0;
+            });
+
+            // Random injection percentage between 10% and 20%
+            const injectPct = 0.10 + Math.random() * 0.10;
+            const stockMult = s.gamePhase === 1 ? 1 : (s.gamePhase === 2 ? 5 : (s.gamePhase === 3 ? 10 : 20));
+
+            // Handle edge case where globalStock is 0 or extremely low by having a baseline fallback
+            const baseStockAmount = globalStock > 0 ? globalStock : 500 * stockMult;
+            let injectAmount = Math.round(baseStockAmount * injectPct);
+            if (injectAmount < 20) {
+                injectAmount = 20 * stockMult;
+            }
+
+            // Assign weights: empty venues have a 4x greater chance of selection (Enhancement 135)
+            const weights = s.markets.map(m => {
+                const qty = m[c.name]?.quantity || 0;
+                return qty <= 0 ? 4 : 1;
+            });
+            const totalWeight = weights.reduce((acc, w) => acc + w, 0);
+
+            // Select index using weighted distribution
+            const selectWeightedIndex = () => {
+                let r = Math.random() * totalWeight;
+                for (let i = 0; i < weights.length; i++) {
+                    r -= weights[i];
+                    if (r <= 0) return i;
+                }
+                return 0;
+            };
+
+            // Distribute injectAmount
+            let remainingToDistribute = injectAmount;
+            while (remainingToDistribute > 0) {
+                const chunkSize = Math.min(remainingToDistribute, Math.max(1, Math.floor(injectAmount / 10)));
+                const targetIdx = selectWeightedIndex();
+                s.markets[targetIdx][c.name].quantity += chunkSize;
+                remainingToDistribute -= chunkSize;
+            }
+
+            // Recalculate prices for this commodity based on new stock levels
+            const phaseMultiplierVal = 1 + ((s.gamePhase - 1) * 0.25);
+            const h2oPasteMinMult = Math.pow(1.05, s.day);
+            const h2oPasteMaxMult = Math.pow(1.10, s.day);
+
+            s.markets.forEach((m, mIdx) => {
+                const item = m[c.name];
+                if (!item) return;
+
+                const adjustedStdQty = item.standardQuantity * stockMult;
+                const effectiveRatio = (item.quantity + 1) / adjustedStdQty;
+
+                let rMin = s.commodityPriceOverrides?.[c.name]?.min || c.minPrice * phaseMultiplierVal;
+                let rMax = s.commodityPriceOverrides?.[c.name]?.max || c.maxPrice * phaseMultiplierVal;
+
+                if (c.name === H2O_NAME || c.name === NUTRI_PASTE_NAME) {
+                    rMin = c.minPrice * h2oPasteMinMult;
+                    rMax = c.maxPrice * h2oPasteMaxMult;
+                }
+
+                let newPrice = 0;
+                if (s.fixedCommodity?.name === c.name) {
+                    newPrice = s.fixedCommodity.venuePrices[mIdx];
+                } else if (c.name === 'Spacetime Tea') {
+                    const logMin = Math.log(rMin);
+                    const logMax = Math.log(rMax);
+                    const scale = logMin + (logMax - logMin) * Math.random();
+                    newPrice = Math.round(Math.exp(scale));
+                    const avgStock = (globalStock + injectAmount) / s.markets.length;
+                    const relativeRatio = avgStock / (item.quantity + 1);
+                    const swing = Math.min(1.25, Math.max(0.75, relativeRatio));
+                    newPrice = Math.round(newPrice * swing);
+                    newPrice = Math.round(Math.min(rMax, Math.max(rMin, newPrice)));
+                } else {
+                    const mid = (rMin + rMax) / 2;
+                    newPrice = mid / Math.sqrt(effectiveRatio);
+                    newPrice = Math.round(Math.min(rMax, Math.max(rMin, newPrice)));
+                }
+
+                m[c.name].price = newPrice;
+            });
+
+            report.events.push(`STOCK ALERT: Critical shortage of ${c.name} detected at ${emptyMarkets.length} venues. Emergency reserve stock of +${injectAmount} units has been injected, prioritizing empty markets.`);
         }
     });
 
@@ -2948,6 +3074,45 @@ export default function App() {
     log(`STOCKS: Sold ${qty} shares of ${stockName}.`, 'sell');
     setStockSellQuantities(prev => ({ ...prev, [stockName]: '' }));
     SFX.play('coin');
+  };
+
+  /**
+   * Triggers a random scenario roll for a Hostile Takeover on a firm (Enhancement 135).
+   * Scenarios are weighted as follows:
+   * - 40% Clean Absorption
+   * - 30% Board Resistance
+   * - 20% Executive Sabotage
+   * - 10% Regulatory Antitrust Block
+   */
+  const handleHostileTakeover = (stockName: string) => {
+    if (!state || !state.stocks) return;
+    const stockIdx = state.stocks.findIndex(st => st.name === stockName);
+    if (stockIdx === -1) return;
+    const stock = state.stocks[stockIdx];
+
+    const roll = Math.random();
+    let outcomeType: 'success' | 'resistance' | 'sabotage' | 'regulatory' = 'success';
+    if (roll < 0.40) {
+      outcomeType = 'success';
+    } else if (roll < 0.70) {
+      outcomeType = 'resistance';
+    } else if (roll < 0.90) {
+      outcomeType = 'sabotage';
+    } else {
+      outcomeType = 'regulatory';
+    }
+
+    setModal({
+      type: 'hostile_takeover_resolution',
+      data: {
+        stockName,
+        outcomeType,
+        sharesCount: stock.quantity,
+        totalShares: stock.totalShares,
+        stockPrice: stock.price,
+        stockVal: stock.price * stock.quantity
+      }
+    });
   };
 
   /**
@@ -3090,6 +3255,52 @@ export default function App() {
   const toggleSound = () => {
       const muted = SFX.toggleMute();
       setIsMuted(muted);
+  };
+
+  /**
+   * Compiles interesting real-time live game status information into a single
+   * continuous retro LED ticker feed (Enhancement 135).
+   * Features actual live prices of stocks, commodities, hull levels, liquidity, and active liabilities,
+   * interspersed with "WOULD YOU LIKE TO KNOW MORE?" headlines.
+   */
+  const getTickerText = () => {
+    if (!state) return "";
+    const parts: string[] = [];
+
+    parts.push(`SYSTEM TELEMETRY: CYCLE DAY ${state.day} OF DEBT LICENSE DECREE`);
+    parts.push(`HULL STABILITY: ${Math.round(state.shipHealth)}%`);
+    parts.push(`NET WORTH VALUE: $B ${getNetWorth(state).toLocaleString()}`);
+    parts.push(`LIQUID ASSETS: $B ${Math.round(state.cash).toLocaleString()}`);
+    parts.push(`WOULD YOU LIKE TO KNOW MORE?`);
+
+    if (state.stocks && state.stocks.length > 0) {
+      const stockFeed = state.stocks.map(st => `${st.name}: $B ${Math.round(st.price).toLocaleString()}`).join(" • ");
+      parts.push(`GALACTIC SECURITIES BOARD: ${stockFeed}`);
+    }
+
+    const currentMarket = state.markets[state.currentVenueIndex];
+    if (currentMarket) {
+      const commFeed = COMMODITIES.slice(0, 5).map(c => {
+        const item = currentMarket[c.name];
+        return `${c.name}: $B ${item ? item.price : "N/A"}`;
+      }).join(" • ");
+      parts.push(`LOCAL MARKET EXCHANGE (${VENUES[state.currentVenueIndex].toUpperCase()}): ${commFeed}`);
+      parts.push(`WOULD YOU LIKE TO KNOW MORE?`);
+    }
+
+    if (state.dailyDividends && state.dailyDividends > 0) {
+      parts.push(`TAKEOVER INCOME DIVIDEND FEED: +$B ${state.dailyDividends.toLocaleString()} DAILY CREDIT`);
+    }
+
+    if (state.activeLoans && state.activeLoans.length > 0) {
+      const activeDebts = state.activeLoans.map(l => l.firmName.toUpperCase()).join(", ");
+      parts.push(`ACTIVE LIABILITIES WITH: ${activeDebts}`);
+    } else {
+      parts.push(`CAPITAL STANDING: AAA PRIME`);
+    }
+    parts.push(`WOULD YOU LIKE TO KNOW MORE?`);
+
+    return parts.join("   ||   ");
   };
 
   // M. HELPER FUNCTIONS & SHORTCUTS
@@ -3862,7 +4073,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.4.4</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.4.5</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -3941,7 +4152,7 @@ export default function App() {
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v10.4.4 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v10.4.5 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -4027,10 +4238,32 @@ export default function App() {
                         <h4 className="text-sm font-black text-white uppercase tracking-wider truncate">{c.name}</h4>
                         <span className="text-[9px] text-orange-400 font-mono font-bold uppercase bg-orange-400/10 px-1 border border-orange-500/10">Rarity: {Math.round(c.rarity * 100)}%</span>
                       </div>
-                      <div className="grid grid-cols-2 gap-x-4 text-[10px] font-mono text-gray-500 mb-2">
-                        <div>Weight: <span className="text-gray-300 font-bold">{c.unitWeight}T</span></div>
-                        <div>Range: <span className="text-yellow-500 font-bold">{c.minPrice}-{c.maxPrice}$B</span></div>
-                      </div>
+                      {(() => {
+                          const phaseMultiplierVal = 1 + ((state.gamePhase - 1) * 0.25);
+                          const isH2OOrPaste = c.name === H2O_NAME || c.name === NUTRI_PASTE_NAME;
+                          const h2oPasteMinMult = Math.pow(1.05, state.day);
+                          const h2oPasteMaxMult = Math.pow(1.10, state.day);
+
+                          let displayMin = state.commodityPriceOverrides?.[c.name]?.min !== undefined
+                              ? Math.round(state.commodityPriceOverrides[c.name].min)
+                              : Math.round(isH2OOrPaste ? c.minPrice * h2oPasteMinMult : c.minPrice * phaseMultiplierVal);
+
+                          let displayMax = state.commodityPriceOverrides?.[c.name]?.max !== undefined
+                              ? Math.round(state.commodityPriceOverrides[c.name].max)
+                              : Math.round(isH2OOrPaste ? c.maxPrice * h2oPasteMaxMult : c.maxPrice * phaseMultiplierVal);
+
+                          const hasOverride = state.commodityPriceOverrides?.[c.name] !== undefined;
+
+                          return (
+                            <div className="grid grid-cols-2 gap-x-4 text-[10px] font-mono text-gray-500 mb-2">
+                              <div>Weight: <span className="text-gray-300 font-bold">{c.unitWeight}T</span></div>
+                              <div>
+                                Range: <span className="text-yellow-500 font-bold">{displayMin}-{displayMax}$B</span>
+                                {hasOverride && <span className="text-[8px] text-green-400 font-bold uppercase ml-1 shrink-0 animate-pulse bg-green-500/10 px-0.5 border border-green-500/10">EXPANDED</span>}
+                              </div>
+                            </div>
+                          );
+                      })()}
                       <p className="text-gray-400 text-xs font-mono leading-relaxed italic">"{c.description || 'No direct telemetry available.'}"</p>
                     </div>
                   </div>
@@ -4141,7 +4374,7 @@ export default function App() {
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                          <p className="text-gray-500 font-mono text-[10px] uppercase">v10.4.4</p>
+                          <p className="text-gray-500 font-mono text-[10px] uppercase">v10.4.5</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -4253,6 +4486,11 @@ export default function App() {
                              </div>
                          ))}
                      </div>
+                 </div>
+                 <div className="text-center mb-6">
+                     <span className="text-cyan-400 font-bold font-mono tracking-widest text-xs animate-pulse bg-cyan-950/40 border border-cyan-500/30 px-4 py-2 rounded-full uppercase">
+                         ★ WOULD YOU LIKE TO KNOW MORE? ★
+                     </span>
                  </div>
                  <button onClick={() => { setModal({type:'none', data:null}); SFX.play('click'); }} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-5 rounded-2xl shadow-xl action-btn uppercase text-2xl">Proceed to Operations</button>
             </div>
@@ -4485,14 +4723,26 @@ export default function App() {
                                 });
                                 const h2oPasteMinMult = Math.pow(1.05, state.day);
                                 const h2oPasteMaxMult = Math.pow(1.10, state.day);
-                                let dMin = Math.round(c.minPrice * phaseMultiplier);
-                                let dMax = Math.round(c.maxPrice * phaseMultiplier);
+                                let dMin = state.commodityPriceOverrides?.[c.name]?.min !== undefined
+                                    ? Math.round(state.commodityPriceOverrides[c.name].min)
+                                    : Math.round(c.minPrice * phaseMultiplier);
+                                let dMax = state.commodityPriceOverrides?.[c.name]?.max !== undefined
+                                    ? Math.round(state.commodityPriceOverrides[c.name].max)
+                                    : Math.round(c.maxPrice * phaseMultiplier);
                                 if (c.name === H2O_NAME || c.name === NUTRI_PASTE_NAME) {
-                                    dMin = Math.round(c.minPrice * h2oPasteMinMult);
-                                    dMax = Math.round(c.maxPrice * h2oPasteMaxMult);
+                                    if (state.commodityPriceOverrides?.[c.name]?.min !== undefined) {
+                                        dMin = Math.round(state.commodityPriceOverrides[c.name].min);
+                                    } else {
+                                        dMin = Math.round(c.minPrice * h2oPasteMinMult);
+                                    }
+                                    if (state.commodityPriceOverrides?.[c.name]?.max !== undefined) {
+                                        dMax = Math.round(state.commodityPriceOverrides[c.name].max);
+                                    } else {
+                                        dMax = Math.round(c.maxPrice * h2oPasteMaxMult);
+                                    }
                                 }
                                 const priceRangeAmt = dMax - dMin;
-                                const relativePrice = (mItem.price - dMin) / priceRangeAmt;
+                                const relativePrice = (mItem.price - dMin) / (priceRangeAmt || 1);
                                 let priceColorClass = 'text-yellow-400';
                                 if (relativePrice <= 0.33) priceColorClass = 'text-green-400';
                                 if (relativePrice >= 0.66) priceColorClass = 'text-red-400';
@@ -4514,7 +4764,12 @@ export default function App() {
                                                         {expandedCommodityPrices[c.name] ? '▲ INTEL' : '▼ INTEL'}
                                                     </button>
                                                 </div>
-                                                <div className="text-sm text-gray-500 mt-1 flex items-center">{c.unitWeight} T | Range: <PriceDisplay value={dMin} size="text-sm ml-1" compact /> - <PriceDisplay value={dMax} size="text-sm" compact /></div>
+                                                <div className="text-sm text-gray-500 mt-1 flex items-center">
+                                                    {c.unitWeight} T | Range: <PriceDisplay value={dMin} size="text-sm ml-1" compact /> - <PriceDisplay value={dMax} size="text-sm" compact />
+                                                    {state.commodityPriceOverrides?.[c.name] !== undefined && (
+                                                        <span className="text-[8px] text-green-400 font-bold uppercase ml-2 animate-pulse bg-green-500/10 px-1 border border-green-500/20">EXPANDED</span>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="p-2 text-sm text-gray-500 align-top pt-3 text-left">
                                             {activeContract ? (
@@ -4977,7 +5232,7 @@ export default function App() {
 
                    <div className="flex-grow flex flex-col overflow-y-auto custom-scrollbar relative pt-10">
                         <div className="absolute top-0 right-0 w-72 text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                            SYSTEM LOG: FABRICATION MATRIX v10.4.4 ACTIVE
+                            SYSTEM LOG: FABRICATION MATRIX v10.4.5 ACTIVE
                         </div>
 
                         <div className="text-center space-y-2 mb-10">
@@ -5147,14 +5402,10 @@ export default function App() {
                         </div>
                       )}
 
-                      {/* Floating comms panel for stock market news and tips */}
-                      <div className="shrink-0 bg-black/50 p-3 rounded-lg border border-cyan-500/30 mb-4 shadow-inner">
-                          <div className="font-mono text-xs text-cyan-300 space-y-1 h-[70px] overflow-y-auto custom-scrollbar pr-2">
-                              <div>[09:32] Weyland-Yutani announces record profits; stock supply tightening.</div>
-                              <div>[08:55] HOT TIP: Starfleet Credit Union expected to rally tomorrow.</div>
-                              <div>[08:10] Hutt Cartel shares tumble after spice shipment seizure.</div>
-                              <div>[07:45] Market volatility is high. Trade with caution.</div>
-                              <div>[07:01] Welcome to the Galactic Stock Exchange.</div>
+                      {/* 1-Line Real-Time Retro LED Marquee Ticker (Enhancement 135) */}
+                      <div className="shrink-0 mb-4 led-ticker-container">
+                          <div className="led-ticker-text">
+                              {getTickerText()}
                           </div>
                       </div>
                       <div className="flex-grow overflow-y-auto custom-scrollbar pr-2 pb-16">
@@ -5227,6 +5478,19 @@ export default function App() {
                                     <button disabled={state.gamePhase < 3} onClick={() => setStockSellQuantities({...stockSellQuantities, [stock.name]: stock.quantity.toString()})} className="w-auto px-4 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded font-bold py-1 disabled:opacity-50">MAX</button>
                                     <button disabled={state.gamePhase < 3} onClick={() => handleSellStock(stock.name)} className="w-auto px-4 bg-green-700 hover:bg-green-600 text-white text-sm rounded font-bold py-1 action-btn disabled:opacity-50">SELL</button>
                                   </div>
+                                  {stock.quantity >= (stock.totalShares || 100000) * 0.5 && (
+                                    <div className="pt-2 border-t border-slate-700/60 mt-2">
+                                      <button
+                                        onClick={() => {
+                                          SFX.play('click');
+                                          setModal({ type: 'hostile_takeover_confirm', data: stock });
+                                        }}
+                                        className="w-full bg-gradient-to-r from-red-600 via-yellow-600 to-cyan-600 hover:from-red-500 hover:to-cyan-500 text-white font-black py-2.5 px-4 rounded-xl text-xs uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(239,68,68,0.5)] animate-pulse"
+                                      >
+                                        ⚡ Attempt Takeover ⚡
+                                      </button>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             )})}
@@ -5844,7 +6108,7 @@ export default function App() {
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v10.4.4</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v10.4.5</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -5974,7 +6238,7 @@ export default function App() {
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.4.4</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.4.5</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -6197,7 +6461,7 @@ export default function App() {
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.4.4</p>
+                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.4.5</p>
                </div>
            </div>
        )}
@@ -6208,6 +6472,256 @@ export default function App() {
 
        {modal.type === 'message' && (
            <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 p-4"><div className="bg-slate-900 border border-gray-500 p-8 rounded-2xl max-w-lg w-full sci-fi-box text-center relative shadow-2xl"><p className={`text-xl font-black mb-8 whitespace-pre-wrap leading-tight uppercase ${modal.color || 'text-white'}`}>{renderLogMessage(modal.data)}</p><button onClick={()=>{setModal({type:'none', data:null}); SFX.play('click');}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl text-xl shadow-lg action-btn uppercase">Acknowledge</button></div></div>
+       )}
+
+       {modal.type === 'hostile_takeover_confirm' && (
+           <div className="absolute inset-0 bg-black/95 flex items-center justify-center z-50 p-4">
+               <div className="bg-slate-900 border-2 border-red-500 p-8 rounded-3xl max-w-xl w-full sci-fi-box text-center relative shadow-2xl animate-in zoom-in-95 duration-300">
+                   <div className="text-red-500 text-5xl mb-4 animate-pulse font-scifi">⚠️</div>
+                   <h3 className="text-red-400 font-bold text-2xl mb-4 uppercase tracking-widest font-scifi">Takeover Directive</h3>
+                   <p className="text-gray-200 mb-6 text-sm uppercase leading-relaxed font-mono">
+                       Captain Shane, you are initiating a Hostile Takeover of <span className="text-cyan-400 font-black">{modal.data.name}</span>. You own <span className="text-yellow-400 font-black">{modal.data.quantity.toLocaleString()}</span> shares ({((modal.data.quantity / modal.data.totalShares) * 100).toFixed(1)}%).
+                   </p>
+                   <p className="text-gray-400 mb-8 text-xs uppercase leading-relaxed font-mono">
+                       WARNING: SEIZING CONTROL INVOLVES EXTREME RISKS OF CORPORATE SABOTAGE, ANTITRUST REGULATORY FINES, AND LITIGATION INJUNCTIONS. PROCEED WITH EXTREME CAUTION.
+                   </p>
+                   <div className="flex flex-col gap-3">
+                       <button
+                           onClick={() => {
+                               SFX.play('click');
+                               handleHostileTakeover(modal.data.name);
+                           }}
+                           className="w-full bg-gradient-to-r from-red-600 to-yellow-600 hover:from-red-500 hover:to-yellow-500 text-white font-black py-4 rounded-xl text-lg uppercase tracking-wider shadow-lg action-btn"
+                       >
+                           ENACT TAKEOVER DIRECTIVE
+                       </button>
+                       <button
+                           onClick={() => {
+                               setModal({ type: 'banking', data: null });
+                               SFX.play('click');
+                           }}
+                           className="w-full bg-gray-700 hover:bg-gray-600 text-gray-300 font-bold py-3 rounded-xl text-md uppercase"
+                       >
+                           ABORT MISSION
+                       </button>
+                   </div>
+               </div>
+           </div>
+       )}
+
+       {modal.type === 'hostile_takeover_resolution' && (
+           <div className="absolute inset-0 bg-black/98 flex items-center justify-center z-50 p-4">
+               <div className="bg-slate-900 border-2 border-cyan-500 p-8 rounded-3xl max-w-2xl w-full sci-fi-box relative shadow-2xl animate-in zoom-in-95 duration-500 overflow-y-auto max-h-[90vh]">
+                   <h3 className="text-cyan-400 font-black text-3xl mb-6 text-center uppercase tracking-widest font-scifi">Takeover Assessment</h3>
+
+                   {modal.data.outcomeType === 'success' && (
+                       <div className="space-y-6 text-center">
+                           <div className="text-green-400 text-6xl animate-bounce">🏆</div>
+                           <h4 className="text-green-400 font-bold text-xl uppercase tracking-wider font-scifi">Board Capitulation Successful</h4>
+                           <p className="text-gray-300 font-mono text-sm leading-relaxed uppercase">
+                               The Board of Directors has surrendered! You have successfully acquired <span className="text-white font-bold">{modal.data.stockName}</span>. Choose how to merge the corporate assets:
+                           </p>
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                               <button
+                                   onClick={() => {
+                                       const val = modal.data.stockVal * 1.5;
+                                       setState(prev => {
+                                           if (!prev || !prev.stocks) return null;
+                                           const updatedStocks = prev.stocks.map(st =>
+                                               st.name === modal.data.stockName ? { ...st, quantity: 0, availableQuantity: st.totalShares } : st
+                                           );
+                                           return {
+                                               ...prev,
+                                               cash: prev.cash + val,
+                                               stocks: updatedStocks
+                                           };
+                                       });
+                                       log(`TAKEOVER: Successfully liquidated ${modal.data.stockName} for Golden Parachute payout of +${formatCurrencyLog(val)}!`, 'sell');
+                                       SFX.play('success');
+                                       setModal({ type: 'none', data: null });
+                                   }}
+                                   className="bg-green-700 hover:bg-green-600 text-white p-4 rounded-xl border border-green-500 flex flex-col items-center justify-center transition-all action-btn"
+                               >
+                                   <span className="font-bold text-sm uppercase mb-1">Golden Parachute Cash-Out</span>
+                                   <span className="text-xs font-mono text-green-200">Payout: +<PriceDisplay value={modal.data.stockVal * 1.5} size="text-xs" compact /></span>
+                               </button>
+                               <button
+                                   onClick={() => {
+                                       setState(prev => {
+                                           if (!prev || !prev.stocks) return null;
+                                           const updatedStocks = prev.stocks.map(st =>
+                                               st.name === modal.data.stockName ? { ...st, quantity: 0, availableQuantity: st.totalShares } : st
+                                           );
+                                           return {
+                                               ...prev,
+                                               dailyDividends: (prev.dailyDividends || 0) + 25000,
+                                               stocks: updatedStocks
+                                           };
+                                       });
+                                       log(`TAKEOVER: Secured control of ${modal.data.stockName}. Permanent daily dividend of +$B 25,000 established.`, 'buy');
+                                       SFX.play('success');
+                                       setModal({ type: 'none', data: null });
+                                   }}
+                                   className="bg-cyan-700 hover:bg-cyan-600 text-white p-4 rounded-xl border border-cyan-500 flex flex-col items-center justify-center transition-all action-btn"
+                               >
+                                   <span className="font-bold text-sm uppercase mb-1">Establish Dividend Feed</span>
+                                   <span className="text-xs font-mono text-cyan-200">Yield: +$B 25,000 / Day</span>
+                               </button>
+                           </div>
+                       </div>
+                   )}
+
+                   {modal.data.outcomeType === 'resistance' && (
+                       <div className="space-y-6 text-center">
+                           <div className="text-yellow-500 text-6xl animate-pulse">⚖️</div>
+                           <h4 className="text-yellow-400 font-bold text-xl uppercase tracking-wider font-scifi">Injunction Filed by Board</h4>
+                           <p className="text-gray-300 font-mono text-sm leading-relaxed uppercase">
+                               The Board is fighting back! They have hired an elite legal defense team and filed a federal antitrust injunction to freeze your shares.
+                           </p>
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                               <button
+                                   disabled={state.cash < 250000}
+                                   onClick={() => {
+                                       setState(prev => {
+                                           if (!prev || !prev.stocks) return null;
+                                           const updatedStocks = prev.stocks.map(st =>
+                                               st.name === modal.data.stockName ? { ...st, quantity: 0, availableQuantity: st.totalShares } : st
+                                           );
+                                           return {
+                                               ...prev,
+                                               cash: prev.cash - 250000,
+                                               dailyDividends: (prev.dailyDividends || 0) + 25000,
+                                               stocks: updatedStocks
+                                           };
+                                       });
+                                       log(`TAKEOVER: Overpowered litigation of ${modal.data.stockName} for $250,000. Permanent dividend of +$B 25,000 established.`, 'buy');
+                                       SFX.play('success');
+                                       setModal({ type: 'none', data: null });
+                                   }}
+                                   className="bg-blue-700 hover:bg-blue-600 disabled:bg-gray-800 disabled:opacity-50 text-white p-4 rounded-xl border border-blue-500 flex flex-col items-center justify-center transition-all action-btn"
+                               >
+                                   <span className="font-bold text-sm uppercase mb-1">Retain Elite Defense lawyers</span>
+                                   <span className="text-xs font-mono text-blue-200">Cost: -$B 250,000 || Yield: +$B 25,000 / Day</span>
+                               </button>
+                               <button
+                                   onClick={() => {
+                                       const soldCount = Math.floor(modal.data.sharesCount * 0.5);
+                                       const payout = soldCount * modal.data.stockPrice * 1.25;
+                                       setState(prev => {
+                                           if (!prev || !prev.stocks) return null;
+                                           const updatedStocks = prev.stocks.map(st =>
+                                               st.name === modal.data.stockName ? { ...st, quantity: st.quantity - soldCount, availableQuantity: (st.availableQuantity || 0) + soldCount } : st
+                                           );
+                                           return {
+                                               ...prev,
+                                               cash: prev.cash + payout,
+                                               stocks: updatedStocks
+                                           };
+                                       });
+                                       log(`TAKEOVER: Settled out of court with ${modal.data.stockName}. Sold ${soldCount.toLocaleString()} shares at 1.25x premium for +${formatCurrencyLog(payout)}.`, 'sell');
+                                       SFX.play('success');
+                                       setModal({ type: 'none', data: null });
+                                   }}
+                                   className="bg-yellow-700 hover:bg-yellow-600 text-white p-4 rounded-xl border border-yellow-500 flex flex-col items-center justify-center transition-all action-btn"
+                               >
+                                   <span className="font-bold text-sm uppercase mb-1">Settle & Divest Stake</span>
+                                   <span className="text-xs font-mono text-yellow-200">Payout: +<PriceDisplay value={payout} size="text-xs" compact /> (Divests 50%)</span>
+                               </button>
+                           </div>
+                       </div>
+                   )}
+
+                   {modal.data.outcomeType === 'sabotage' && (
+                       <div className="space-y-6 text-center">
+                           <div className="text-red-500 text-6xl animate-bounce">💥</div>
+                           <h4 className="text-red-500 font-bold text-xl uppercase tracking-wider font-scifi">Rogue Executive Sabotage</h4>
+                           <p className="text-gray-300 font-mono text-sm leading-relaxed uppercase">
+                               The corporate executives panicked! They ransacked the vault, liquidated core assets, sabotaged operations, and fled to the Outer Rim, crashing stock values by 60%.
+                           </p>
+                           <p className="text-green-400 font-mono text-xs uppercase leading-relaxed">
+                               However, your salvage crews raided their physical warehouses, recovering +20% consolidation buyout in cash, plus 15 units of <span className="font-bold">{MESH_NAME}</span> and 50 units of <span className="font-bold">Titanium Ore</span>!
+                           </p>
+                           <div className="pt-4">
+                               <button
+                                   onClick={() => {
+                                       const consolidationCash = modal.data.stockVal * 0.20;
+                                       setState(prev => {
+                                           if (!prev || !prev.stocks) return null;
+                                           const updatedStocks = prev.stocks.map(st => {
+                                               if (st.name === modal.data.stockName) {
+                                                   return { ...st, price: Math.round(st.price * 0.40), quantity: 0, availableQuantity: st.totalShares };
+                                               }
+                                               return st;
+                                           });
+                                           const newCargo = { ...prev.cargo };
+                                           newCargo[MESH_NAME] = { quantity: (newCargo[MESH_NAME]?.quantity || 0) + 15, averageCost: 0 };
+                                           newCargo['Titanium Ore'] = { quantity: (newCargo['Titanium Ore']?.quantity || 0) + 50, averageCost: 0 };
+
+                                           return {
+                                               ...prev,
+                                               cash: prev.cash + consolidationCash,
+                                               cargo: newCargo,
+                                               cargoWeight: prev.cargoWeight + (15 * 2.5) + (50 * 5.0),
+                                               stocks: updatedStocks
+                                           };
+                                       });
+                                       log(`TAKEOVER: ${modal.data.stockName} executives sabotaged the firm. Salvaged +${formatCurrencyLog(consolidationCash)} cash, 15 Mesh, and 50 Titanium Ore.`, 'maintenance');
+                                       SFX.play('explosion');
+                                       setModal({ type: 'none', data: null });
+                                   }}
+                                   className="w-full bg-red-700 hover:bg-red-600 text-white font-black py-4 rounded-xl text-lg uppercase tracking-widest shadow-lg action-btn"
+                               >
+                                   RETURN TO TERMINAL CONSOLE
+                               </button>
+                           </div>
+                       </div>
+                   )}
+
+                   {modal.data.outcomeType === 'regulatory' && (
+                       <div className="space-y-6 text-center">
+                           <div className="text-red-500 text-6xl animate-pulse">🚨</div>
+                           <h4 className="text-red-500 font-bold text-xl uppercase tracking-wider font-scifi">Antitrust Regulatory Fine</h4>
+                           <p className="text-gray-300 font-mono text-sm leading-relaxed uppercase">
+                               The Interstellar Trade Commission stepped in! They blocked the monopoly and hit you with an antitrust policy fine of -$B 150,000, forcing divestment of 10% of total shares at a 10% discount.
+                           </p>
+                           <div className="pt-4">
+                               <button
+                                   onClick={() => {
+                                       const forcedShares = Math.floor(modal.data.totalShares * 0.10);
+                                       const divestedShares = Math.min(modal.data.sharesCount, forcedShares);
+                                       const divestmentRevenue = divestedShares * modal.data.stockPrice * 0.90;
+
+                                       setState(prev => {
+                                           if (!prev || !prev.stocks) return null;
+                                           const updatedStocks = prev.stocks.map(st => {
+                                               if (st.name === modal.data.stockName) {
+                                                   return {
+                                                       ...st,
+                                                       quantity: st.quantity - divestedShares,
+                                                       availableQuantity: (st.availableQuantity || 0) + divestedShares
+                                                   };
+                                               }
+                                               return st;
+                                           });
+                                           return {
+                                               ...prev,
+                                               cash: prev.cash - 150000 + divestmentRevenue,
+                                               stocks: updatedStocks
+                                           };
+                                       });
+                                       log(`TAKEOVER: Monopolization fine paid (-$150,000). Forced divestment of ${divestedShares.toLocaleString()} shares of ${modal.data.stockName} for +${formatCurrencyLog(divestmentRevenue)}.`, 'maintenance');
+                                       SFX.play('laser');
+                                       setModal({ type: 'none', data: null });
+                                   }}
+                                   className="w-full bg-red-700 hover:bg-red-600 text-white font-black py-4 rounded-xl text-lg uppercase tracking-widest shadow-lg action-btn"
+                               >
+                                   RETURN TO TERMINAL CONSOLE
+                               </button>
+                           </div>
+                       </div>
+                   )}
+               </div>
+           </div>
        )}
 
        {modal.type === 'cargo_capacity_ship_confirm' && (
