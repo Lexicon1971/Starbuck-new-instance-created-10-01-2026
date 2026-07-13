@@ -190,6 +190,18 @@ export interface GameState {
   optimalVenueToday: number;
   hasSpokenOptimalVenue: boolean;
   dailyDividends?: number;
+
+  // Achievements (Enhancement 136)
+  achievements?: string[];
+  fabricationCount?: number;
+  survivedMutiny?: boolean;
+  bribeCount?: number;
+  visitedVenues?: string[];
+  daysTravelledCount?: number;
+  daysStayedCount?: number;
+  lastVenueIndex?: number;
+  reachedPhase4BeforeDay20?: boolean;
+  survivedCriticalHull?: boolean;
 }
 
 export interface Stock {
@@ -202,6 +214,7 @@ export interface Stock {
   availableQuantity?: number;
   totalShares?: number;
   dailyBuyLimitRemaining?: number; // Enhancement 131: Limit of shares allowed to be bought per day
+  takeoverSuccessful?: boolean; // Enhancement 136
 }
 
 // Fix: Updated Encounter type union to include 'fuel_breach' and 'cargo_tax' instead of 'fuel_leak' and 'tax'

@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v10.4.5
+ * VERSION: v10.4.6
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -1022,6 +1022,57 @@ export default function App() {
     s.stocks = initialStocks;
   }
 
+  const renderAchievementIcons = (s: any) => {
+    if (!s || !s.achievements) return null;
+    const list = s.achievements;
+    return (
+      <span className="inline-flex gap-1 items-center ml-2">
+        {list.includes('elon') && (
+          <span className="inline-flex items-center justify-center bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-500 text-slate-900 font-black rounded-full w-5 h-5 shadow-[0_0_12px_#f59e0b] text-xs border border-yellow-300 animate-pulse animate-bounce" title="E.L.O.N. Award: Executive Lord of Orbital Networks (Richest Man)">E</span>
+        )}
+        {list.includes('mutant_survivor') && (
+          <span className="inline-flex items-center justify-center bg-purple-900 text-purple-300 font-bold rounded-full w-5 h-5 text-xs border border-purple-500" title="Mutant Crew Uprising Survivor">👾</span>
+        )}
+        {list.includes('master_fabricator') && (
+          <span className="inline-flex items-center justify-center bg-orange-900 text-orange-300 font-bold rounded-full w-5 h-5 text-xs border border-orange-500" title="Master Fabricator (Fabricated 20+ times)">🛠️</span>
+        )}
+        {list.includes('corruption_master') && (
+          <span className="inline-flex items-center justify-center bg-yellow-950 text-yellow-300 font-bold rounded-full w-5 h-5 text-xs border border-yellow-600" title="Corruption Master (Bribed inspectors 5+ times)">💼</span>
+        )}
+        {list.includes('jetsetter') && (
+          <span className="inline-flex items-center justify-center bg-blue-900 text-blue-300 font-bold rounded-full w-5 h-5 text-xs border border-blue-500" title="Jetsetter Award (Visited every venue)">✈️</span>
+        )}
+        {list.includes('traveller') && (
+          <span className="inline-flex items-center justify-center bg-cyan-900 text-cyan-300 font-bold rounded-full w-5 h-5 text-xs border border-cyan-500" title="Traveller Award (Travelled 25+ days)">🚀</span>
+        )}
+        {list.includes('hermit') && (
+          <span className="inline-flex items-center justify-center bg-slate-800 text-slate-300 font-bold rounded-full w-5 h-5 text-xs border border-slate-500" title="Hermit Award (Stayed at a venue 3+ days)">🏡</span>
+        )}
+        {list.includes('overachiever') && (
+          <span className="inline-flex items-center justify-center bg-red-900 text-red-300 font-bold rounded-full w-5 h-5 text-xs border border-red-500 animate-pulse" title="Overachiever Award (Reached final phase before day 20)">⚡</span>
+        )}
+        {list.includes('steel_hull') && (
+          <span className="inline-flex items-center justify-center bg-emerald-900 text-emerald-300 font-bold rounded-full w-5 h-5 text-xs border border-emerald-500" title="Steel Hull Survivor (Survived with <= 10% Hull)">🛡️</span>
+        )}
+      </span>
+    );
+  };
+
+  const getAchievementName = (id: string) => {
+    switch (id) {
+      case 'elon': return 'E.L.O.N. (Executive Lord of Orbital Networks) Award';
+      case 'mutant_survivor': return 'Mutant Crew Uprising Survivor';
+      case 'master_fabricator': return 'Master Fabricator';
+      case 'corruption_master': return 'Corruption Master / Bribe Expert';
+      case 'jetsetter': return 'Jetsetter Award';
+      case 'traveller': return 'Traveller Award';
+      case 'hermit': return 'Hermit Award';
+      case 'overachiever': return 'Overachiever Award';
+      case 'steel_hull': return 'Steel Hull Survivor';
+      default: return id;
+    }
+  };
+
   const getInitialState = (startingCash: number, startIdx: number, markets: Market[], initialLoan: any, initialCargo: any, cargoWeight: number) => {
     const s = {
         day: 1,
@@ -1043,7 +1094,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v10.4.5 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v10.4.6 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -1063,6 +1114,15 @@ export default function App() {
         fixedCommodity: undefined,
         boostedCommodity: undefined,
         stocks: [],
+        achievements: [],
+        fabricationCount: 0,
+        survivedMutiny: false,
+        bribeCount: 0,
+        visitedVenues: [VENUES[startIdx]],
+        daysTravelledCount: 0,
+        daysStayedCount: 0,
+        reachedPhase4BeforeDay20: false,
+        survivedCriticalHull: false,
         jackpot: 1000000,
         hasTradedStocksToday: false,
         optimalVenueToday: -1,
@@ -1238,20 +1298,127 @@ export default function App() {
     }
   }, [modal.type]);
 
-  // Restores the scroll position of the main console when it is displayed.
+  // Restores the scroll position of the main console when it is displayed (Enhancement 136)
   useEffect(() => {
     const scrollableDiv = consoleScrollRef.current;
-    if (scrollableDiv) {
-      // This effect runs when the component mounts (i.e., when modal.type becomes 'none')
-      // Restore scroll position
-      scrollableDiv.scrollTop = consoleScrollPosition;
-
-      // Return a cleanup function that runs when the component unmounts
-      return () => {
-        setConsoleScrollPosition(scrollableDiv.scrollTop);
-      };
+    if (scrollableDiv && modal.type === 'none') {
+      // Slight delay to ensure elements have fully rendered and sizes are calculated
+      const timer = setTimeout(() => {
+        scrollableDiv.scrollTop = consoleScrollPosition;
+      }, 50);
+      return () => clearTimeout(timer);
     }
   }, [modal.type]);
+
+  // Pre-populate the maximum quantities for each stock for buy and sell values (Enhancement 136)
+  useEffect(() => {
+    if (state && state.stocks && state.gamePhase >= 3) {
+      setStockBuyQuantities(prevBuys => {
+        const nextBuys = { ...prevBuys };
+        let updated = false;
+        state.stocks!.forEach(stock => {
+          const maxAffordable = Math.floor((state.cash * 0.9) / stock.price);
+          const maxBuy = Math.max(0, Math.min(stock.availableQuantity ?? 0, maxAffordable));
+          if (nextBuys[stock.name] === undefined || nextBuys[stock.name] === '') {
+            nextBuys[stock.name] = maxBuy.toString();
+            updated = true;
+          }
+        });
+        return updated ? nextBuys : prevBuys;
+      });
+
+      setStockSellQuantities(prevSells => {
+        const nextSells = { ...prevSells };
+        let updated = false;
+        state.stocks!.forEach(stock => {
+          const maxSell = stock.quantity;
+          if (nextSells[stock.name] === undefined || nextSells[stock.name] === '') {
+            nextSells[stock.name] = maxSell.toString();
+            updated = true;
+          }
+        });
+        return updated ? nextSells : prevSells;
+      });
+    }
+  }, [state?.stocks, state?.cash, state?.gamePhase]);
+
+  // Dynamically monitors, tracks, and unlocks achievements in the Game State (Enhancement 136)
+  useEffect(() => {
+    if (state && !state.gameOver) {
+      let updated = false;
+      const s = { ...state };
+      const achievements = [...(s.achievements || [])];
+
+      const add = (id: string) => {
+        if (!achievements.includes(id)) {
+          achievements.push(id);
+          updated = true;
+          log(`ACHIEVEMENT UNLOCKED: ${getAchievementName(id)}!`, 'profit');
+          SFX.play('success');
+        }
+      };
+
+      // 1. E.L.O.N.
+      if (s.stocks && s.stocks.length > 0 && s.stocks.every(st => st.takeoverSuccessful)) {
+        add('elon');
+      }
+      // 2. Mutant survivor
+      if (s.survivedMutiny) {
+        add('mutant_survivor');
+      }
+      // 3. Master Fabricator
+      if ((s.fabricationCount || 0) >= 20) {
+        add('master_fabricator');
+      }
+      // 4. Corruption Master
+      if ((s.bribeCount || 0) >= 5) {
+        add('corruption_master');
+      }
+      // 5. Jetsetter
+      if (s.visitedVenues && s.visitedVenues.length === 10) {
+        add('jetsetter');
+      }
+      // 6. Traveller
+      if ((s.daysTravelledCount || 0) >= 25) {
+        add('traveller');
+      }
+      // 7. Hermit
+      if ((s.daysStayedCount || 0) >= 3) {
+        add('hermit');
+      }
+      // 8. Overachiever
+      if (s.reachedPhase4BeforeDay20) {
+        add('overachiever');
+      }
+      // 9. Steel Hull (lived/survived with <= 10% hull)
+      if (s.shipHealth > 0 && s.shipHealth <= 10) {
+        if (!s.survivedCriticalHull) {
+          s.survivedCriticalHull = true;
+          updated = true;
+        }
+        add('steel_hull');
+      }
+
+      if (updated) {
+        setState(prev => prev ? ({
+          ...prev,
+          achievements,
+          survivedCriticalHull: s.survivedCriticalHull || prev.survivedCriticalHull
+        }) : null);
+      }
+    }
+  }, [
+    state?.stocks,
+    state?.survivedMutiny,
+    state?.fabricationCount,
+    state?.bribeCount,
+    state?.visitedVenues,
+    state?.daysTravelledCount,
+    state?.daysStayedCount,
+    state?.reachedPhase4BeforeDay20,
+    state?.shipHealth,
+    state?.survivedCriticalHull
+  ]);
 
   // Automatically switches to the warehouse tab after a shipment is made (Removed in v10.4.4 for direct console return).
 
@@ -1308,7 +1475,7 @@ export default function App() {
   useEffect(() => {
     if (modal.type === 'fomo' && state) {
       const h2oAmt = state.cargo[H2O_NAME]?.quantity || 0;
-      const oreAmt = state.cargo['Titanium Ore']?.quantity || 0;
+      const oreAmt = state.cargo['Allthemantium Ore']?.quantity || 0;
       const clothAmt = state.cargo['Synthetic Cloth']?.quantity || 0;
       const cashMaxAmtMesh = Math.floor(state.cash / 2000);
       const maxMesh = Math.max(0, Math.min(h2oAmt, oreAmt, clothAmt, cashMaxAmtMesh));
@@ -1837,6 +2004,7 @@ export default function App() {
      
      if (destIdx === s.currentVenueIndex) {
          s.day++;
+         s.daysStayedCount = (s.daysStayedCount || 0) + 1; // Track stay days (Enhancement 136)
          processDay(s, report);
          const curGoal = s.gamePhase === 1 ? GOAL_PHASE_1_AMOUNT : (s.gamePhase === 2 ? GOAL_PHASE_2_AMOUNT : GOAL_PHASE_3_AMOUNT);
          const deadlineLimit = s.gamePhase === 1 ? GOAL_PHASE_1_DAYS : (state.gamePhase === 2 ? GOAL_PHASE_2_DAYS : (state.gamePhase === 3 ? GOAL_PHASE_3_DAYS : GOAL_OVERTIME_DAYS));
@@ -1871,6 +2039,14 @@ export default function App() {
      }
 
      SFX.play('warp');
+     s.daysTravelledCount = (s.daysTravelledCount || 0) + 1; // Track travel days (Enhancement 136)
+     const visited = s.visitedVenues || [];
+     const destName = VENUES[destIdx];
+     if (!visited.includes(destName)) {
+         visited.push(destName);
+     }
+     s.visitedVenues = visited; // Track visited venues for Jetsetter (Enhancement 136)
+
      if (invest95 && s.activeLoans.length === 0) {
          const investAmt = Math.floor(s.cash * 0.95);
          if (investAmt > 0) {
@@ -1995,6 +2171,7 @@ export default function App() {
                   s.cash -= encounter.demandAmount;
                   outcomeMsg = `BRIBE ACCEPTED: You paid the 22% "Refurbishment Waiver." The enforcers ignored the rust. Lost ${formatCurrencyLog(encounter.demandAmount)}.`;
                   r.events.push(`ENCOUNTER: Paid V.I.S.A. bribe of ${formatCurrencyLog(encounter.demandAmount)}.`);
+                  s.bribeCount = (s.bribeCount || 0) + 1;
               } else {
                   s.laserHealth = Math.max(0, s.laserHealth - 50);
                   outcomeMsg = `AUDIT FAILURE: You refused to pay. They remotely "shorted" your Hot Isotope Hummers. Laser integrity halved.`;
@@ -2007,6 +2184,7 @@ export default function App() {
                   s.cash -= encounter.demandAmount;
                   outcomeMsg = `CLEARED: The 25% "Processing Fee" was accepted. No cargo was scanned. Lost ${formatCurrencyLog(encounter.demandAmount)}.`;
                   r.events.push(`ENCOUNTER: Paid S.C.A.M. fees.`);
+                  s.bribeCount = (s.bribeCount || 0) + 1;
               } else {
                   const confiscated = ['Antimatter Rod', 'G.I.G.O (Lite) Matter', 'Spacetime Tea'];
                   let itemLost = '';
@@ -2083,11 +2261,38 @@ export default function App() {
               }
               outcomeType = 'danger';
               break;
+            case 'god_license':
+                if (decision === 'pay') {
+                    s.cash -= encounter.demandAmount;
+                    outcomeMsg = `LICENSED: Paid ${formatCurrencyLog(encounter.demandAmount)} G.O.D. compliance fee. Operating license is active.`;
+                    r.events.push(`ENCOUNTER: Paid G.O.D. license check of ${formatCurrencyLog(encounter.demandAmount)}.`);
+                    s.bribeCount = (s.bribeCount || 0) + 1;
+                } else {
+                    s.shipHealth = Math.max(0, s.shipHealth - 30);
+                    outcomeMsg = `LICENSE REVOCATION: You refused compliance. G.O.D enforcers remotely fried your hull shields. Sustained 30% damage.`;
+                    outcomeType = 'danger';
+                    r.events.push(`ENCOUNTER: Refused G.O.D. check. 30% damage.`);
+                }
+                break;
+            case 'cargo_tax':
+                if (decision === 'pay') {
+                    s.cash -= encounter.demandAmount;
+                    outcomeMsg = `TAXED: Paid ${formatCurrencyLog(encounter.demandAmount)} cargo transit tax. Cargo cleared.`;
+                    r.events.push(`ENCOUNTER: Paid cargo tax of ${formatCurrencyLog(encounter.demandAmount)}.`);
+                    s.bribeCount = (s.bribeCount || 0) + 1;
+                } else {
+                    s.shipHealth = Math.max(0, s.shipHealth - 25);
+                    outcomeMsg = `TAX EVASION: Refused tax payment. Customs officers fired warning shots, grazing your cargo hold. Sustained 25% damage.`;
+                    outcomeType = 'danger';
+                    r.events.push(`ENCOUNTER: Evaded cargo tax. 25% damage.`);
+                }
+                break;
             case 'mutiny':
                 if (decision === 'pay') {
                     s.cash -= encounter.demandAmount;
                     outcomeMsg = `APPEASED: The crew accepted their "Profit Share." Lost ${formatCurrencyLog(encounter.demandAmount)}.`;
                     r.events.push(`ENCOUNTER: Paid crew ${formatCurrencyLog(encounter.demandAmount)} to avert mutiny.`);
+                    s.survivedMutiny = true; // Track mutiny survivor!
                 } else {
                     s.isMutinyActive = true;
                     outcomeMsg = `MUTINY: The crew has seized control of the F.O.M.O. and Upgrades decks! You must pay their ransom at an I.B.A.N.K. Hub to regain access.`;
@@ -2179,7 +2384,7 @@ export default function App() {
             const amt = Math.max(1, Math.round(baseYield * finalYieldScale)); 
 
             const minedItems: {name: string, amt: number}[] = [];
-            if (laserLevel >= 1) minedItems.push({name: 'Titanium Ore', amt: amt});
+            if (laserLevel >= 1) minedItems.push({name: 'Allthemantium Ore', amt: amt});
             if (laserLevel >= 2 && Math.random() > 0.4) minedItems.push({name: 'Antimatter Rod', amt: Math.ceil(amt * 0.2)});
             if (laserLevel >= 3 && Math.random() > 0.7) minedItems.push({name: 'Dark Matter', amt: Math.ceil(amt * 0.05)});
 
@@ -2466,7 +2671,7 @@ export default function App() {
         let score = 0;
         // Fabrication score (lower cost of raw materials)
         const h2oPrice = market[H2O_NAME]?.price || Infinity;
-        const orePrice = market['Titanium Ore']?.price || Infinity;
+        const orePrice = market['Allthemantium Ore']?.price || Infinity;
         const clothPrice = market['Synthetic Cloth']?.price || Infinity;
         score -= (h2oPrice + orePrice + clothPrice);
 
@@ -2642,15 +2847,54 @@ export default function App() {
     if (s.stocks) {
       let updatedStocks = s.stocks.map(stock => {
         let priceChange = 0;
-        if (stock.risk === 'low') {
-          priceChange = stock.price * (Math.random() * 0.1 - 0.03);
-        } else if (stock.risk === 'medium') {
-          priceChange = stock.price * (Math.random() * 0.25 - 0.1);
+        const roll = Math.random();
+
+        // 30% chance of simulated active trading by NPCs on this stock today (Enhancement 136)
+        if (roll < 0.15) {
+          // Simulated Institutional Buy
+          const volume = Math.floor((stock.totalShares ?? 100000) * (0.005 + Math.random() * 0.025));
+          const actualVolume = Math.min(stock.availableQuantity ?? 0, volume);
+          if (actualVolume > 0) {
+            const priceImpactPercent = 0.02 + Math.random() * 0.08; // 2% to 10% price increase
+            priceChange = stock.price * priceImpactPercent;
+            stock.availableQuantity = Math.max(0, (stock.availableQuantity ?? 0) - actualVolume);
+
+            // Log to messages so it appears in the G.I.G.O feed!
+            const logEntry = `SIMULATOR: Institution purchased ${actualVolume.toLocaleString()} shares of ${stock.name}, driving price up +${(priceImpactPercent * 100).toFixed(1)}%.`;
+            s.messages.push({
+              id: Date.now() + Math.random(),
+              message: logEntry,
+              type: 'info'
+            });
+            report.events.push(`MARKET: NPC buying increased ${stock.name} price by +${(priceImpactPercent * 100).toFixed(1)}%.`);
+          }
+        } else if (roll < 0.30) {
+          // Simulated Retail/Whale Sell
+          const volume = Math.floor((stock.totalShares ?? 100000) * (0.005 + Math.random() * 0.025));
+          const priceImpactPercent = -(0.02 + Math.random() * 0.08); // 2% to 10% price drop
+          priceChange = stock.price * priceImpactPercent;
+          stock.availableQuantity = (stock.availableQuantity ?? 0) + volume;
+
+          const logEntry = `SIMULATOR: Large stakeholder divested ${volume.toLocaleString()} shares of ${stock.name}, lowering price by ${(priceImpactPercent * 100).toFixed(1)}%.`;
+          s.messages.push({
+            id: Date.now() + Math.random(),
+            message: logEntry,
+            type: 'info'
+          });
+          report.events.push(`MARKET: NPC selling dropped ${stock.name} price by ${(priceImpactPercent * 100).toFixed(1)}%.`);
         } else {
-          priceChange = stock.price * (Math.random() * 0.72 - 0.22);
+          // Standard organic drift
+          if (stock.risk === 'low') {
+            priceChange = stock.price * (Math.random() * 0.1 - 0.03);
+          } else if (stock.risk === 'medium') {
+            priceChange = stock.price * (Math.random() * 0.25 - 0.1);
+          } else {
+            priceChange = stock.price * (Math.random() * 0.72 - 0.22);
+          }
         }
+
         const newPrice = Math.max(1, stock.price + priceChange);
-        const availableQuantity = 1000 + Math.floor(Math.random() * 99001);
+        const availableQuantity = stock.availableQuantity || (1000 + Math.floor(Math.random() * 99001));
         return { ...stock, price: newPrice, availableQuantity };
       });
 
@@ -3126,6 +3370,10 @@ export default function App() {
     // Perform a deep copy of the game state to ensure React registers a fresh object reference
     const ns = JSON.parse(JSON.stringify(s)) as GameState;
     ns.gamePhase = nextPhase;
+
+    if (nextPhase === 4 && ns.day < 20) {
+      ns.reachedPhase4BeforeDay20 = true; // Track overachiever achievement (Enhancement 136)
+    }
 
     // Initialize the stock market when the player reaches Phase 3.
     if (nextPhase === 3) {
@@ -3834,7 +4082,7 @@ export default function App() {
     const oreNeeded = q;
     const clothNeeded = q;
     const h2o = state.cargo[H2O_NAME]?.quantity || 0;
-    const ore = state.cargo['Titanium Ore']?.quantity || 0;
+    const ore = state.cargo['Allthemantium Ore']?.quantity || 0;
     const cloth = state.cargo['Synthetic Cloth']?.quantity || 0;
 
     if (state.cash < totalCost) return setModal({type:'message', data: "Insufficient funds."});
@@ -3843,8 +4091,8 @@ export default function App() {
     const newCargo = { ...state.cargo };
     newCargo[H2O_NAME].quantity -= h2oNeeded;
     if (newCargo[H2O_NAME].quantity <= 0) delete newCargo[H2O_NAME];
-    newCargo['Titanium Ore'].quantity -= oreNeeded;
-    if (newCargo['Titanium Ore'].quantity <= 0) delete newCargo['Titanium Ore'];
+    newCargo['Allthemantium Ore'].quantity -= oreNeeded;
+    if (newCargo['Allthemantium Ore'].quantity <= 0) delete newCargo['Allthemantium Ore'];
     newCargo['Synthetic Cloth'].quantity -= clothNeeded;
     if (newCargo['Synthetic Cloth'].quantity <= 0) delete newCargo['Synthetic Cloth'];
 
@@ -3861,10 +4109,11 @@ export default function App() {
       cash: prev.cash - totalCost,
       cargo: newCargo,
       cargoWeight: prev.cargoWeight + weightDelta,
-      fomoDailyUse: { ...prev.fomoDailyUse, mesh: true }
+      fomoDailyUse: { ...prev.fomoDailyUse, mesh: true },
+      fabricationCount: (prev.fabricationCount || 0) + 1
     }) : null);
 
-    log(`FABRICATION: Used ${h2oNeeded} ${H2O_NAME}, ${oreNeeded} Titanium Ore, and ${clothNeeded} Synthetic Cloth to produce ${q} units of ${MESH_NAME}.`, 'mining');
+    log(`FABRICATION: Used ${h2oNeeded} ${H2O_NAME}, ${oreNeeded} Allthemantium Ore, and ${clothNeeded} Synthetic Cloth to produce ${q} units of ${MESH_NAME}.`, 'mining');
     setFomoQty('');
     SFX.play('success');
 
@@ -3924,7 +4173,8 @@ export default function App() {
       cash: prev.cash - totalCost,
       cargo: newCargo,
       cargoWeight: prev.cargoWeight + weightDelta,
-      fomoDailyUse: { ...prev.fomoDailyUse, stims: true }
+      fomoDailyUse: { ...prev.fomoDailyUse, stims: true },
+      fabricationCount: (prev.fabricationCount || 0) + 1
     }) : null);
 
     log(`FABRICATION: Used ${h2oNeeded} ${H2O_NAME}, ${pasteNeeded} ${NUTRI_PASTE_NAME}, and ${medKitsNeeded} Medical Kits to produce ${q} Stim-Packs.`, 'mining');
@@ -4073,7 +4323,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.4.5</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.4.6</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -4099,6 +4349,8 @@ export default function App() {
       { id: 'venues', label: "Trading Venues", icon: Building2 },
       { id: 'commodities', label: "Commodities Guide", icon: Box },
       { id: 'banks', label: "Banks & Stocks", icon: BarChart3 },
+      { id: 'achievements', label: "Achievements & Awards", icon: Trophy },
+      { id: 'frontpanels', label: "Console Guide", icon: Info },
       { id: 'broadcasts', label: "Neural Intercepts", icon: Radio },
       { id: 'acronyms', label: "Acronym Directory", icon: HelpCircle },
       { id: 'credits', label: "Credits", icon: Heart }
@@ -4139,7 +4391,8 @@ export default function App() {
       { term: "F.O.M.O.", exp: "Fabricate Output Management Operations", desc: "The ship's automated crafting unit. Utilizing atomic restructuring, it synthesizes advanced components such as expansion mesh or biological stimulants from basic inventory resources." },
       { term: "G.I.G.O.", exp: "Garbage In, Garbage Out", desc: "The ship's main real-time communication antenna and system logging device. It captures live market volatility reports, event feed summaries, and wacky neural network broadcasts." },
       { term: "T.O.N.S.", exp: "Tactical Orbital Navigation & Storage", desc: "The standard metric unit (T) of mass used to measure cargo weight capacity and shipping logistics limits across all interstellar freighters." },
-      { term: "I.B.A.N.K.", exp: "Interstellar Banking, Assets, & Net-worth Keepers", desc: "The centralized financial server that manages micro-loans, secure investment lockups, and real-time high-score Sync Registries." }
+      { term: "I.B.A.N.K.", exp: "Interstellar Banking, Assets, & Net-worth Keepers", desc: "The centralized financial server that manages micro-loans, secure investment lockups, and real-time high-score Sync Registries." },
+      { term: "E.L.O.N.", exp: "Executive Lord of Orbital Networks", desc: "A legendary executive title awarded only to the absolute richest tycoon who successfully secures a hostile takeover of every single public corporation in the known galaxy." }
     ];
 
     const broadcastTypes = Object.keys(QUIRKY_MESSAGES_DB) as Array<keyof typeof QUIRKY_MESSAGES_DB>;
@@ -4152,7 +4405,7 @@ export default function App() {
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v10.4.5 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v10.4.6 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -4351,6 +4604,110 @@ export default function App() {
             </div>
           )}
 
+          {currentTab === 'achievements' && (
+            <div className="space-y-6">
+              <div className="bg-black/35 p-6 rounded-2xl border border-gray-800/80">
+                <h3 className="text-lg font-bold text-white mb-4 uppercase tracking-wider flex items-center gap-2 border-b border-gray-900 pb-2">
+                  <Trophy className="text-yellow-400 animate-pulse" size={18} />
+                  Achievements & Awards Registry
+                </h3>
+                <p className="text-xs text-gray-400 font-mono leading-relaxed mb-6">
+                  Earn legendary honors across the space lanes by meeting unique gameplay conditions. Unlocked badges will be dynamically synchronized with your neural backup profile and visible on your Save and Load screens.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[
+                    { id: 'elon', name: "E.L.O.N. Award", desc: "Executive Lord of Orbital Networks. Successfully initiate hostile takeovers for every single public stock in the Known Galaxy.", reward: "Eternal Prestige & Golden Shiny E Badge", icon: <span className="inline-flex items-center justify-center bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-500 text-slate-900 font-black rounded-full w-6 h-6 shadow-[0_0_10px_#f59e0b] border border-yellow-300">E</span> },
+                    { id: 'mutant_survivor', name: "Mutant Crew Uprising Survivor", desc: "Successfully pacify, bribe, or pay off a rogue crew mutiny to regain control of your ship decks.", reward: "Moral boost & mutant skull badge", icon: "👾" },
+                    { id: 'master_fabricator', name: "Master Fabricator", desc: "Fabricate 20 or more batches of items using the F.O.M.O. Engineering Deck.", reward: "Crafting mastery badge", icon: "🛠️" },
+                    { id: 'corruption_master', name: "Corruption Master / Bribe Expert", desc: "Successfully bribe or pay off safety inspectors, customs checkpoints, and tax enforcers 5 or more times.", reward: "Waiver clearance badge", icon: "💼" },
+                    { id: 'jetsetter', name: "Jetsetter Award", desc: "Chart warp lanes and visit all 10 distinct trading venues in the galaxy.", reward: "Universal transit badge", icon: "✈️" },
+                    { id: 'traveller', name: "Traveller Award", desc: "Spend 25 or more cycles travelling between solar systems.", reward: "Cosmic odometer badge", icon: "🚀" },
+                    { id: 'hermit', name: "Hermit Award", desc: "Remain anchored at the exact same venue for 3 or more days using stay-in-place actions.", reward: "Planetary anchor badge", icon: "🏡" },
+                    { id: 'overachiever', name: "Overachiever Award", desc: "Advance to the final trading phase (Phase 4) in record time, before D.A.Y. 20.", reward: "Chronos speedrunner badge", icon: "⚡" },
+                    { id: 'steel_hull', name: "Steel Hull Survivor", desc: "Survive or travel through danger zones with hull integrity depleted to 10% or less.", reward: "Unyielding chassis badge", icon: "🛡️" }
+                  ].map(ach => {
+                    const isUnlocked = state.achievements?.includes(ach.id);
+                    return (
+                      <div key={ach.id} className={`p-4 rounded-xl border flex gap-3 items-start transition-all ${
+                        isUnlocked
+                          ? 'bg-yellow-950/20 border-yellow-500/40 shadow-[0_0_10px_rgba(234,179,8,0.15)]'
+                          : 'bg-black/35 border-gray-800/80 opacity-60 hover:opacity-85'
+                      }`}>
+                        <div className="text-3xl bg-slate-900/60 p-2 rounded-lg border border-slate-800 flex items-center justify-center shrink-0 w-12 h-12">
+                          {ach.icon}
+                        </div>
+                        <div className="min-w-0 flex-grow">
+                          <div className="flex justify-between items-center mb-1">
+                            <h4 className="text-sm font-black text-white uppercase tracking-wide truncate">{ach.name}</h4>
+                            <span className={`text-[8px] font-bold uppercase font-mono px-1.5 py-0.5 rounded tracking-widest ${
+                              isUnlocked ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 animate-pulse' : 'bg-gray-800 text-gray-500'
+                            }`}>
+                              {isUnlocked ? 'UNLOCKED' : 'LOCKED'}
+                            </span>
+                          </div>
+                          <p className="text-gray-400 text-xs font-mono leading-relaxed mb-1">{ach.desc}</p>
+                          <p className="text-[10px] text-gray-500 font-mono italic">Reward: {ach.reward}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {currentTab === 'frontpanels' && (
+            <div className="space-y-6">
+              <div className="bg-black/35 p-6 rounded-2xl border border-gray-800/80">
+                <h3 className="text-lg font-bold text-white mb-4 uppercase tracking-wider flex items-center gap-2 border-b border-gray-900 pb-2">
+                  <Info className="text-cyan-400" size={18} />
+                  Main Terminal Console Guide
+                </h3>
+                <p className="text-xs text-gray-400 font-mono leading-relaxed mb-6">
+                  Review and analyze complete structural logs and operational guidelines for each primary terminal deck. Click any deck guide below to preview its neural system description directly.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[
+                    { id: 'shop', title: "Fixathing'u'ma Jig Deck (Upgrades)", desc: "Buy, install, and upgrade the Mining Laser. Repair your Ship Hull and Laser focal lenses. Acquire Shields, Cannons, and scanners. Expand cargo bay to maximum size using Z@onflex Weave Mesh (to be bought at the market) before expanding. (Pro tip: Cargo bay limits expand at each Phase threshold)." },
+                    { id: 'banking', title: "I.B.A.N.K. Hub (Banking)", desc: "Manage your Starbucks Financial needs. Take out institution-specific loans (max 3 total, up to 1 per day). Invest idle capital in high-interest fixed-term deposits (1, 2, or 3 days) for guaranteed returns (only if debt-free!)." },
+                    { id: 'travel', title: "C.A.T. Station (Travel & Jump)", desc: "Chart flight paths and warp. Check lane Risk levels (High risk increases Crimson Fleet pirates and asteroid storm chances). Purchase warp transit cargo insurance. Place 95% of cash in safe 1-day CDs at 5% interest (debt-free only!)." },
+                    { id: 'shipping', title: "Void-Ex Logistics (Logistics & Contracts)", desc: "Access high-paying Corporate contracts and private logistics transfers. Corporate contracts require shipping exact commodity quantities to destination venues before the deadline. Failed contracts result in market trade bans and heavy liquidated damages fines. Private logistics allows 1-day express storage transfers to local warehouses. Warning: Unmoved warehouse stock is sold off after 3 cycles." },
+                    { id: 'comms', title: "G.I.G.O. Panel (Communications)", desc: "Garbage In, Garbage Out. Access and monitor system logs, galactic volatility feeds, space-news flashcasts, and intercept signals." },
+                    { id: 'fomo', title: "F.O.M.O. Engineering Deck (Fabrication)", desc: "Craft valuable Z@onflex Weave Mesh and high-potency Stim-Packs from basic mined raw materials and cargo stock. Fabrication is restricted to one batch run per item type per cycle. Maximize your batch sizes to optimize yield!" },
+                    { id: 'highscores', title: "Galactic Legends Registry (Universal Sync)", desc: "High-resolution registry of the top 100 interstellar tycoons. Syncs real-time net-worth indexes to the Universal I.B.A.N.K. Leaderboard." },
+                    { id: 'wiki', title: "Sector Codex Explorer (Wiki Systems)", desc: "Your universal repository of galactic lore, corporate compliance regulations, acronym directories, and achievement records." }
+                  ].map(panel => {
+                    return (
+                      <div key={panel.id} className="bg-slate-900/40 p-4 rounded-xl border border-slate-800/80 flex flex-col justify-between hover:border-cyan-500/20 transition-all">
+                        <div className="mb-4">
+                          <h4 className="text-sm font-black text-cyan-400 uppercase tracking-wide mb-2">{panel.title}</h4>
+                          <p className="text-gray-300 font-mono text-xs leading-relaxed">{panel.desc}</p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            SFX.play('click');
+                            handleFeatureClick(panel.id, () => {
+                              if (panel.id === 'wiki') {
+                                setWikiTab('lore');
+                              } else if (panel.id === 'highscores') {
+                                setModal({ type: 'highscores', data: null });
+                              } else {
+                                setModal({ type: panel.id, data: null });
+                              }
+                            });
+                          }}
+                          className="w-full text-center bg-cyan-950/40 hover:bg-cyan-900/50 text-cyan-300 border border-cyan-800/40 font-scifi uppercase text-[10px] py-1.5 px-3 rounded-lg tracking-wider transition-colors"
+                        >
+                          🔗 Access Live Deck 🔗
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
           {currentTab === 'acronyms' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {acronymsList.map((acr, i) => {
@@ -4374,7 +4731,7 @@ export default function App() {
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                          <p className="text-gray-500 font-mono text-[10px] uppercase">v10.4.5</p>
+                          <p className="text-gray-500 font-mono text-[10px] uppercase">v10.4.6</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -4697,7 +5054,7 @@ export default function App() {
                     <span className={`${isOverfilled ? 'text-red-500' : 'text-yellow-400'} text-sm md:text-xl font-bold font-mono w-1/3 text-right`}>{Math.round(state.cargoWeight)}/{state.cargoCapacity}T</span>
                 </div>
                 
-                <div className="overflow-y-auto custom-scrollbar flex-grow p-2" ref={consoleScrollRef}>
+                <div className="overflow-y-auto custom-scrollbar flex-grow p-2" ref={consoleScrollRef} onScroll={(e) => setConsoleScrollPosition(e.currentTarget.scrollTop)}>
                     <table className="w-full border-collapse hidden md:table">
                         <thead className="bg-gray-800/90 text-gray-400 sticky top-0 z-10 text-base">
                             <tr>
@@ -5212,7 +5569,7 @@ export default function App() {
       }
 
       if (modal.type === 'fomo') {
-          const availResources = [H2O_NAME, NUTRI_PASTE_NAME, "Medical Kits", "Titanium Ore", "Synthetic Cloth"];
+          const availResources = [H2O_NAME, NUTRI_PASTE_NAME, "Medical Kits", "Allthemantium Ore", "Synthetic Cloth"];
           return (
               <div className="p-4 md:p-8 flex h-full gap-8 max-w-full overflow-hidden">
                    <div className="w-56 flex flex-col shrink-0 overflow-y-auto custom-scrollbar bg-black/20 p-4 rounded-3xl border border-orange-500/20">
@@ -5232,7 +5589,7 @@ export default function App() {
 
                    <div className="flex-grow flex flex-col overflow-y-auto custom-scrollbar relative pt-10">
                         <div className="absolute top-0 right-0 w-72 text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                            SYSTEM LOG: FABRICATION MATRIX v10.4.5 ACTIVE
+                            SYSTEM LOG: FABRICATION MATRIX v10.4.6 ACTIVE
                         </div>
 
                         <div className="text-center space-y-2 mb-10">
@@ -5247,7 +5604,7 @@ export default function App() {
                                     <p className="text-gray-400 text-sm leading-relaxed">Advanced structural weaving for cargo expansion modules. Essential for ship upgrades.</p>
                                     <div className="bg-black/40 p-4 rounded-2xl border border-orange-500/10 space-y-1.5">
                                         <div className="flex justify-between text-xs"><span className="text-gray-500 uppercase font-bold">Input A:</span><span className="text-white font-bold">1x {H2O_NAME}</span></div>
-                                        <div className="flex justify-between text-xs"><span className="text-gray-500 uppercase font-bold">Input B:</span><span className="text-white font-bold">1x Titanium Ore</span></div>
+                                        <div className="flex justify-between text-xs"><span className="text-gray-500 uppercase font-bold">Input B:</span><span className="text-white font-bold">1x Allthemantium Ore</span></div>
                                         <div className="flex justify-between text-xs"><span className="text-gray-500 uppercase font-bold">Input C:</span><span className="text-white font-bold">1x Synthetic Cloth</span></div>
                                         <div className="flex justify-between text-sm pt-2 border-t border-gray-900 mt-2"><span className="text-gray-500 uppercase font-bold">Power Charge:</span><PriceDisplay value={2000} size="text-sm"/></div>
                                     </div>
@@ -5257,7 +5614,7 @@ export default function App() {
                                     <input type="number" placeholder="Qty" className="w-[190px] bg-gray-900 text-white text-center rounded-xl border border-gray-700 text-lg font-bold p-3" value={fomoQty || ''} onChange={e=>setFomoQty(e.target.value)} />
                                     <button onClick={()=>{
                                         const h2oAmt = state.cargo[H2O_NAME]?.quantity || 0;
-                                        const oreAmt = state.cargo['Titanium Ore']?.quantity || 0;
+                                        const oreAmt = state.cargo['Allthemantium Ore']?.quantity || 0;
                                         const clothAmt = state.cargo['Synthetic Cloth']?.quantity || 0;
                                         const cashMaxAmt = Math.floor(state.cash / 2000);
                                         const maxFab = Math.max(0, Math.min(h2oAmt, oreAmt, clothAmt, cashMaxAmt));
@@ -5382,7 +5739,7 @@ export default function App() {
                                     <p className="text-red-200 text-sm mb-4">The crew demands a ransom of {formatCurrencyLog(50000)} to unlock the F.O.M.O. and Upgrades decks.</p>
                                     <button onClick={() => {
                                         if (state.cash < 50000) return setModal({type:'message', data: "Insufficient funds to pay ransom."});
-                                        setState(prev => prev ? ({ ...prev, cash: prev.cash - 50000, isMutinyActive: false }) : null);
+                                        setState(prev => prev ? ({ ...prev, cash: prev.cash - 50000, isMutinyActive: false, survivedMutiny: true }) : null);
                                         log(`MUTINY: Paid crew ransom. F.O.M.O. & Upgrades unlocked.`, 'buy');
                                         SFX.play('success');
                                     }} className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-3 rounded-xl text-lg uppercase">PAY RANSOM</button>
@@ -5478,7 +5835,13 @@ export default function App() {
                                     <button disabled={state.gamePhase < 3} onClick={() => setStockSellQuantities({...stockSellQuantities, [stock.name]: stock.quantity.toString()})} className="w-auto px-4 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded font-bold py-1 disabled:opacity-50">MAX</button>
                                     <button disabled={state.gamePhase < 3} onClick={() => handleSellStock(stock.name)} className="w-auto px-4 bg-green-700 hover:bg-green-600 text-white text-sm rounded font-bold py-1 action-btn disabled:opacity-50">SELL</button>
                                   </div>
-                                  {stock.quantity >= (stock.totalShares || 100000) * 0.5 && (
+                                  {stock.takeoverSuccessful ? (
+                                    <div className="pt-2 border-t border-slate-700/60 mt-2 text-center">
+                                      <div className="bg-emerald-950/80 border border-emerald-500/30 text-emerald-400 font-bold py-2 px-4 rounded-xl text-xs uppercase tracking-widest shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+                                        ✅ Takeover Successful
+                                      </div>
+                                    </div>
+                                  ) : stock.quantity >= (stock.totalShares || 100000) * 0.5 ? (
                                     <div className="pt-2 border-t border-slate-700/60 mt-2">
                                       <button
                                         onClick={() => {
@@ -5490,7 +5853,7 @@ export default function App() {
                                         ⚡ Attempt Takeover ⚡
                                       </button>
                                     </div>
-                                  )}
+                                  ) : null}
                                 </div>
                               </div>
                             )})}
@@ -6108,7 +6471,7 @@ export default function App() {
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v10.4.5</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v10.4.6</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -6238,7 +6601,7 @@ export default function App() {
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.4.5</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.4.6</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -6414,6 +6777,13 @@ export default function App() {
                <div className="bg-slate-900 border border-blue-500 p-10 rounded-2xl max-sm w-full sci-fi-box text-center shadow-2xl">
                    <div className="flex justify-center mb-6 text-green-400 animate-pulse"><Save size={64} /></div>
                    <h2 className="text-3xl font-black text-white mb-2 uppercase tracking-tighter">Save Successful</h2>
+
+                   {/* Captain Name and Achievements (Enhancement 136) */}
+                   <div className="mb-6 text-yellow-500 font-mono font-bold flex items-center justify-center gap-1 uppercase tracking-widest text-lg">
+                       <span>CAPTAIN SHANE</span>
+                       {renderAchievementIcons(state)}
+                   </div>
+
                    <p className="text-gray-200 mb-10 font-bold text-lg uppercase tracking-widest animate-pulse">Neural State Secured.</p>
                    <div className="flex flex-col gap-3">
                        <button
@@ -6461,13 +6831,38 @@ export default function App() {
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.4.5</p>
+                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.4.6</p>
                </div>
            </div>
        )}
 
        {modal.type === 'load_save' && (
-           <div className="absolute inset-0 bg-black/90 flex items-center justify-center z-50 p-4"><div className="bg-slate-900 border border-blue-500 p-8 rounded-3xl max-sm w-full sci-fi-box text-center relative shadow-2xl animate-in zoom-in-95 duration-300"><h2 className="text-2xl font-black text-blue-400 mb-4 uppercase tracking-tighter">Backup Detected</h2><p className="text-gray-300 mb-8 font-mono text-sm uppercase">Neural backup detected from local cache. Resume active cycle?</p><div className="flex gap-4 justify-center"><button onClick={()=>loadSavedGame()} className="bg-blue-600 hover:bg-blue-500 text-white font-black py-3 px-8 rounded-xl uppercase shadow-xl">Resume</button><button onClick={()=>{ localStorage.removeItem('sbe_savegame'); initGame(false); }} className="bg-gray-700 hover:bg-gray-600 text-white py-3 px-8 rounded-xl uppercase">New Game</button></div></div></div>
+           <div className="absolute inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
+               <div className="bg-slate-900 border border-blue-500 p-8 rounded-3xl max-sm w-full sci-fi-box text-center relative shadow-2xl animate-in zoom-in-95 duration-300">
+                   <h2 className="text-2xl font-black text-blue-400 mb-4 uppercase tracking-tighter">Backup Detected</h2>
+
+                   {/* Name and Achievements (Enhancement 136) */}
+                   {(() => {
+                       try {
+                           const sData = JSON.parse(localStorage.getItem('sbe_savegame') || '{}');
+                           return (
+                               <div className="mb-4 text-yellow-500 font-mono font-bold flex items-center justify-center gap-1">
+                                   <span>CAPTAIN SHANE</span>
+                                   {renderAchievementIcons(sData)}
+                               </div>
+                           );
+                       } catch {
+                           return null;
+                       }
+                   })()}
+
+                   <p className="text-gray-300 mb-8 font-mono text-sm uppercase">Neural backup detected from local cache. Resume active cycle?</p>
+                   <div className="flex gap-4 justify-center">
+                       <button onClick={()=>loadSavedGame()} className="bg-blue-600 hover:bg-blue-500 text-white font-black py-3 px-8 rounded-xl uppercase shadow-xl">Resume</button>
+                       <button onClick={()=>{ localStorage.removeItem('sbe_savegame'); initGame(false); }} className="bg-gray-700 hover:bg-gray-600 text-white py-3 px-8 rounded-xl uppercase">New Game</button>
+                   </div>
+               </div>
+           </div>
        )}
 
        {modal.type === 'message' && (
@@ -6528,7 +6923,7 @@ export default function App() {
                                        setState(prev => {
                                            if (!prev || !prev.stocks) return null;
                                            const updatedStocks = prev.stocks.map(st =>
-                                               st.name === modal.data.stockName ? { ...st, quantity: 0, availableQuantity: st.totalShares } : st
+                                               st.name === modal.data.stockName ? { ...st, quantity: 0, availableQuantity: st.totalShares, takeoverSuccessful: true } : st
                                            );
                                            return {
                                                ...prev,
@@ -6550,7 +6945,7 @@ export default function App() {
                                        setState(prev => {
                                            if (!prev || !prev.stocks) return null;
                                            const updatedStocks = prev.stocks.map(st =>
-                                               st.name === modal.data.stockName ? { ...st, quantity: 0, availableQuantity: st.totalShares } : st
+                                               st.name === modal.data.stockName ? { ...st, quantity: 0, availableQuantity: st.totalShares, takeoverSuccessful: true } : st
                                            );
                                            return {
                                                ...prev,
@@ -6585,7 +6980,7 @@ export default function App() {
                                        setState(prev => {
                                            if (!prev || !prev.stocks) return null;
                                            const updatedStocks = prev.stocks.map(st =>
-                                               st.name === modal.data.stockName ? { ...st, quantity: 0, availableQuantity: st.totalShares } : st
+                                               st.name === modal.data.stockName ? { ...st, quantity: 0, availableQuantity: st.totalShares, takeoverSuccessful: true } : st
                                            );
                                            return {
                                                ...prev,
@@ -6639,7 +7034,7 @@ export default function App() {
                                The corporate executives panicked! They ransacked the vault, liquidated core assets, sabotaged operations, and fled to the Outer Rim, crashing stock values by 60%.
                            </p>
                            <p className="text-green-400 font-mono text-xs uppercase leading-relaxed">
-                               However, your salvage crews raided their physical warehouses, recovering +20% consolidation buyout in cash, plus 15 units of <span className="font-bold">{MESH_NAME}</span> and 50 units of <span className="font-bold">Titanium Ore</span>!
+                               However, your salvage crews raided their physical warehouses, recovering +20% consolidation buyout in cash, plus 15 units of <span className="font-bold">{MESH_NAME}</span> and 50 units of <span className="font-bold">Allthemantium Ore</span>!
                            </p>
                            <div className="pt-4">
                                <button
@@ -6655,7 +7050,7 @@ export default function App() {
                                            });
                                            const newCargo = { ...prev.cargo };
                                            newCargo[MESH_NAME] = { quantity: (newCargo[MESH_NAME]?.quantity || 0) + 15, averageCost: 0 };
-                                           newCargo['Titanium Ore'] = { quantity: (newCargo['Titanium Ore']?.quantity || 0) + 50, averageCost: 0 };
+                                           newCargo['Allthemantium Ore'] = { quantity: (newCargo['Allthemantium Ore']?.quantity || 0) + 50, averageCost: 0 };
 
                                            return {
                                                ...prev,
@@ -6665,7 +7060,7 @@ export default function App() {
                                                stocks: updatedStocks
                                            };
                                        });
-                                       log(`TAKEOVER: ${modal.data.stockName} executives sabotaged the firm. Salvaged +${formatCurrencyLog(consolidationCash)} cash, 15 Mesh, and 50 Titanium Ore.`, 'maintenance');
+                                       log(`TAKEOVER: ${modal.data.stockName} executives sabotaged the firm. Salvaged +${formatCurrencyLog(consolidationCash)} cash, 15 Mesh, and 50 Allthemantium Ore.`, 'maintenance');
                                        SFX.play('explosion');
                                        setModal({ type: 'none', data: null });
                                    }}
