@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v10.4.7
+ * VERSION: v10.4.8
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -46,9 +46,11 @@ import { GameState, Market, LoanOffer, LogEntry, DailyReport, Commodity, HighSco
 import Starfield from './Starfield';
 import { Building2, Rocket, XCircle, Trophy, Zap, Truck, Shield, Wrench, Fuel, Crosshair, Heart, Swords, Skull, Box, AlertTriangle, Radar, ClipboardList, Radio, HelpCircle, Warehouse as WarehouseIcon, RefreshCw, Factory, Map as MapIcon, BarChart3, PowerOff, Droplets, Pill, Save, Volume2, VolumeX, Menu, Anchor, Cpu, Hourglass, ToggleLeft, ToggleRight, Info, LineChart, ChevronUp, ChevronDown, Circle, CheckCircle2, BookOpen, Lock } from 'lucide-react';
 import { subscribeToLeaderboard, postHighScore } from './src/services/scores';
+import { db } from './src/firebase';
 
 // Resolve path to intro_ship.png correctly for Vite environment (including GitHub Pages base path)
 const introShip = new URL('./intro_ship.png', import.meta.url).href;
+const gorskyIcon = new URL('./gorsky.png', import.meta.url).href;
 
 // --- BLOCK 1: EXTERNAL SERVICES (FIREBASE & AUDIO) --------------------------
 // This block handles the integration of external services, specifically Firebase for data persistence
@@ -57,26 +59,7 @@ const introShip = new URL('./intro_ship.png', import.meta.url).href;
 // A. FIREBASE INITIALIZATION
 // Initializes the Firebase app and Firestore database if the configuration is valid.
 // This allows the game to save high scores and other persistent data.
-import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs } from 'firebase/firestore';
-
-const firebaseConfig = {
-  apiKey: "API_KEY",
-  authDomain: "PROJECT_ID.firebaseapp.com",
-  projectId: "PROJECT_ID",
-  storageBucket: "PROJECT_ID.appspot.com",
-  messagingSenderId: "SENDER_ID",
-  appId: "APP_ID"
-};
-
-let db: any = null;
-try {
-  if (firebaseConfig.projectId !== "PROJECT_ID") {
-    const app = initializeApp(firebaseConfig);
-    db = getFirestore(app);
-  }
-} catch (e) {
-}
+import { collection, addDoc, query, orderBy, limit, getDocs } from 'firebase/firestore';
 
 // B. SOUND ENGINE
 // Manages all audio within the game, including sound effects and ambient noises.
@@ -852,6 +835,7 @@ export default function App() {
   const [shippingTiers, setShippingTiers] = useState<Record<string, string>>({});
   const [logisticsTab, setLogisticsTab] = useState<'shipping' | 'contracts' | 'warehouse'>('contracts');
   const [highScoreName, setHighScoreName] = useState('');
+  const [tempSaveName, setTempSaveName] = useState('CAPTAIN SHANE');
   const [highlightShippingItem, setHighlightShippingItem] = useState<string | null>(null);
   const [stagedContract, setStagedContract] = useState<Contract | null>(null);
   const [pulsingContractId, setPulsingContractId] = useState<number | null>(null);
@@ -929,7 +913,8 @@ export default function App() {
    */
   const loadHighScores = async () => {
     let scores: HighScore[] = [];
-    if (db) {
+    const isFirebaseConfigured = import.meta.env.VITE_FIREBASE_PROJECT_ID && import.meta.env.VITE_FIREBASE_PROJECT_ID !== "PROJECT_ID";
+    if (db && isFirebaseConfigured) {
       try {
         const q = query(collection(db, "highscores"), orderBy("score", "desc"), limit(100));
         const s = await getDocs(q);
@@ -1051,7 +1036,7 @@ export default function App() {
           <span className="inline-flex items-center justify-center bg-yellow-950 text-yellow-300 font-bold rounded-full w-5 h-5 text-xs border border-yellow-600" title="Corruption Master (Bribed inspectors 5+ times)">💼</span>
         )}
         {list.includes('jetsetter') && (
-          <span className="inline-flex items-center justify-center bg-blue-900 text-blue-300 font-bold rounded-full w-5 h-5 text-xs border border-blue-500" title="Jetsetter Award (Visited every venue)">✈️</span>
+          <img src={gorskyIcon} className="inline-block w-5 h-5 object-contain rounded-full border border-yellow-500/50" title="and GOOD LUCK, MR. GORSKY (Visited every venue)" alt="Gorsky" />
         )}
         {list.includes('traveller') && (
           <span className="inline-flex items-center justify-center bg-cyan-900 text-cyan-300 font-bold rounded-full w-5 h-5 text-xs border border-cyan-500" title="Traveller Award (Travelled 25+ days)">🚀</span>
@@ -1075,7 +1060,7 @@ export default function App() {
       case 'mutant_survivor': return 'Mutant Crew Uprising Survivor';
       case 'master_fabricator': return 'Master Fabricator';
       case 'corruption_master': return 'Corruption Master / Bribe Expert';
-      case 'jetsetter': return 'Jetsetter Award';
+      case 'jetsetter': return 'and GOOD LUCK, MR. GORSKY';
       case 'traveller': return 'Traveller Award';
       case 'hermit': return 'Hermit Award';
       case 'overachiever': return 'Overachiever Award';
@@ -1105,7 +1090,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v10.4.7 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v10.4.8 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -1512,18 +1497,9 @@ export default function App() {
           e.preventDefault();
           e.stopPropagation();
       }
-      if (state) {
-          try {
-              localStorage.setItem('sbe_savegame', JSON.stringify(state));
-              setHasSave(true);
-              SFX.play('success');
-              setModal({ type: 'save_confirm', data: null });
-          } catch (e) {
-              console.error("Save failed", e);
-              SFX.play('error');
-              setModal({type:'message', data: "Neural Uplink Failed: Local Storage limit exceeded."});
-          }
-      }
+      SFX.play('click');
+      setTempSaveName(state?.playerName || 'CAPTAIN SHANE');
+      setModal({ type: 'save_prompt', data: null });
   };
 
   /**
@@ -3491,12 +3467,13 @@ export default function App() {
    * @param days The number of days survived.
    * @returns The updated list of high scores.
    */
-  const saveHighScore = async (name: string, score: number, days: number) => {
-    const newScore = { name, score, days, date: new Date().toLocaleDateString() };
+  const saveHighScore = async (name: string, score: number, days: number, achievements?: string[]) => {
+    const newScore = { name, score, days, date: new Date().toLocaleDateString(), achievements: achievements || [] };
     const currentScores = await loadHighScores();
     const updated = [...currentScores, newScore].sort((a,b) => b.score - a.score).slice(0, 100);
     localStorage.setItem('sbe_highscores', JSON.stringify(updated));
-    if (db) {
+    const isFirebaseConfigured = import.meta.env.VITE_FIREBASE_PROJECT_ID && import.meta.env.VITE_FIREBASE_PROJECT_ID !== "PROJECT_ID";
+    if (db && isFirebaseConfigured) {
         try {
             await addDoc(collection(db, "highscores"), newScore);
         } catch(e) {}
@@ -4360,7 +4337,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.4.7</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.4.8</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -4442,7 +4419,7 @@ export default function App() {
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v10.4.7 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v10.4.8 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -4657,7 +4634,7 @@ export default function App() {
                     { id: 'mutant_survivor', name: "Mutant Crew Uprising Survivor", desc: "Successfully pacify, bribe, or pay off a rogue crew mutiny to regain control of your ship decks.", reward: "Moral boost & mutant skull badge", icon: "👾" },
                     { id: 'master_fabricator', name: "Master Fabricator", desc: "Fabricate 20 or more batches of items using the F.O.M.O. Engineering Deck.", reward: "Crafting mastery badge", icon: "🛠️" },
                     { id: 'corruption_master', name: "Corruption Master / Bribe Expert", desc: "Successfully bribe or pay off safety inspectors, customs checkpoints, and tax enforcers 5 or more times.", reward: "Waiver clearance badge", icon: "💼" },
-                    { id: 'jetsetter', name: "Jetsetter Award", desc: "Chart warp lanes and visit all 10 distinct trading venues in the galaxy.", reward: "Universal transit badge", icon: "✈️" },
+                    { id: 'jetsetter', name: "and GOOD LUCK, MR. GORSKY", desc: "Successfully land on all 10 distinct venues in the Rusty Redeemer.", reward: "Good Luck, Mr. Gorsky badge", icon: <img src={gorskyIcon} className="w-12 h-12 object-contain rounded-full border border-yellow-500/30" alt="Gorsky" /> },
                     { id: 'traveller', name: "Traveller Award", desc: "Spend 25 or more cycles travelling between solar systems.", reward: "Cosmic odometer badge", icon: "🚀" },
                     { id: 'hermit', name: "Hermit Award", desc: "Remain anchored at the exact same venue for 3 or more days using stay-in-place actions.", reward: "Planetary anchor badge", icon: "🏡" },
                     { id: 'overachiever', name: "Overachiever Award", desc: "Advance to the final trading phase (Phase 4) in record time, before D.A.Y. 20.", reward: "Chronos speedrunner badge", icon: "⚡" },
@@ -4768,7 +4745,7 @@ export default function App() {
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                          <p className="text-gray-500 font-mono text-[10px] uppercase">v10.4.7</p>
+                          <p className="text-gray-500 font-mono text-[10px] uppercase">v10.4.8</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -5278,29 +5255,59 @@ export default function App() {
                                         <tr className="bg-slate-900/50">
                                             <td colSpan={6} className="p-4 border-b border-gray-800">
                                                 <div className="p-4 bg-black/40 rounded-2xl border border-slate-700/50 grid grid-cols-2 md:grid-cols-5 gap-3 text-xs font-mono">
-                                                    {VENUES.map((venueName, vIdx) => {
-                                                        const price = state.markets[vIdx][c.name]?.price || 0;
-                                                        const isLowest = price === minP;
-                                                        const isHighest = price === maxP;
-                                                        let prefix = "";
-                                                        let styleClass = "border border-slate-800 bg-slate-900/20 text-gray-400";
-                                                        if (isLowest) {
-                                                            prefix = "Buy: ";
-                                                            styleClass = "border-2 border-green-500 bg-green-950/30 text-green-400 font-bold shadow-[0_0_15px_rgba(34,197,94,0.1)]";
-                                                        } else if (isHighest) {
-                                                            prefix = "Sell: ";
-                                                            styleClass = "border-2 border-red-500 bg-red-950/30 text-red-400 font-bold shadow-[0_0_15px_rgba(239,68,68,0.1)]";
-                                                        }
-                                                        return (
-                                                            <div key={vIdx} className={`p-3 rounded-xl flex flex-col justify-between ${styleClass} transition-all hover:scale-[1.02]`}>
-                                                                <span className="text-[10px] uppercase text-slate-500 truncate font-sans font-semibold mb-1">{venueName}</span>
-                                                                <span className="text-sm flex items-center gap-0.5 mt-auto font-black">
-                                                                    {prefix}
-                                                                    <PriceDisplay value={price} size="text-sm" compact />
-                                                                </span>
-                                                            </div>
-                                                        );
-                                                    })}
+                                                    {(() => {
+                                                        const quantities = VENUES.map((_, idx) => state.markets[idx][c.name]?.quantity || 0);
+                                                        const maxQ = Math.max(...quantities);
+                                                        const minQ = Math.min(...quantities);
+
+                                                        return VENUES.map((venueName, vIdx) => {
+                                                            const price = state.markets[vIdx][c.name]?.price || 0;
+                                                            const qty = state.markets[vIdx][c.name]?.quantity || 0;
+
+                                                            const isLowest = price === minP;
+                                                            const isHighest = price === maxP;
+                                                            let prefix = "";
+                                                            let styleClass = "border border-slate-800 bg-slate-900/20 text-gray-400";
+                                                            if (isLowest) {
+                                                                prefix = "Buy: ";
+                                                                styleClass = "border-2 border-green-500 bg-green-950/30 text-green-400 font-bold shadow-[0_0_15px_rgba(34,197,94,0.1)]";
+                                                            } else if (isHighest) {
+                                                                prefix = "Sell: ";
+                                                                styleClass = "border-2 border-red-500 bg-red-950/30 text-red-400 font-bold shadow-[0_0_15px_rgba(239,68,68,0.1)]";
+                                                            }
+
+                                                            // Stock styling
+                                                            let stockStyle = "text-sky-300"; // default light blue (small)
+                                                            if (qty === maxQ && maxQ > 0) {
+                                                                stockStyle = "text-blue-600 font-black animate-pulse"; // blinking dark blue
+                                                            } else if (qty > minQ + (maxQ - minQ) * 0.33) {
+                                                                stockStyle = "text-sky-500 font-semibold"; // medium
+                                                            }
+
+                                                            // Price styling
+                                                            let priceStyle = "text-yellow-500 font-semibold"; // static yellow/orange
+                                                            if (isLowest) {
+                                                                priceStyle = "text-green-400 font-black animate-pulse"; // blinking bright green
+                                                            } else if (isHighest) {
+                                                                priceStyle = "text-red-500 font-black animate-pulse"; // blinking red
+                                                            }
+
+                                                            return (
+                                                                <div key={vIdx} className={`p-3 rounded-xl flex flex-col justify-between ${styleClass} transition-all hover:scale-[1.02]`}>
+                                                                    <span className="text-[10px] uppercase text-slate-500 truncate font-sans font-semibold mb-1">{venueName}</span>
+
+                                                                    <div className="text-[10px] font-mono mb-2">
+                                                                        Stock: <span className={stockStyle}>{qty.toLocaleString()}</span>
+                                                                    </div>
+
+                                                                    <span className={`text-sm flex items-center gap-0.5 mt-auto font-black ${priceStyle}`}>
+                                                                        {prefix}
+                                                                        <PriceDisplay value={price} size="text-sm" compact />
+                                                                    </span>
+                                                                </div>
+                                                            );
+                                                        });
+                                                    })()}
                                                 </div>
                                             </td>
                                         </tr>
@@ -5632,7 +5639,7 @@ export default function App() {
 
                    <div className="flex-grow flex flex-col overflow-y-auto custom-scrollbar relative pt-10">
                         <div className="absolute top-0 right-0 w-72 text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                            SYSTEM LOG: FABRICATION MATRIX v10.4.7 ACTIVE
+                            SYSTEM LOG: FABRICATION MATRIX v10.4.8 ACTIVE
                         </div>
 
                         <div className="text-center space-y-2 mb-10">
@@ -6469,7 +6476,10 @@ export default function App() {
                                   <div className="flex items-center gap-6">
                                       <span className={`font-mono text-xl w-8 text-center ${i < 3 ? 'text-yellow-400 font-black animate-pulse' : 'text-gray-600'}`}>{i + 1}</span>
                                       <div className="flex flex-col">
-                                          <span className="text-white font-bold text-lg uppercase tracking-tighter">{s.name}</span>
+                                          <div className="flex items-center gap-1">
+                                              <span className="text-white font-bold text-lg uppercase tracking-tighter">{s.name}</span>
+                                              {renderAchievementIcons(s)}
+                                          </div>
                                           <span className="text-[10px] text-gray-500 font-mono">{s.date}</span>
                                       </div>
                                   </div>
@@ -6514,7 +6524,7 @@ export default function App() {
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v10.4.7</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v10.4.8</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -6644,7 +6654,7 @@ export default function App() {
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.4.7</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.4.8</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -6818,19 +6828,134 @@ export default function App() {
            </div>
        )}
 
+       {modal.type === 'save_prompt' && (
+           <div className="absolute inset-0 bg-black/95 flex items-center justify-center z-50 p-4">
+               <div className="bg-slate-900 border border-blue-500 p-8 rounded-2xl max-w-md w-full sci-fi-box text-center shadow-2xl">
+                   <div className="flex justify-center mb-4 text-cyan-400 animate-pulse"><Save size={48} /></div>
+                   <h2 className="text-2xl font-black text-white mb-2 uppercase tracking-tighter">Initiate Neural Backup</h2>
+                   <p className="text-xs text-gray-400 font-mono mb-6 uppercase leading-relaxed">
+                       Only 3 save points are allowed per neural cycle.
+                       <br />
+                       Saves Used: <span className="text-yellow-400 font-bold">{(state?.saveCount || 0)} / 3</span>
+                   </p>
+
+                   <div className="mb-6 text-left">
+                       <label className="block text-xs text-cyan-400 uppercase font-bold mb-2">Captain Alias</label>
+                       <input
+                           type="text"
+                           placeholder="Captain Alias"
+                           className="w-full p-3 bg-gray-950 border border-cyan-500 text-white text-lg rounded-xl text-center outline-none uppercase font-mono"
+                           value={tempSaveName}
+                           onChange={e => setTempSaveName(e.target.value.toUpperCase())}
+                           maxLength={15}
+                       />
+                   </div>
+
+                   <div className="flex flex-col gap-3">
+                       <button
+                           onClick={async () => {
+                               if (!tempSaveName.trim()) return;
+                               const currentSaves = state?.saveCount || 0;
+                               if (currentSaves >= 3) {
+                                   SFX.play('error');
+                                   alert("Neural Uplink Blocked: Maximum of 3 save points utilized.");
+                                   return;
+                               }
+
+                               const nextSaveCount = currentSaves + 1;
+                               const updatedState = {
+                                   ...state,
+                                   playerName: tempSaveName.trim(),
+                                   saveCount: nextSaveCount
+                               } as GameState;
+
+                               try {
+                                   localStorage.setItem('sbe_savegame', JSON.stringify(updatedState));
+                                   setHasSave(true);
+                                   SFX.play('success');
+
+                                   const nw = getNetWorth(updatedState);
+                                   const displayScores = universalLeaderboard.length > 0 ? universalLeaderboard : state.highScores;
+                                   const threshold = displayScores.length < 100 ? 0 : displayScores[displayScores.length - 1].score;
+                                   const isLegend = nw > threshold;
+
+                                   if (isLegend) {
+                                       await postHighScore(tempSaveName.trim(), nw, state.day, state.achievements || []);
+                                       const updatedLocal = await saveHighScore(tempSaveName.trim(), nw, state.day, state.achievements || []);
+                                       setState({ ...updatedState, highScores: updatedLocal });
+                                   } else {
+                                       setState(updatedState);
+                                   }
+
+                                   setModal({
+                                       type: 'save_confirm',
+                                       data: {
+                                           name: tempSaveName.trim(),
+                                           isLegend,
+                                           saveCount: nextSaveCount
+                                       }
+                                   });
+                               } catch (e) {
+                                   console.error("Save failed", e);
+                                   SFX.play('error');
+                                   setModal({ type: 'message', data: "Neural Uplink Failed: Local Storage limit exceeded." });
+                               }
+                           }}
+                           disabled={(state?.saveCount || 0) >= 3}
+                           className="w-full bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-800 disabled:text-gray-500 text-white font-black py-3 rounded-xl text-lg shadow-lg action-btn uppercase"
+                       >
+                           {(state?.saveCount || 0) >= 3 ? "Save Locked" : "Confirm Neural Backup"}
+                       </button>
+                       <button
+                           onClick={() => {
+                               setModal({ type: 'none', data: null });
+                               SFX.play('click');
+                           }}
+                           className="w-full bg-slate-800 hover:bg-slate-700 text-white font-black py-3 rounded-xl text-lg uppercase transition-all"
+                       >
+                           Abort
+                       </button>
+                   </div>
+               </div>
+           </div>
+       )}
+
        {modal.type === 'save_confirm' && (
            <div className="absolute inset-0 bg-black/95 flex items-center justify-center z-50 p-4">
-               <div className="bg-slate-900 border border-blue-500 p-10 rounded-2xl max-sm w-full sci-fi-box text-center shadow-2xl">
+               <div className="bg-slate-900 border border-blue-500 p-10 rounded-2xl max-w-md w-full sci-fi-box text-center shadow-2xl">
                    <div className="flex justify-center mb-6 text-green-400 animate-pulse"><Save size={64} /></div>
                    <h2 className="text-3xl font-black text-white mb-2 uppercase tracking-tighter">Save Successful</h2>
 
                    {/* Captain Name and Achievements (Enhancement 136) */}
-                   <div className="mb-6 text-yellow-500 font-mono font-bold flex items-center justify-center gap-1 uppercase tracking-widest text-lg">
-                       <span>CAPTAIN SHANE</span>
+                   <div className="mb-4 text-yellow-500 font-mono font-bold flex items-center justify-center gap-1 uppercase tracking-widest text-lg">
+                       <span>{modal.data?.name || state?.playerName || "CAPTAIN SHANE"}</span>
                        {renderAchievementIcons(state)}
                    </div>
 
-                   <p className="text-gray-200 mb-10 font-bold text-lg uppercase tracking-widest animate-pulse">Neural State Secured.</p>
+                   <p className="text-gray-200 mb-2 font-bold text-md uppercase tracking-wider">Neural State Secured.</p>
+
+                   {/* Save Point Counter Instruction & Counter */}
+                   <div className="mb-6 bg-black/30 p-3 rounded border border-gray-800 text-xs font-mono text-gray-400 uppercase leading-relaxed">
+                       Only 3 save points are allowed per neural cycle.
+                       <br />
+                       Save Point: <span className="text-yellow-400 font-bold">{modal.data?.saveCount || state?.saveCount || 1} / 3</span>
+                       <br />
+                       Saves remaining: <span className="text-cyan-400 font-bold">{3 - (modal.data?.saveCount || state?.saveCount || 1)}</span>
+                   </div>
+
+                   {/* Universal Legends List feedback */}
+                   <div className="mb-8 font-mono text-xs uppercase leading-relaxed">
+                       {modal.data?.isLegend ? (
+                           <div className="text-green-400 font-bold animate-pulse bg-green-500/10 p-2 border border-green-500/20 rounded">
+                               Neural link established! Successfully registered in the Universal Legends list!
+                           </div>
+                       ) : (
+                           <div className="text-red-400 font-bold bg-red-500/10 p-2 border border-red-500/20 rounded">
+                               You have not made it into the Legend list.
+                           </div>
+                       )}
+                   </div>
+
                    <div className="flex flex-col gap-3">
                        <button
                            onClick={() => {
@@ -6857,7 +6982,39 @@ export default function App() {
        )}
 
        {modal.type === 'endgame' && (
-           <div className="absolute inset-0 bg-black z-50 flex flex-col items-center justify-center p-4"><h1 className="text-5xl md:text-7xl font-scifi text-red-600 mb-4 uppercase">{modal.data.isHighScore ? "Legendary Status" : "Neural Link Severed"}</h1><div className="text-2xl text-white mb-2 uppercase font-black">{modal.data.reason}</div><div className="text-4xl text-yellow-400 font-bold mb-8 font-mono"><PriceDisplay value={modal.data.netWorth} size="text-4xl" /></div>{modal.data.isHighScore && (<div className="mb-8 w-full max-w-md"><input type="text" placeholder="Hall of Fame Alias" className="w-full p-4 bg-gray-900 border border-yellow-500 text-white text-xl rounded-xl text-center mb-3 outline-none" value={highScoreName || ''} onChange={e=>setHighScoreName(e.target.value)} maxLength={15} /><button onClick={async ()=>{ if(!highScoreName) return; await postHighScore(highScoreName, modal.data.netWorth, modal.data.days); const updated = await saveHighScore(highScoreName, modal.data.netWorth, modal.data.days); setState(prev => prev ? ({...prev, highScores: updated}) : null); setModal({type:'highscores', data:null}); }} className="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-black py-3 rounded-xl text-lg uppercase shadow-xl">Submit Legacy</button></div>)}<div className="grid grid-cols-2 gap-8 text-center mb-8 text-gray-400"><div><div className="text-[10px] uppercase font-bold tracking-widest mb-1">D.A.Y.s Survived</div><div className="text-3xl text-white font-mono">{modal.data.days}</div></div><div><div className="text-[10px] uppercase font-bold tracking-widest mb-1">Single Win Record</div><div className="text-3xl text-green-400 font-mono"><PriceDisplay value={modal.data.stats.largestSingleWin} size="text-3xl" compact/></div></div></div><div className="flex flex-wrap gap-4 justify-center"><button onClick={() => { localStorage.removeItem('sbe_savegame'); initGame(false); }} className="bg-emerald-700 hover:bg-emerald-600 text-white font-black py-4 px-8 rounded-xl text-lg uppercase tracking-widest shadow-lg">New License</button><button onClick={() => { setModal({ type: 'credits', data: null }); SFX.play('click'); }} className="bg-blue-700 hover:bg-blue-600 text-white font-black py-4 px-8 rounded-xl text-lg uppercase tracking-widest shadow-lg">Watch Credits</button><button onClick={() => window.location.reload()} className="bg-red-700 hover:bg-red-600 text-white font-black py-4 px-8 rounded-xl text-lg uppercase tracking-widest shadow-lg">Sever Link</button></div></div>
+           <div className="absolute inset-0 bg-black z-50 flex flex-col items-center justify-center p-4">
+               <h1 className="text-5xl md:text-7xl font-scifi text-red-600 mb-4 uppercase">{modal.data.isHighScore ? "Legendary Status" : "Neural Link Severed"}</h1>
+               <div className="text-2xl text-white mb-2 uppercase font-black">{modal.data.reason}</div>
+               <div className="text-4xl text-yellow-400 font-bold mb-8 font-mono"><PriceDisplay value={modal.data.netWorth} size="text-4xl" /></div>
+
+               {!modal.data.isHighScore && (
+                   <div className="text-red-500 font-bold text-lg mb-6 uppercase tracking-wider bg-red-950/20 px-6 py-3 border border-red-900/30 rounded animate-pulse text-center max-w-md">
+                       You have not made it into the Legend list.
+                   </div>
+               )}
+
+               {modal.data.isHighScore && (
+                   <div className="mb-8 w-full max-w-md">
+                       <input type="text" placeholder="Hall of Fame Alias" className="w-full p-4 bg-gray-900 border border-yellow-500 text-white text-xl rounded-xl text-center mb-3 outline-none" value={highScoreName || ''} onChange={e=>setHighScoreName(e.target.value)} maxLength={15} />
+                       <button onClick={async ()=>{ if(!highScoreName) return; await postHighScore(highScoreName, modal.data.netWorth, modal.data.days, state?.achievements || []); const updated = await saveHighScore(highScoreName, modal.data.netWorth, modal.data.days, state?.achievements || []); setState(prev => prev ? ({...prev, highScores: updated}) : null); setModal({type:'highscores', data:null}); }} className="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-black py-3 rounded-xl text-lg uppercase shadow-xl">Submit Legacy</button>
+                   </div>
+               )}
+               <div className="grid grid-cols-2 gap-8 text-center mb-8 text-gray-400">
+                   <div>
+                       <div className="text-[10px] uppercase font-bold tracking-widest mb-1">D.A.Y.s Survived</div>
+                       <div className="text-3xl text-white font-mono">{modal.data.days}</div>
+                   </div>
+                   <div>
+                       <div className="text-[10px] uppercase font-bold tracking-widest mb-1">Single Win Record</div>
+                       <div className="text-3xl text-green-400 font-mono"><PriceDisplay value={modal.data.stats.largestSingleWin} size="text-3xl" compact/></div>
+                   </div>
+               </div>
+               <div className="flex flex-wrap gap-4 justify-center mt-6">
+                   <button onClick={() => { localStorage.removeItem('sbe_savegame'); initGame(false); }} className="bg-emerald-700 hover:bg-emerald-600 text-white font-black py-4 px-8 rounded-xl text-lg uppercase tracking-widest shadow-lg">New License</button>
+                   <button onClick={() => { setModal({ type: 'credits', data: null }); SFX.play('click'); }} className="bg-blue-700 hover:bg-blue-600 text-white font-black py-4 px-8 rounded-xl text-lg uppercase tracking-widest shadow-lg">Watch Credits</button>
+                   <button onClick={() => window.location.reload()} className="bg-red-700 hover:bg-red-600 text-white font-black py-4 px-8 rounded-xl text-lg uppercase tracking-widest shadow-lg">Sever Link</button>
+               </div>
+           </div>
        )}
 
        {modal.type === 'welcome' && (
@@ -6877,7 +7034,7 @@ export default function App() {
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.4.7</p>
+                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.4.8</p>
                </div>
            </div>
        )}
@@ -6893,7 +7050,7 @@ export default function App() {
                            const sData = JSON.parse(localStorage.getItem('sbe_savegame') || '{}');
                            return (
                                <div className="mb-4 text-yellow-500 font-mono font-bold flex items-center justify-center gap-1">
-                                   <span>CAPTAIN SHANE</span>
+                                   <span>{sData.playerName || "CAPTAIN SHANE"}</span>
                                    {renderAchievementIcons(sData)}
                                </div>
                            );
@@ -6921,7 +7078,7 @@ export default function App() {
                    <div className="text-red-500 text-5xl mb-4 animate-pulse font-scifi">⚠️</div>
                    <h3 className="text-red-400 font-bold text-2xl mb-4 uppercase tracking-widest font-scifi">Takeover Directive</h3>
                    <p className="text-gray-200 mb-6 text-sm uppercase leading-relaxed font-mono">
-                       Captain Shane, you are initiating a Hostile Takeover of <span className="text-cyan-400 font-black">{modal.data.name}</span>. You own <span className="text-yellow-400 font-black">{modal.data.quantity.toLocaleString()}</span> shares ({((modal.data.quantity / modal.data.totalShares) * 100).toFixed(1)}%).
+                       {state?.playerName || "Captain Shane"}, you are initiating a Hostile Takeover of <span className="text-cyan-400 font-black">{modal.data.name}</span>. You own <span className="text-yellow-400 font-black">{modal.data.quantity.toLocaleString()}</span> shares ({((modal.data.quantity / modal.data.totalShares) * 100).toFixed(1)}%).
                    </p>
                    <p className="text-gray-400 mb-8 text-xs uppercase leading-relaxed font-mono">
                        WARNING: SEIZING CONTROL INVOLVES EXTREME RISKS OF CORPORATE SABOTAGE, ANTITRUST REGULATORY FINES, AND LITIGATION INJUNCTIONS. PROCEED WITH EXTREME CAUTION.
