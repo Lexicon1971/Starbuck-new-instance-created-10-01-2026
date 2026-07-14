@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v10.4.8
+ * VERSION: v10.4.9
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -1090,7 +1090,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v10.4.8 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v10.4.9 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -1105,6 +1105,7 @@ export default function App() {
         warrantLevel: 0,
         sectorPasses: [],
         isMutinyActive: false,
+        mutantUnrest: 10,
         scannerLastUsedDay: 0,
         scannerConsecutiveDays: 0,
         fixedCommodity: undefined,
@@ -1234,7 +1235,8 @@ export default function App() {
                 fomoDailyUse: savedData.fomoDailyUse || { mesh: false, stims: false },
                 equipment: savedData.equipment || {},
                 warrantLevel: savedData.warrantLevel || 0,
-                sectorPasses: savedData.sectorPasses || []
+                sectorPasses: savedData.sectorPasses || [],
+                mutantUnrest: typeof savedData.mutantUnrest === 'number' ? savedData.mutantUnrest : 10
             };
             setState(mergedState);
             setModal({ type: 'load_save', data: null });
@@ -2065,13 +2067,13 @@ export default function App() {
      s.cargoWeight -= fuelCost * f.unitWeight;
      if (s.cargo[FUEL_NAME].quantity <= 0) delete s.cargo[FUEL_NAME];
      
-     let encounterChance = 0.35;
+     let encounterChance = 0.55;
      if (s.warrantLevel > 0) encounterChance *= 2;
      if (s.sectorPasses.includes(VENUES[destIdx])) encounterChance -= 0.20;
      if (s.fixedCommodity || s.boostedCommodity) encounterChance += 0.25;
 
      if (Math.random() < encounterChance) {
-        const types: Encounter['type'][] = ['visa_audit', 'scam_customs', 'god_license', 'cargo_tax', 'pirate', 'fuel_breach', 'accident', 'structural', 'rust_rats', 'derelict', 'mutiny'];
+        const types: Encounter['type'][] = ['visa_audit', 'scam_customs', 'god_license', 'cargo_tax', 'pirate', 'fuel_breach', 'accident', 'structural', 'rust_rats', 'derelict', 'mutiny', 'fold_error'];
         const typeEncounter = types[Math.floor(Math.random()*types.length)];
         let encounter: Encounter = { type: typeEncounter, title: '', description: '', riskDamage: 0 };
         let riskMult = ins ? 1.5 : 4.0; 
@@ -2133,6 +2135,10 @@ export default function App() {
                 encounter.description = `Morale is low. The crew demands a "Profit Share" bonus to keep the engines running.`;
                 encounter.demandAmount = Math.floor(s.cash * 0.15);
                 break;
+            case 'fold_error':
+                encounter.title = 'Spacetime Fold Alignment Failure';
+                encounter.description = `The fold-drive failed to align one of the spatial corners during hyper-jump. A cosmic anomaly is forcing your ship out of warp at an unexpected coordinates matrix!`;
+                break;
         }
 
         setModal({ type: 'event_encounter', data: { state: s, report, encounter, destIdx, mine, overload } });
@@ -2152,11 +2158,24 @@ export default function App() {
       const { state: stateData, report: reportData, encounter, destIdx, mine, overload } = modal.data;
       let outcomeMsg = "";
       let outcomeType: 'info' | 'profit' | 'danger' = 'info';
+      let resolvedDestIdx = destIdx;
       
       const s = { ...stateData } as GameState;
       const r = { ...reportData } as DailyReport;
 
       switch(encounter.type) {
+          case 'fold_error': {
+              let randIdx = s.currentVenueIndex;
+              const availableIndices = VENUES.map((_, idx) => idx).filter(idx => idx !== s.currentVenueIndex);
+              if (availableIndices.length > 0) {
+                  randIdx = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+              }
+              resolvedDestIdx = randIdx;
+              outcomeMsg = `FOLD SPACE FAILURE: A dimensional corner of hyperspace did not fold correctly! Your warp coordinates collapsed, forcing drop-out at ${VENUES[randIdx]}. Onboard cargo arrived with you, but shipped cargo has reached the original destination.`;
+              outcomeType = 'danger';
+              r.events.push(`NAVIGATION ANOMALY: Diverted to ${VENUES[randIdx]}.`);
+              break;
+          }
           case 'visa_audit':
               if (decision === 'pay') {
                   s.cash -= encounter.demandAmount;
@@ -2284,8 +2303,10 @@ export default function App() {
                     outcomeMsg = `APPEASED: The crew accepted their "Profit Share." Lost ${formatCurrencyLog(encounter.demandAmount)}.`;
                     r.events.push(`ENCOUNTER: Paid crew ${formatCurrencyLog(encounter.demandAmount)} to avert mutiny.`);
                     s.survivedMutiny = true; // Track mutiny survivor!
+                    s.mutantUnrest = Math.max(10, Math.floor((s.mutantUnrest || 10) - 50));
                 } else {
                     s.isMutinyActive = true;
+                    s.mutantUnrest = 100;
                     outcomeMsg = `MUTINY: The crew has seized control of the F.O.M.O. and Upgrades decks! You must pay their ransom at an I.B.A.N.K. Hub to regain access.`;
                     outcomeType = 'critical';
                     r.events.push(`CRITICAL: Crew mutiny! F.O.M.O. & Upgrades locked.`);
@@ -2325,7 +2346,7 @@ export default function App() {
         speakPanicked(outcomeMsg);
       }
 
-      setModal({ type: 'encounter_resolution', data: { state: s, report: r, outcomeMsg, outcomeType, destIdx, mine, overload } });
+      setModal({ type: 'encounter_resolution', data: { state: s, report: r, outcomeMsg, outcomeType, destIdx: resolvedDestIdx, mine, overload } });
   };
 
   /**
@@ -2546,54 +2567,54 @@ export default function App() {
       const currentState = newStateForTravel || state;
       if (!currentState) return;
 
-      // Eligible items (excluding hot isotopes and spice fuel)
-      const eligibleCargoItems = Object.entries(currentState.cargo).filter(([name, item]) => {
-          return name !== POWER_CELL_NAME && name !== FUEL_NAME && item.quantity > 0;
+      const laserLevel = currentState.equipment['laser_mk3'] ? 3 : (currentState.equipment['laser_mk2'] ? 2 : 1);
+      const cellsNeeded = travelConfig.mining ? (currentState.gamePhase * Math.pow(3, (laserLevel - 1))) : 0;
+
+      // Spice Fuel and Hot Isotope Hummers needed to travel are excluded:
+      const fuelNeededToTravel = fuel;
+      const cellsNeededToTravel = cellsNeeded;
+
+      // Find excess and eligible items to ship
+      // For Strategy 1 and Strategy 2, we subtract required travel fuel & hot isotopes first.
+      const stratShippedItems: Array<{ name: string; quantity: number; averageCost: number; unitWeight: number }> = [];
+
+      Object.entries(currentState.cargo).forEach(([name, item]) => {
+          if (name === FUEL_NAME) {
+              const excess = Math.max(0, item.quantity - fuelNeededToTravel);
+              if (excess > 0) {
+                  const cData = COMMODITIES.find(c => c.name === name);
+                  stratShippedItems.push({ name, quantity: excess, averageCost: item.averageCost, unitWeight: cData?.unitWeight || 0 });
+              }
+          } else if (name === POWER_CELL_NAME) {
+              const excess = Math.max(0, item.quantity - cellsNeededToTravel);
+              if (excess > 0) {
+                  const cData = COMMODITIES.find(c => c.name === name);
+                  stratShippedItems.push({ name, quantity: excess, averageCost: item.averageCost, unitWeight: cData?.unitWeight || 0 });
+              }
+          } else if (item.quantity > 0) {
+              const cData = COMMODITIES.find(c => c.name === name);
+              stratShippedItems.push({ name, quantity: item.quantity, averageCost: item.averageCost, unitWeight: cData?.unitWeight || 0 });
+          }
       });
 
-      const hasEligibleItems = eligibleCargoItems.length > 0;
+      // Shipped weight and remaining cargo weight
+      const totalShippedWeight = stratShippedItems.reduce((sum, item) => sum + (item.quantity * item.unitWeight), 0);
+      const remainingWeightAfterShipping = currentState.cargoWeight - totalShippedWeight;
+
       const isOverfilled = currentState.cargoWeight > currentState.cargoCapacity;
 
-      // Excluded items weight
-      const excludedWeight = Object.entries(currentState.cargo)
-          .filter(([name, item]) => (name === POWER_CELL_NAME || name === FUEL_NAME) && item.quantity > 0)
-          .reduce((sum, [name, item]) => {
-              const cData = COMMODITIES.find(c => c.name === name);
-              return sum + (item.quantity * (cData?.unitWeight || 0));
-          }, 0);
-
-      const willBeOverfilledWithOnlyExcluded = excludedWeight > currentState.cargoCapacity;
-
       if (isOverfilled) {
-          if (hasEligibleItems) {
-              setModal({
-                  type: 'cargo_capacity_ship_confirm',
-                  data: {
-                      destIdx,
-                      fuel,
-                      missingFuel,
-                      missingCells,
-                      newStateForTravel,
-                      eligibleItems: eligibleCargoItems,
-                      totalWeight: currentState.cargoWeight - excludedWeight,
-                      excludedWeight,
-                      willBeOverfilledWithOnlyExcluded
-                  }
-              });
-          } else {
+          const cannotProceedEvenAfterShipping = remainingWeightAfterShipping > currentState.cargoCapacity;
+
+          if (cannotProceedEvenAfterShipping) {
+              // Direct player to move cargo themselves
               setModal({
                   type: 'message',
-                  data: `CARGO OVERFILL BLOCK: Captain, your cargo hold is overloaded (${Math.round(currentState.cargoWeight)}/${currentState.cargoCapacity}T). Spice Fuel and Hot Isotope Hummers alone exceed your capacity. You must manually ship or sell these commodities until your cargo weight is under capacity before you can depart!`,
+                  data: `CARGO OVERFILL BLOCK: Captain, your cargo hold is overloaded (${Math.round(currentState.cargoWeight)}/${currentState.cargoCapacity}T). Even after auto-shipping all excess cargo, your remaining required Spice Fuel (${fuelNeededToTravel} units) and Hot Isotope Hummers (${cellsNeededToTravel} units) needed to travel still weigh ${Math.round(remainingWeightAfterShipping)}T, exceeding your cargo capacity. Please manually move, sell, or discard cargo to fit within capacity before you can depart!`,
                   color: 'text-red-500'
               });
               SFX.play('error');
-          }
-      } else {
-          // Flow Optimization: To prevent prompt fatigue, we only offer proactive cargo space optimization
-          // if the cargo hold is actually close to full (over 85% capacity). Otherwise, we bypass the modal and travel immediately.
-          const isCloseToFull = currentState.cargoWeight > (currentState.cargoCapacity * 0.85);
-
-          if (isCloseToFull && hasEligibleItems) {
+          } else {
               setModal({
                   type: 'cargo_capacity_ship_confirm',
                   data: {
@@ -2602,10 +2623,29 @@ export default function App() {
                       missingFuel,
                       missingCells,
                       newStateForTravel,
-                      eligibleItems: eligibleCargoItems,
-                      totalWeight: currentState.cargoWeight - excludedWeight,
-                      excludedWeight,
-                      willBeOverfilledWithOnlyExcluded,
+                      shippedItems: stratShippedItems,
+                      totalShippedWeight,
+                      remainingWeightAfterShipping,
+                      isProactive: false
+                  }
+              });
+          }
+      } else {
+          // Flow Optimization: offer proactive cargo space optimization if cargo hold is close to full (>85% capacity)
+          const isCloseToFull = currentState.cargoWeight > (currentState.cargoCapacity * 0.85);
+
+          if (isCloseToFull && stratShippedItems.length > 0) {
+              setModal({
+                  type: 'cargo_capacity_ship_confirm',
+                  data: {
+                      destIdx,
+                      fuel,
+                      missingFuel,
+                      missingCells,
+                      newStateForTravel,
+                      shippedItems: stratShippedItems,
+                      totalShippedWeight,
+                      remainingWeightAfterShipping,
                       isProactive: true
                   }
               });
@@ -2653,6 +2693,15 @@ export default function App() {
     s.dailyTransactions = {};
     s.fomoDailyUse = { mesh: false, stims: false };
     s.hasSpokenOptimalVenue = false;
+
+    // Increase mutant crew unrest daily as phases increase (Enhancement 142)
+    const dailyUnrestIncrease = s.gamePhase * 2;
+    s.mutantUnrest = Math.min(100, (s.mutantUnrest || 10) + dailyUnrestIncrease);
+    if (s.mutantUnrest >= 100 && !s.isMutinyActive) {
+        s.isMutinyActive = true;
+        s.mutantUnrest = 100;
+        report.events.push(`MUTINY DECLARED: Mutant crew unrest reached 100%! F.O.M.O. and Upgrades decks have been locked.`);
+    }
 
     // Calculate optimal venue for the next day
     let bestVenueIndex = -1;
@@ -4118,18 +4167,36 @@ export default function App() {
 
     const weightDelta = (q * cData.unitWeight) - (h2oNeeded * 1.0) - (oreNeeded * 5.0) - (clothNeeded * 0.25);
 
+    const prevUnrest = state.mutantUnrest || 10;
+    const unrestIncrease = 5 + (state.gamePhase * 4) + Math.min(10, Math.floor(q * 0.1));
+    const nextUnrest = Math.min(100, prevUnrest + unrestIncrease);
+    const mutinyTriggered = nextUnrest >= 100 && !state.isMutinyActive;
+
     setState(prev => prev ? ({
       ...prev,
       cash: prev.cash - totalCost,
       cargo: newCargo,
       cargoWeight: prev.cargoWeight + weightDelta,
       fomoDailyUse: { ...prev.fomoDailyUse, mesh: true },
-      fabricationCount: (prev.fabricationCount || 0) + 1
+      fabricationCount: (prev.fabricationCount || 0) + 1,
+      mutantUnrest: nextUnrest,
+      isMutinyActive: mutinyTriggered ? true : prev.isMutinyActive
     }) : null);
 
-    log(`FABRICATION: Used ${h2oNeeded} ${H2O_NAME}, ${oreNeeded} Allthemantium Ore, and ${clothNeeded} Synthetic Cloth to produce ${q} units of ${MESH_NAME}.`, 'mining');
+    log(`FABRICATION: Used ${h2oNeeded} ${H2O_NAME}, ${oreNeeded} Allthemantium Ore, and ${clothNeeded} Synthetic Cloth to produce ${q} units of ${MESH_NAME}. (Crew Unrest: ${nextUnrest}%)`, 'mining');
     setFomoQty('');
     SFX.play('success');
+
+    if (mutinyTriggered) {
+      log(`MUTINY: Mutant crew has revolted! F.O.M.O. and Upgrades decks are locked.`, 'critical');
+      setModal({
+        type: 'message',
+        data: `MUTINY DECLARED: Mutant crew unrest reached 100% due to fabrication strain! The crew has mutinied and locked the F.O.M.O. and Upgrades decks. You must pay their ransom at an I.B.A.N.K. Hub to pacify them.`,
+        color: 'text-red-500'
+      });
+      SFX.play('alarm');
+      return;
+    }
 
     const stimsAvailable = !state.fomoDailyUse.stims;
     if (stimsAvailable) {
@@ -4182,18 +4249,36 @@ export default function App() {
 
     const weightDelta = (q * cData.unitWeight) - (h2oNeeded * 1.0) - (pasteNeeded * 0.5) - (medKitsNeeded * 0.01);
 
+    const prevUnrest = state.mutantUnrest || 10;
+    const unrestIncrease = 5 + (state.gamePhase * 4) + Math.min(10, Math.floor(q * 0.1));
+    const nextUnrest = Math.min(100, prevUnrest + unrestIncrease);
+    const mutinyTriggered = nextUnrest >= 100 && !state.isMutinyActive;
+
     setState(prev => prev ? ({
       ...prev,
       cash: prev.cash - totalCost,
       cargo: newCargo,
       cargoWeight: prev.cargoWeight + weightDelta,
       fomoDailyUse: { ...prev.fomoDailyUse, stims: true },
-      fabricationCount: (prev.fabricationCount || 0) + 1
+      fabricationCount: (prev.fabricationCount || 0) + 1,
+      mutantUnrest: nextUnrest,
+      isMutinyActive: mutinyTriggered ? true : prev.isMutinyActive
     }) : null);
 
-    log(`FABRICATION: Used ${h2oNeeded} ${H2O_NAME}, ${pasteNeeded} ${NUTRI_PASTE_NAME}, and ${medKitsNeeded} Medical Kits to produce ${q} Stim-Packs.`, 'mining');
+    log(`FABRICATION: Used ${h2oNeeded} ${H2O_NAME}, ${pasteNeeded} ${NUTRI_PASTE_NAME}, and ${medKitsNeeded} Medical Kits to produce ${q} Stim-Packs. (Crew Unrest: ${nextUnrest}%)`, 'mining');
     setFomoStimQty('');
     SFX.play('success');
+
+    if (mutinyTriggered) {
+      log(`MUTINY: Mutant crew has revolted! F.O.M.O. and Upgrades decks are locked.`, 'critical');
+      setModal({
+        type: 'message',
+        data: `MUTINY DECLARED: Mutant crew unrest reached 100% due to synthesis strain! The crew has mutinied and locked the F.O.M.O. and Upgrades decks. You must pay their ransom at an I.B.A.N.K. Hub to pacify them.`,
+        color: 'text-red-500'
+      });
+      SFX.play('alarm');
+      return;
+    }
 
     const meshAvailable = !state.fomoDailyUse.mesh;
     if (meshAvailable) {
@@ -4337,7 +4422,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.4.8</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.4.9</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -4381,7 +4466,9 @@ export default function App() {
       { title: "F.O.M.O. Engineering", icon: Factory, content: "Fabricate Output Management Operations allows captains to synthesize raw materials into high-value commodities. Z@onflex Weave Mesh is critical for cargo bay expansions, while Stim-Packs are in high demand by biological colonies throughout the sector." },
       { title: "Void-Ex Logistics", icon: Truck, content: "Shipping goods across the void via Private or Corporate contracts is the most reliable way to secure multi-million credit payouts. Beware of auto-seizure policies: goods left in third-party warehouses for more than 3 cycles are sold to defray storage costs." },
       { title: "Void-Sickness", icon: Info, content: "Hauling massive cargo loads across unmapped dark systems often induces Void-Sickness. Affected crew members report hearing the faint, chilling voices of ancient marketing executives whispering long-forgotten quarterly sales targets in their minds. It is recommended to administer high-potency Stim-Packs to any crew showing signs of auditory advertising hallucinations." },
-      { title: "Temporal Phase Shifts", icon: Rocket, content: "Advancing through Phase 1, Phase 2, and Phase 3 is not just a commercial progression—it is a literal spatial-temporal shift. The S.H.A.N.E. network employs quantum algorithms that rewrite the physics of trade: spiking fuel costs, increasing pirate encounter frequencies, and creating highly volatile stock market dynamics." }
+      { title: "Temporal Phase Shifts", icon: Rocket, content: "Advancing through Phase 1, Phase 2, and Phase 3 is not just a commercial progression—it is a literal spatial-temporal shift. The S.H.A.N.E. network employs quantum algorithms that rewrite the physics of trade: spiking fuel costs, increasing pirate encounter frequencies, and creating highly volatile stock market dynamics." },
+      { title: "Crew Mutiny & Unrest", icon: Skull, content: "Mutant crew members working on the F.O.M.O. Engineering Deck are prone to severe unrest under intensive fabrication shifts. Their mutiny status increases with every fabrication done by the team and rises as temporal phases advance. If unrest reaches 100%, they will initiate a hostile mutiny, locking control of the F.O.M.O. and Upgrades decks! Resolving a mutiny event with an appeasing payment decreases their unrest, while paying their ransom at an I.B.A.N.K. Hub fully pacifies them." },
+      { title: "Spacetime Folding Anomalies", icon: Rocket, content: "Folding 4D spacetime during travel is a highly volatile process. If one of the universe's dimensional corners fails to fold correctly, a fold alignment failure occurs, diverting the ship to a completely random venue. While any pre-shipped cargo continues on its logistics vector to its original planned destination, onboard items not shipped remain in the ship cargo and safely arrive with you at the random coordinate anomaly." }
     ];
 
     const venueDetails = [
@@ -4419,7 +4506,7 @@ export default function App() {
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v10.4.8 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v10.4.9 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -4745,7 +4832,7 @@ export default function App() {
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                          <p className="text-gray-500 font-mono text-[10px] uppercase">v10.4.8</p>
+                          <p className="text-gray-500 font-mono text-[10px] uppercase">v10.4.9</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -5404,11 +5491,18 @@ export default function App() {
                           return (
                               <div key={i} className={`bg-slate-800 p-4 rounded-xl border-2 border-slate-700 flex flex-col justify-between hover:border-emerald-500/50 transition-all ${isBanned?'opacity-50 grayscale':''}`}>
                                   <div className="mb-4">
-                                      <div className="flex justify-between items-start mb-2">
+                                      <div className="flex justify-between items-center mb-2">
                                           <div className="flex items-center gap-2 min-w-0">
                                               <div className="text-white font-bold text-lg leading-tight truncate">{v}</div>
                                               <button onClick={() => setModal({ type: 'venue_intel', data: { venueIdx: i, market: state.markets[i] } })} className="text-[10px] bg-blue-900 hover:bg-blue-800 border border-blue-500 text-blue-300 px-2 py-1 rounded font-black shrink-0">INTEL</button>
                                           </div>
+
+                                          {state.visitedVenues?.includes(v) && (
+                                              <span className="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 mx-2 animate-pulse">
+                                                  <CheckCircle2 size={10} className="text-emerald-400" /> Visited
+                                              </span>
+                                          )}
+
                                           <div className={`text-[10px] font-bold px-2 py-1 rounded bg-black shrink-0 ${riskColor}`}>{risk} RISK {travelConfig.overload ? ' (CRITICAL)' : ''}</div>
                                       </div>
                                       <div className="text-gray-400 text-xs font-mono mb-2">{dist} Parsecs distance.</div>
@@ -5574,7 +5668,13 @@ export default function App() {
                                         <div className={`flex items-center font-bold text-lg ${group.color}`}><GroupIcon className="mr-2" size={24}/> {group.name}</div>
                                         <div className="flex gap-1">
                                             {group.items.map((id) => (
-                                                <Circle key={id} size={12} fill={state.equipment[id] ? '#10b981' : '#334155'} className={state.equipment[id] ? 'text-emerald-500' : 'text-slate-700'} />
+                                                <Circle
+                                                    key={id}
+                                                    size={12}
+                                                    fill={state.equipment[id] ? '#00ff66' : '#1e293b'}
+                                                    style={state.equipment[id] ? { filter: 'drop-shadow(0 0 6px #00ff66) drop-shadow(0 0 10px #00ff66)' } : undefined}
+                                                    className={state.equipment[id] ? 'text-emerald-400 animate-pulse' : 'text-slate-700'}
+                                                />
                                             ))}
                                         </div>
                                     </div>
@@ -5589,20 +5689,41 @@ export default function App() {
                                     )}
 
                                     {nextUpgradeItem ? (
-                                        <div className="p-4 bg-slate-900/50 rounded-xl border border-purple-500/20">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <div className="text-purple-300 font-bold text-sm">UPGRADE: {nextUpgradeItem.name}</div>
-                                                <PriceDisplay value={nextUpgradeItem.cost * (nextUpgradeItem.type === 'defense' ? state.gamePhase : 1)} size="text-sm" compact />
-                                            </div>
-                                            <div className="text-xs text-gray-500 mb-4">{nextUpgradeItem.description}</div>
-                                            <button 
-                                                onClick={() => buyEquipment(nextUpgradeItem)}
-                                        disabled={state.cash < (nextUpgradeItem.cost * (nextUpgradeItem.type === 'defense' ? state.gamePhase : 1)) || (nextUpgradeItem.id === 'scanner_mk2' && state.gamePhase < 2) || (nextUpgradeItem.id === 'scanner_mk3' && state.gamePhase < 3)}
-                                                className="w-full bg-purple-600 hover:bg-purple-500 disabled:bg-slate-700 text-white font-bold py-2 rounded-lg text-xs transition-all shadow-md border-b-4 border-purple-900 action-btn"
-                                            >
-                                                INITIATE UPGRADE
-                                            </button>
-                                        </div>
+                                        (() => {
+                                            const isScannerMk2Locked = nextUpgradeItem.id === 'scanner_mk2' && state.gamePhase < 2;
+                                            const isScannerMk3Locked = nextUpgradeItem.id === 'scanner_mk3' && state.gamePhase < 3;
+                                            const isLockedByPhase = isScannerMk2Locked || isScannerMk3Locked;
+                                            const cost = nextUpgradeItem.cost * (nextUpgradeItem.type === 'defense' ? state.gamePhase : 1);
+                                            const isAffordable = state.cash >= cost;
+                                            const isDisabled = isLockedByPhase || !isAffordable;
+
+                                            let buttonText = "INITIATE UPGRADE";
+                                            if (isScannerMk2Locked) buttonText = "LOCKED: REQUIRES PHASE 2";
+                                            if (isScannerMk3Locked) buttonText = "LOCKED: REQUIRES PHASE 3";
+
+                                            return (
+                                                <div className="p-4 bg-slate-900/50 rounded-xl border border-purple-500/20">
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <div className="text-purple-300 font-bold text-sm">UPGRADE: {nextUpgradeItem.name}</div>
+                                                        <PriceDisplay value={cost} size="text-sm" compact />
+                                                    </div>
+                                                    <div className="text-xs text-gray-500 mb-4">{nextUpgradeItem.description}</div>
+                                                    <button
+                                                        onClick={() => buyEquipment(nextUpgradeItem)}
+                                                        disabled={isDisabled}
+                                                        className={`w-full font-bold py-2 rounded-lg text-xs transition-all shadow-md border-b-4 action-btn ${
+                                                            isLockedByPhase
+                                                            ? 'bg-slate-800 text-slate-500 border-slate-950 opacity-40 cursor-not-allowed hover:bg-slate-800'
+                                                            : isDisabled
+                                                            ? 'bg-slate-700 text-gray-400 border-slate-900 opacity-60'
+                                                            : 'bg-purple-600 hover:bg-purple-500 text-white border-purple-900'
+                                                        }`}
+                                                    >
+                                                        {buttonText}
+                                                    </button>
+                                                </div>
+                                            );
+                                        })()
                                     ) : (
                                         <div className="p-4 bg-emerald-900/10 rounded-xl border border-emerald-500/20 text-center">
                                             <div className="text-emerald-400 font-bold text-sm uppercase tracking-tighter">MAXIMUM LEVEL ACHIEVED</div>
@@ -5637,9 +5758,29 @@ export default function App() {
                         </div>
                    </div>
 
-                   <div className="flex-grow flex flex-col overflow-y-auto custom-scrollbar relative pt-10">
-                        <div className="absolute top-0 right-0 w-72 text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                            SYSTEM LOG: FABRICATION MATRIX v10.4.8 ACTIVE
+                   <div className="flex-grow flex flex-col overflow-y-auto custom-scrollbar relative pt-20">
+                        <div className="absolute top-0 right-0 flex flex-col items-end gap-2">
+                            <div className="text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
+                                SYSTEM LOG: FABRICATION MATRIX v10.4.9 ACTIVE
+                            </div>
+                            <div className="bg-slate-950/90 border border-red-500/40 p-3 rounded-xl w-60 font-mono text-xs shadow-[0_0_15px_rgba(239,68,68,0.15)] flex flex-col gap-1 text-left">
+                                <div className="flex justify-between items-center text-red-400 font-bold tracking-wider">
+                                    <span>👾 MUTANT UNREST</span>
+                                    <span className="animate-pulse font-mono text-[10px]">{state.mutantUnrest || 10}%</span>
+                                </div>
+                                <div className="w-full bg-gray-900 rounded-full h-2 overflow-hidden border border-red-950">
+                                    <div
+                                        className={`h-full transition-all duration-300 ${(state.mutantUnrest || 10) >= 80 ? 'bg-red-500 animate-pulse' : ((state.mutantUnrest || 10) >= 50 ? 'bg-yellow-500' : 'bg-emerald-500')}`}
+                                        style={{ width: `${state.mutantUnrest || 10}%` }}
+                                    />
+                                </div>
+                                <div className="text-[9px] text-gray-500 uppercase tracking-tight flex justify-between mt-1">
+                                    <span>Status:</span>
+                                    <span className={state.isMutinyActive ? 'text-red-500 font-bold animate-pulse' : 'text-emerald-500'}>
+                                        {state.isMutinyActive ? 'MUTINY ACTIVE' : 'PACIFIED'}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="text-center space-y-2 mb-10">
@@ -5789,7 +5930,7 @@ export default function App() {
                                     <p className="text-red-200 text-sm mb-4">The crew demands a ransom of {formatCurrencyLog(50000)} to unlock the F.O.M.O. and Upgrades decks.</p>
                                     <button onClick={() => {
                                         if (state.cash < 50000) return setModal({type:'message', data: "Insufficient funds to pay ransom."});
-                                        setState(prev => prev ? ({ ...prev, cash: prev.cash - 50000, isMutinyActive: false, survivedMutiny: true }) : null);
+                                        setState(prev => prev ? ({ ...prev, cash: prev.cash - 50000, isMutinyActive: false, survivedMutiny: true, mutantUnrest: 10 }) : null);
                                         log(`MUTINY: Paid crew ransom. F.O.M.O. & Upgrades unlocked.`, 'buy');
                                         SFX.play('success');
                                     }} className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-3 rounded-xl text-lg uppercase">PAY RANSOM</button>
@@ -6524,7 +6665,7 @@ export default function App() {
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v10.4.8</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v10.4.9</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -6654,7 +6795,7 @@ export default function App() {
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.4.8</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.4.9</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -7034,7 +7175,7 @@ export default function App() {
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.4.8</p>
+                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.4.9</p>
                </div>
            </div>
        )}
@@ -7336,10 +7477,10 @@ export default function App() {
                    </p>
                    <div className="bg-black/40 p-4 rounded-xl border border-gray-800 mb-6 text-left text-xs font-mono space-y-2">
                        <div className="text-yellow-400 font-bold uppercase border-b border-gray-800 pb-2 mb-2">Logistics Summary</div>
-                       <div>Eligible cargo weight: <span className="text-white font-bold">{Math.round(modal.data.totalWeight)}T</span></div>
-                       <div>Excluded cargo weight (Fuel & Hummers): <span className="text-white font-bold">{Math.round(modal.data.excludedWeight)}T</span></div>
+                       <div>Eligible Shipped Weight: <span className="text-white font-bold">{Math.round(modal.data.totalShippedWeight)}T</span></div>
+                       <div>Required Travel Reserved Weight: <span className="text-white font-bold">{Math.round(modal.data.remainingWeightAfterShipping)}T</span></div>
                        <div>Logistics Fee Per Cargo Unit: <span className="text-white font-bold">100 / T</span></div>
-                       <div>Total estimated logistics fee: <span className="text-yellow-500 font-bold"><PriceDisplay value={Math.ceil(modal.data.totalWeight * 100)} size="text-xs" compact /></span></div>
+                       <div>Total estimated logistics fee: <span className="text-yellow-500 font-bold"><PriceDisplay value={Math.ceil(modal.data.totalShippedWeight * 100)} size="text-xs" compact /></span></div>
                    </div>
                    <div className="flex flex-col gap-3">
                        {/*
@@ -7348,8 +7489,8 @@ export default function App() {
                          This is ideal for securing peak sale opportunities upon arrival.
                        */}
                        <button onClick={() => {
-                           const { destIdx, fuel, missingFuel, missingCells, newStateForTravel, eligibleItems, totalWeight, excludedWeight, willBeOverfilledWithOnlyExcluded } = modal.data;
-                           const shippingCost = Math.ceil(totalWeight * 100);
+                           const { destIdx, fuel, missingFuel, missingCells, newStateForTravel, shippedItems, totalShippedWeight } = modal.data;
+                           const shippingCost = Math.ceil(totalShippedWeight * 100);
 
                            const baseState = newStateForTravel || state;
                            const ns = JSON.parse(JSON.stringify(baseState));
@@ -7359,19 +7500,27 @@ export default function App() {
                            const interestFee = willDebit ? Math.ceil(shippingCost * 0.10) : 0;
                            const totalCost = shippingCost + interestFee;
                            ns.cash -= totalCost;
-                           ns.cargoWeight = Math.max(0, ns.cargoWeight - totalWeight);
+                           ns.cargoWeight = Math.max(0, ns.cargoWeight - totalShippedWeight);
 
-                           eligibleItems.forEach(([name, item]: [string, CargoItem]) => {
+                           shippedItems.forEach((item: any) => {
                                // Find recommended highest paying venue across the sector
-                               const targetDest = getHighestPayingVenue(name, ns.markets, ns.currentVenueIndex);
-                               delete ns.cargo[name];
+                               const targetDest = getHighestPayingVenue(item.name, ns.markets, ns.currentVenueIndex);
+
+                               const cargoItem = ns.cargo[item.name];
+                               if (cargoItem) {
+                                   cargoItem.quantity -= item.quantity;
+                                   if (cargoItem.quantity <= 0) {
+                                       delete ns.cargo[item.name];
+                                   }
+                               }
+
                                if (!ns.warehouse[targetDest]) ns.warehouse[targetDest] = {};
-                               const existing = ns.warehouse[targetDest][name];
+                               const existing = ns.warehouse[targetDest][item.name];
                                if (existing) {
                                    existing.quantity += item.quantity;
                                    existing.originalAvgCost = ((existing.quantity * existing.originalAvgCost) + (item.quantity * item.averageCost)) / (existing.quantity + item.quantity);
                                } else {
-                                   ns.warehouse[targetDest][name] = {
+                                   ns.warehouse[targetDest][item.name] = {
                                        quantity: item.quantity,
                                        originalAvgCost: item.averageCost,
                                        arrivalDay: ns.day + 1 // Arrives tomorrow at remote venue
@@ -7385,18 +7534,9 @@ export default function App() {
                                SFX.play('error');
                            }
 
-                           if (willBeOverfilledWithOnlyExcluded) {
-                               setModal({
-                                   type: 'message',
-                                   data: `CARGO OVERFILL BLOCK: Even after auto-shipping eligible cargo, your remaining Hot Isotope Hummers and Spice Fuel alone weigh ${Math.round(excludedWeight)}T, exceeding your cargo capacity of ${ns.cargoCapacity}T. You must manually ship or sell these commodities until your cargo weight is under capacity before you can depart!`,
-                                   color: 'text-red-500'
-                               });
-                               SFX.play('error');
-                           } else {
-                               triggerTravelExecution(destIdx, fuel, missingFuel, missingCells, ns);
-                           }
+                           triggerTravelExecution(destIdx, fuel, missingFuel, missingCells, ns);
                        }} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl text-md shadow-lg action-btn uppercase">
-                           Ship item individually to best-selling location & Jump (-<PriceDisplay value={Math.ceil(modal.data.totalWeight * 100)} size="text-sm" compact />)
+                           Ship item individually to best-selling location & Jump (-<PriceDisplay value={Math.ceil(modal.data.totalShippedWeight * 100)} size="text-sm" compact />)
                        </button>
 
                        {/*
@@ -7404,8 +7544,8 @@ export default function App() {
                          Ships all commodities directly to the destination venue index.
                        */}
                        <button onClick={() => {
-                           const { destIdx, fuel, missingFuel, missingCells, newStateForTravel, eligibleItems, totalWeight, excludedWeight, willBeOverfilledWithOnlyExcluded } = modal.data;
-                           const shippingCost = Math.ceil(totalWeight * 100);
+                           const { destIdx, fuel, missingFuel, missingCells, newStateForTravel, shippedItems, totalShippedWeight } = modal.data;
+                           const shippingCost = Math.ceil(totalShippedWeight * 100);
 
                            const baseState = newStateForTravel || state;
                            const ns = JSON.parse(JSON.stringify(baseState));
@@ -7415,19 +7555,27 @@ export default function App() {
                            const interestFee = willDebit ? Math.ceil(shippingCost * 0.10) : 0;
                            const totalCost = shippingCost + interestFee;
                            ns.cash -= totalCost;
-                           ns.cargoWeight = Math.max(0, ns.cargoWeight - totalWeight);
+                           ns.cargoWeight = Math.max(0, ns.cargoWeight - totalShippedWeight);
 
-                           eligibleItems.forEach(([name, item]: [string, CargoItem]) => {
+                           shippedItems.forEach((item: any) => {
                                // Destination is destIdx (the venue index we are travelling to)
                                const targetDest = destIdx;
-                               delete ns.cargo[name];
+
+                               const cargoItem = ns.cargo[item.name];
+                               if (cargoItem) {
+                                   cargoItem.quantity -= item.quantity;
+                                   if (cargoItem.quantity <= 0) {
+                                       delete ns.cargo[item.name];
+                                   }
+                               }
+
                                if (!ns.warehouse[targetDest]) ns.warehouse[targetDest] = {};
-                               const existing = ns.warehouse[targetDest][name];
+                               const existing = ns.warehouse[targetDest][item.name];
                                if (existing) {
                                    existing.quantity += item.quantity;
                                    existing.originalAvgCost = ((existing.quantity * existing.originalAvgCost) + (item.quantity * item.averageCost)) / (existing.quantity + item.quantity);
                                } else {
-                                   ns.warehouse[targetDest][name] = {
+                                   ns.warehouse[targetDest][item.name] = {
                                        quantity: item.quantity,
                                        originalAvgCost: item.averageCost,
                                        arrivalDay: ns.day + 1 // Arrives tomorrow at destination venue
@@ -7441,35 +7589,11 @@ export default function App() {
                                SFX.play('error');
                            }
 
-                           if (willBeOverfilledWithOnlyExcluded) {
-                               setModal({
-                                   type: 'message',
-                                   data: `CARGO OVERFILL BLOCK: Even after auto-shipping eligible cargo, your remaining Hot Isotope Hummers and Spice Fuel alone weigh ${Math.round(excludedWeight)}T, exceeding your cargo capacity of ${ns.cargoCapacity}T. You must manually ship or sell these commodities until your cargo weight is under capacity before you can depart!`,
-                                   color: 'text-red-500'
-                               });
-                               SFX.play('error');
-                           } else {
-                               triggerTravelExecution(destIdx, fuel, missingFuel, missingCells, ns);
-                           }
+                           triggerTravelExecution(destIdx, fuel, missingFuel, missingCells, ns);
                        }} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl text-md shadow-lg action-btn uppercase">
-                           Ship all to destination travelling to & Jump (-<PriceDisplay value={Math.ceil(modal.data.totalWeight * 100)} size="text-sm" compact />)
+                           Ship all to destination travelling to & Jump (-<PriceDisplay value={Math.ceil(modal.data.totalShippedWeight * 100)} size="text-sm" compact />)
                        </button>
 
-                       <button onClick={() => {
-                           const { destIdx, fuel, missingFuel, missingCells, newStateForTravel, isProactive } = modal.data;
-                           if (isProactive) {
-                               triggerTravelExecution(destIdx, fuel, missingFuel, missingCells, newStateForTravel);
-                           } else {
-                               setModal({
-                                   type: 'message',
-                                   data: `CARGO OVERFILL BLOCK: Travel denied. Your cargo hold is overloaded (${Math.round(state.cargoWeight)}/${state.cargoCapacity}T). You must manually ship or sell these commodities until your cargo weight is under capacity before you can depart!`,
-                                   color: 'text-red-500'
-                               });
-                               SFX.play('error');
-                           }
-                       }} className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-xl uppercase">
-                           Proceed with Cargo
-                       </button>
                        <button onClick={() => { setModal({ type: 'travel', data: null }); SFX.play('click'); }} className="w-full bg-slate-800 hover:bg-slate-700 text-gray-400 font-bold py-2 rounded-xl uppercase">
                            Cancel Flight
                        </button>
