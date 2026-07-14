@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v10.5.1
+ * VERSION: v10.5.2
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -1090,7 +1090,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v10.5.1 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v10.5.2 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -4422,7 +4422,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.5.1</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.5.2</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -4506,7 +4506,7 @@ export default function App() {
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v10.5.1 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v10.5.2 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -4832,7 +4832,7 @@ export default function App() {
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                          <p className="text-gray-500 font-mono text-[10px] uppercase">v10.5.1</p>
+                          <p className="text-gray-500 font-mono text-[10px] uppercase">v10.5.2</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -5761,7 +5761,7 @@ export default function App() {
                    <div className="flex-grow flex flex-col overflow-y-auto custom-scrollbar relative pt-20">
                         <div className="absolute top-0 right-0 flex flex-col items-end gap-2">
                             <div className="text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                                SYSTEM LOG: FABRICATION MATRIX v10.5.1 ACTIVE
+                                SYSTEM LOG: FABRICATION MATRIX v10.5.2 ACTIVE
                             </div>
                             <div className="bg-slate-950/90 border border-red-500/40 p-3 rounded-xl w-60 font-mono text-xs shadow-[0_0_15px_rgba(239,68,68,0.15)] flex flex-col gap-1 text-left">
                                 <div className="flex justify-between items-center text-red-400 font-bold tracking-wider">
@@ -6665,7 +6665,7 @@ export default function App() {
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v10.5.1</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v10.5.2</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -6795,7 +6795,7 @@ export default function App() {
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.5.1</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.5.2</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -7175,7 +7175,7 @@ export default function App() {
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.5.1</p>
+                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.5.2</p>
                </div>
            </div>
        )}
@@ -7492,20 +7492,53 @@ export default function App() {
                        */}
                        <button onClick={() => {
                            const { destIdx, fuel, missingFuel, missingCells, newStateForTravel, shippedItems, totalShippedWeight } = modal.data;
-                           const shippingCost = Math.ceil(totalShippedWeight * 100);
-
                            const baseState = newStateForTravel || state;
                            const ns = JSON.parse(JSON.stringify(baseState));
 
-                           // Credit check bypassed: go into debit with 10% interest if cash is insufficient
+                           // 1. Resolve spice fuel and hot isotopes required for the trip first!
+                           if (missingFuel > 0 || missingCells > 0) {
+                               const fuelPrice = COMMODITIES.find(c => c.name === FUEL_NAME)!.maxPrice;
+                               const cellPrice = COMMODITIES.find(c => c.name === POWER_CELL_NAME)!.maxPrice;
+                               const cost = (missingFuel * fuelPrice) + (missingCells * cellPrice);
+
+                               const overdraftFee = ns.cash < cost ? cost * 0.10 : 0;
+                               const totalCost = cost + overdraftFee;
+                               ns.cash -= totalCost;
+
+                               if (missingFuel > 0) {
+                                   if (!ns.cargo[FUEL_NAME]) ns.cargo[FUEL_NAME] = { quantity: 0, averageCost: 0 };
+                                   const curF = ns.cargo[FUEL_NAME];
+                                   ns.cargo[FUEL_NAME] = {
+                                       quantity: curF.quantity + missingFuel,
+                                       averageCost: ((curF.quantity * curF.averageCost) + (missingFuel * fuelPrice)) / (curF.quantity + missingFuel)
+                                   };
+                                   ns.cargoWeight += missingFuel * COMMODITIES.find(c => c.name === FUEL_NAME)!.unitWeight;
+                               }
+                               if (missingCells > 0) {
+                                   if (!ns.cargo[POWER_CELL_NAME]) ns.cargo[POWER_CELL_NAME] = { quantity: 0, averageCost: 0 };
+                                   const curC = ns.cargo[POWER_CELL_NAME];
+                                   ns.cargo[POWER_CELL_NAME] = {
+                                       quantity: curC.quantity + missingCells,
+                                       averageCost: ((curC.quantity * curC.averageCost) + (missingCells * cellPrice)) / (curC.quantity + missingCells)
+                                   };
+                                   ns.cargoWeight += missingCells * COMMODITIES.find(c => c.name === POWER_CELL_NAME)!.unitWeight;
+                               }
+
+                               log(`EMERGENCY: Auto-bought ${missingFuel} Fuel and ${missingCells} Cells at max price.`, 'maintenance');
+                               if (overdraftFee > 0) log(`OVERDRAFT FEE: Paid ${formatCurrencyLog(overdraftFee)} for emergency purchase.`, 'overdraft');
+                               SFX.play('coin');
+                           }
+
+                           // 2. Compute logistics/shipping cost and subtract it (allowing overdraft)
+                           const shippingCost = Math.ceil(totalShippedWeight * 100);
                            const willDebit = ns.cash < shippingCost;
                            const interestFee = willDebit ? Math.ceil(shippingCost * 0.10) : 0;
                            const totalCost = shippingCost + interestFee;
                            ns.cash -= totalCost;
                            ns.cargoWeight = Math.max(0, ns.cargoWeight - totalShippedWeight);
 
+                           // 3. Ship items individually to their highest-paying venues
                            shippedItems.forEach((item: any) => {
-                               // Find recommended highest paying venue across the sector
                                const targetDest = getHighestPayingVenue(item.name, ns.markets, ns.currentVenueIndex);
 
                                const cargoItem = ns.cargo[item.name];
@@ -7525,7 +7558,7 @@ export default function App() {
                                    ns.warehouse[targetDest][item.name] = {
                                        quantity: item.quantity,
                                        originalAvgCost: item.averageCost,
-                                       arrivalDay: ns.day + 1 // Arrives tomorrow at remote venue
+                                       arrivalDay: ns.day + 1
                                    };
                                }
                            });
@@ -7536,7 +7569,8 @@ export default function App() {
                                SFX.play('error');
                            }
 
-                           triggerTravelExecution(destIdx, fuel, missingFuel, missingCells, ns);
+                           // 4. Travel! Calling handleTravel directly bypasses the redundant/broken triggerTravelExecution
+                           handleTravel(destIdx, fuel, travelConfig.insurance, travelConfig.mining, travelConfig.overload, travelConfig.invest95, ns);
                        }} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl text-md shadow-lg action-btn uppercase">
                            Ship item individually to best-selling location & Jump (-<PriceDisplay value={Math.ceil(modal.data.totalShippedWeight * 100)} size="text-sm" compact />)
                        </button>
@@ -7547,20 +7581,53 @@ export default function App() {
                        */}
                        <button onClick={() => {
                            const { destIdx, fuel, missingFuel, missingCells, newStateForTravel, shippedItems, totalShippedWeight } = modal.data;
-                           const shippingCost = Math.ceil(totalShippedWeight * 100);
-
                            const baseState = newStateForTravel || state;
                            const ns = JSON.parse(JSON.stringify(baseState));
 
-                           // Credit check bypassed: go into debit with 10% interest if cash is insufficient
+                           // 1. Resolve spice fuel and hot isotopes required for the trip first!
+                           if (missingFuel > 0 || missingCells > 0) {
+                               const fuelPrice = COMMODITIES.find(c => c.name === FUEL_NAME)!.maxPrice;
+                               const cellPrice = COMMODITIES.find(c => c.name === POWER_CELL_NAME)!.maxPrice;
+                               const cost = (missingFuel * fuelPrice) + (missingCells * cellPrice);
+
+                               const overdraftFee = ns.cash < cost ? cost * 0.10 : 0;
+                               const totalCost = cost + overdraftFee;
+                               ns.cash -= totalCost;
+
+                               if (missingFuel > 0) {
+                                   if (!ns.cargo[FUEL_NAME]) ns.cargo[FUEL_NAME] = { quantity: 0, averageCost: 0 };
+                                   const curF = ns.cargo[FUEL_NAME];
+                                   ns.cargo[FUEL_NAME] = {
+                                       quantity: curF.quantity + missingFuel,
+                                       averageCost: ((curF.quantity * curF.averageCost) + (missingFuel * fuelPrice)) / (curF.quantity + missingFuel)
+                                   };
+                                   ns.cargoWeight += missingFuel * COMMODITIES.find(c => c.name === FUEL_NAME)!.unitWeight;
+                               }
+                               if (missingCells > 0) {
+                                   if (!ns.cargo[POWER_CELL_NAME]) ns.cargo[POWER_CELL_NAME] = { quantity: 0, averageCost: 0 };
+                                   const curC = ns.cargo[POWER_CELL_NAME];
+                                   ns.cargo[POWER_CELL_NAME] = {
+                                       quantity: curC.quantity + missingCells,
+                                       averageCost: ((curC.quantity * curC.averageCost) + (missingCells * cellPrice)) / (curC.quantity + missingCells)
+                                   };
+                                   ns.cargoWeight += missingCells * COMMODITIES.find(c => c.name === POWER_CELL_NAME)!.unitWeight;
+                               }
+
+                               log(`EMERGENCY: Auto-bought ${missingFuel} Fuel and ${missingCells} Cells at max price.`, 'maintenance');
+                               if (overdraftFee > 0) log(`OVERDRAFT FEE: Paid ${formatCurrencyLog(overdraftFee)} for emergency purchase.`, 'overdraft');
+                               SFX.play('coin');
+                           }
+
+                           // 2. Compute logistics/shipping cost and subtract it (allowing overdraft)
+                           const shippingCost = Math.ceil(totalShippedWeight * 100);
                            const willDebit = ns.cash < shippingCost;
                            const interestFee = willDebit ? Math.ceil(shippingCost * 0.10) : 0;
                            const totalCost = shippingCost + interestFee;
                            ns.cash -= totalCost;
                            ns.cargoWeight = Math.max(0, ns.cargoWeight - totalShippedWeight);
 
+                           // 3. Ship all items to the chosen destination venue index
                            shippedItems.forEach((item: any) => {
-                               // Destination is destIdx (the venue index we are travelling to)
                                const targetDest = destIdx;
 
                                const cargoItem = ns.cargo[item.name];
@@ -7580,7 +7647,7 @@ export default function App() {
                                    ns.warehouse[targetDest][item.name] = {
                                        quantity: item.quantity,
                                        originalAvgCost: item.averageCost,
-                                       arrivalDay: ns.day + 1 // Arrives tomorrow at destination venue
+                                       arrivalDay: ns.day + 1
                                    };
                                }
                            });
@@ -7591,7 +7658,8 @@ export default function App() {
                                SFX.play('error');
                            }
 
-                           triggerTravelExecution(destIdx, fuel, missingFuel, missingCells, ns);
+                           // 4. Travel! Calling handleTravel directly bypasses the redundant/broken triggerTravelExecution
+                           handleTravel(destIdx, fuel, travelConfig.insurance, travelConfig.mining, travelConfig.overload, travelConfig.invest95, ns);
                        }} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl text-md shadow-lg action-btn uppercase">
                            Ship all to destination travelling to & Jump (-<PriceDisplay value={Math.ceil(modal.data.totalShippedWeight * 100)} size="text-sm" compact />)
                        </button>
