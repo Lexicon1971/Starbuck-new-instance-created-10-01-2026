@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v10.4.6
+ * VERSION: v10.4.7
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -676,7 +676,8 @@ const VerticalToggle = ({ checked, onChange, disabled, label, rightContent }: { 
  * @param msg The log message string.
  * @returns A React fragment with the formatted message.
  */
-const renderLogMessage = (msg: string) => {
+const renderLogMessage = (msg: string | null | undefined) => {
+    if (!msg) return '';
     const markerRegex = /\$B/g;
     const parts = msg.split(markerRegex);
     if (parts.length === 1) return msg;
@@ -810,15 +811,25 @@ export default function App() {
       const reason = event.reason;
       if (reason) {
         // Gracefully capture and suppress Firestore/Firebase background sync rejections
-        // (such as permission denied, domain restriction, or network blocks)
+        // (such as permission denied, domain restriction, network blocks, or 403 errors)
         const isFirebaseError =
           reason.name === 'FirebaseError' ||
-          (reason.code && (reason.code === 403 || reason.code === 'permission-denied' || reason.code === 'auth/operation-not-allowed')) ||
-          (reason.message && (reason.message.includes('Firebase') || reason.message.includes('Firestore') || reason.message.includes('permission_denied') || reason.message.includes('restricted')));
+          reason.name === 'n' ||
+          reason.code === 403 ||
+          reason.code === 'permission-denied' ||
+          reason.code === 'auth/operation-not-allowed' ||
+          reason.httpStatus === 200 ||
+          (reason.message && (
+            reason.message.includes('Firebase') ||
+            reason.message.includes('Firestore') ||
+            reason.message.includes('permission_denied') ||
+            reason.message.includes('restricted') ||
+            reason.message.includes('403')
+          ));
 
         if (isFirebaseError) {
           console.warn("Handled third-party database connection rejection gracefully:", reason);
-          event.preventDefault(); // Supresses browser global unhandled promise rejection errors
+          event.preventDefault(); // Suppresses browser global unhandled promise rejection errors
         }
       }
     };
@@ -1094,7 +1105,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v10.4.6 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v10.4.7 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -3421,19 +3432,27 @@ export default function App() {
    * @returns An array of market tip objects.
    */
   const getMarketTips = (s: GameState) => {
-    if (!s) return [];
+    if (!s || !s.markets) return [];
     const tips: any[] = [];
     const currentMarketLocal = s.markets[s.currentVenueIndex];
+    if (!currentMarketLocal) return [];
     COMMODITIES.forEach(c => {
-      const cp = currentMarketLocal[c.name].price;
+      const mItemLocal = currentMarketLocal[c.name];
+      if (!mItemLocal) return;
+      const cp = mItemLocal.price || 0;
       let minP = Infinity, maxP = 0, maxV = '';
       s.markets.forEach((m, i) => {
-        const p = m[c.name].price;
-        if (p < minP) minP = p;
-        if (p > maxP) { maxP = p; maxV = VENUES[i]; }
+        const mItem = m?.[c.name];
+        const p = mItem ? mItem.price : 0;
+        if (p > 0) {
+          if (p < minP) minP = p;
+          if (p > maxP) { maxP = p; maxV = VENUES[i] || 'Unknown'; }
+        }
       });
-      if (cp <= minP * 1.1) tips.push({ type: 'buy', text: `BUY ${c.name}: Low (${formatCurrencyLog(cp)}). Sell at ${maxV} (~${formatCurrencyLog(maxP)}).`, score: maxP/cp });
-      if (cp >= maxP * 0.9) tips.push({ type: 'sell', text: `SELL ${c.name}: High (${formatCurrencyLog(cp)}).`, score: cp });
+      if (minP !== Infinity && maxP > 0 && cp > 0) {
+        if (cp <= minP * 1.1) tips.push({ type: 'buy', text: `BUY ${c.name}: Low (${formatCurrencyLog(cp)}). Sell at ${maxV} (~${formatCurrencyLog(maxP)}).`, score: maxP/cp });
+        if (cp >= maxP * 0.9) tips.push({ type: 'sell', text: `SELL ${c.name}: High (${formatCurrencyLog(cp)}).`, score: cp });
+      }
     });
     return tips.sort((a,b) => b.score - a.score).slice(0, 3);
   };
@@ -4341,7 +4360,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.4.6</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.4.7</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -4423,7 +4442,7 @@ export default function App() {
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v10.4.6 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v10.4.7 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -4749,7 +4768,7 @@ export default function App() {
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                          <p className="text-gray-500 font-mono text-[10px] uppercase">v10.4.6</p>
+                          <p className="text-gray-500 font-mono text-[10px] uppercase">v10.4.7</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -4915,10 +4934,13 @@ export default function App() {
         let minPrice = Infinity;
         let maxPrice = 0;
         state.markets.forEach(m => {
-            const price = m[name].price;
-            if (price < minPrice) minPrice = price;
-            if (price > maxPrice) maxPrice = price;
+            const price = m?.[name]?.price || 0;
+            if (price > 0) {
+                if (price < minPrice) minPrice = price;
+                if (price > maxPrice) maxPrice = price;
+            }
         });
+        if (minPrice === Infinity) minPrice = 0;
 
         return (
             <div className="flex flex-col h-full p-4 md:p-8 bg-black/40 animate-in zoom-in-95 duration-300">
@@ -4947,8 +4969,9 @@ export default function App() {
                             <span>Local Stock / Price</span>
                         </div>
                         {state.markets.map((m, i) => {
-                            const price = m[name].price;
-                            const stock = m[name].quantity;
+                            const mItem = m?.[name];
+                            const price = mItem ? mItem.price : 0;
+                            const stock = mItem ? mItem.quantity : 0;
                             const isStored = state.warehouse[i]?.[name] !== undefined;
 
                             const h2oPasteMinMult = Math.pow(1.05, state.day);
@@ -5609,7 +5632,7 @@ export default function App() {
 
                    <div className="flex-grow flex flex-col overflow-y-auto custom-scrollbar relative pt-10">
                         <div className="absolute top-0 right-0 w-72 text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                            SYSTEM LOG: FABRICATION MATRIX v10.4.6 ACTIVE
+                            SYSTEM LOG: FABRICATION MATRIX v10.4.7 ACTIVE
                         </div>
 
                         <div className="text-center space-y-2 mb-10">
@@ -6491,7 +6514,7 @@ export default function App() {
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v10.4.6</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v10.4.7</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -6621,7 +6644,7 @@ export default function App() {
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.4.6</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.4.7</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -6780,12 +6803,15 @@ export default function App() {
                    <p className="text-white text-xl mb-10 leading-relaxed font-mono">"{modal.data.outcomeMsg}"</p>
                    
                    <button onClick={() => {
+                        if (!modal || !modal.data) return;
                         const { state: sData, report: rData, destIdx, mine, overload } = modal.data;
-                        if (sData.shipHealth <= 0) {
-                            sData.gameOver = true;
-                            setModal({ type: 'endgame', data: { reason: "Structural Integrity Failure: Ship Destroyed", netWorth: getNetWorth(sData), stats: sData.stats, isHighScore: false, days: sData.day } });
-                        } else {
-                            finalizeJump(sData, rData, destIdx, mine, overload);
+                        if (sData) {
+                            if (sData.shipHealth <= 0) {
+                                sData.gameOver = true;
+                                setModal({ type: 'endgame', data: { reason: "Structural Integrity Failure: Ship Destroyed", netWorth: getNetWorth(sData), stats: sData.stats, isHighScore: false, days: sData.day } });
+                            } else {
+                                finalizeJump(sData, rData, destIdx, mine, overload);
+                            }
                         }
                    }} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-5 rounded-xl text-2xl shadow-xl action-btn uppercase">Acknowledged</button>
                </div>
@@ -6851,7 +6877,7 @@ export default function App() {
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.4.6</p>
+                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.4.7</p>
                </div>
            </div>
        )}
@@ -7382,7 +7408,7 @@ export default function App() {
                                   key={c.name}
                                   onClick={() => {
                                       if (level === 2) {
-                                          const prices = state.markets.map(m => m[c.name].price);
+                                          const prices = state.markets.map(m => m?.[c.name]?.price || 0);
                                           setState(prev => prev ? ({
                                               ...prev,
                                               fixedCommodity: { name: c.name, venuePrices: prices, daySet: prev.day },
