@@ -7,7 +7,7 @@ import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestor
  * @param score The net worth achieved.
  * @param days The number of days survived.
  */
-export async function postHighScore(name: string, score: number, days: number = 1): Promise<boolean> {
+export async function postHighScore(name: string, score: number, days: number = 1, achievements: string[] = []): Promise<boolean> {
   // Use VITE_FIREBASE_FUNCTIONS_URL environment variable, fallback to us-central1 default endpoint
   const url = import.meta.env.VITE_FIREBASE_FUNCTIONS_URL || "https://us-central1-starbucks-galaxy.cloudfunctions.net/submitScore";
 
@@ -17,7 +17,7 @@ export async function postHighScore(name: string, score: number, days: number = 
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ name, score, days })
+      body: JSON.stringify({ name, score, days, achievements })
     });
     return response.ok;
   } catch (error) {
