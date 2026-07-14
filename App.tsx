@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v10.4.9
+ * VERSION: v10.5.0
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -1090,7 +1090,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v10.4.9 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v10.5.0 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -4422,7 +4422,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.4.9</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.5.0</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -4506,7 +4506,7 @@ export default function App() {
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v10.4.9 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v10.5.0 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -4832,7 +4832,7 @@ export default function App() {
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                          <p className="text-gray-500 font-mono text-[10px] uppercase">v10.4.9</p>
+                          <p className="text-gray-500 font-mono text-[10px] uppercase">v10.5.0</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -5761,7 +5761,7 @@ export default function App() {
                    <div className="flex-grow flex flex-col overflow-y-auto custom-scrollbar relative pt-20">
                         <div className="absolute top-0 right-0 flex flex-col items-end gap-2">
                             <div className="text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                                SYSTEM LOG: FABRICATION MATRIX v10.4.9 ACTIVE
+                                SYSTEM LOG: FABRICATION MATRIX v10.5.0 ACTIVE
                             </div>
                             <div className="bg-slate-950/90 border border-red-500/40 p-3 rounded-xl w-60 font-mono text-xs shadow-[0_0_15px_rgba(239,68,68,0.15)] flex flex-col gap-1 text-left">
                                 <div className="flex justify-between items-center text-red-400 font-bold tracking-wider">
@@ -6665,7 +6665,7 @@ export default function App() {
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v10.4.9</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v10.5.0</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -6795,7 +6795,7 @@ export default function App() {
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.4.9</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.5.0</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -7175,7 +7175,7 @@ export default function App() {
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.4.9</p>
+                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.5.0</p>
                </div>
            </div>
        )}
@@ -7602,15 +7602,15 @@ export default function App() {
            </div>
        )}
 
-       {modal.type === 'stock_limit_confirm' && (
+       {modal.type === 'stock_limit_confirm' && modal.data && (
            <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 p-4"><div className="bg-slate-900 border border-yellow-500 p-6 rounded-xl max-w-sm w-full sci-fi-box relative shadow-2xl"><h3 className="text-yellow-400 font-bold mb-2 uppercase tracking-widest">Insufficient Stock</h3><p className="text-gray-300 mb-4 text-sm font-bold uppercase">Requested: {modal.data.quantity} <br/>Available: {modal.data.actualStock}</p><div className="flex gap-2"><button onClick={()=>{ executeTrade({...modal.data, quantity: modal.data.actualStock}); }} className="flex-1 bg-yellow-600 hover:bg-yellow-500 text-white py-2 rounded-xl font-black shadow-md uppercase">Buy Available</button><button onClick={()=>{setModal({type:'none', data:null}); SFX.play('click');}} className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-xl uppercase">Cancel</button></div></div></div>
        )}
 
-       {modal.type === 'tax_confirm' && (
+       {modal.type === 'tax_confirm' && modal.data && (
            <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 p-4"><div className="bg-slate-900 border border-red-500 p-6 rounded-xl max-sm w-full sci-fi-box relative shadow-2xl"><h3 className="text-red-400 font-bold mb-2 uppercase tracking-widest">Trade Tax</h3><p className="text-gray-300 mb-4 text-sm font-bold uppercase leading-relaxed">Multiple transactions on this commodity today. A 5% tax (<PriceDisplay value={modal.data.tax} size="text-sm"/>) applied.</p><div className="flex gap-2"><button onClick={()=>{ executeTrade(modal.data); }} className="flex-1 bg-red-600 hover:bg-red-500 text-white py-2 rounded-xl font-black shadow-md uppercase">Trade</button><button onClick={()=>{setModal({type:'none', data:null}); SFX.play('click');}} className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-xl uppercase">Cancel</button></div></div></div>
        )}
 
-      {modal.type === 'fabrication_prompt' && (
+      {modal.type === 'fabrication_prompt' && modal.data && (
         <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
             <div className="bg-slate-900 border border-orange-500 p-8 rounded-2xl max-w-lg w-full sci-fi-box text-center relative shadow-2xl animate-in fade-in zoom-in-95 duration-300">
                 <p className="text-xl font-black mb-4 text-orange-400 font-scifi tracking-wider uppercase">FABRICATION MATRIX ACTIVE</p>
@@ -7637,7 +7637,7 @@ export default function App() {
         </div>
       )}
 
-      {modal.type === 'fabrication_success' && (
+      {modal.type === 'fabrication_success' && modal.data && (
         <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
             <div className="bg-slate-900 border border-green-500 p-8 rounded-2xl max-w-lg w-full sci-fi-box text-center relative shadow-2xl animate-in fade-in zoom-in-95 duration-300">
                 <p className="text-xl font-black mb-4 text-white">FABRICATION SUCCESSFUL</p>
@@ -7652,7 +7652,7 @@ export default function App() {
         </div>
       )}
 
-      {modal.type === 'banking_transaction_success' && (
+      {modal.type === 'banking_transaction_success' && modal.data && (
         <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
             <div className="bg-slate-900 border border-green-500 p-8 rounded-2xl max-w-lg w-full sci-fi-box text-center relative shadow-2xl animate-in fade-in zoom-in-95 duration-300">
                 <p className="text-xl font-black mb-4 text-white">TRANSACTION SUCCESSFUL</p>
@@ -7667,7 +7667,7 @@ export default function App() {
         </div>
       )}
 
-      {modal.type === 'scanner_actions' && (
+      {modal.type === 'scanner_actions' && modal.data && (
         (() => {
           const level = modal.data.level;
           const title = level === 2 ? "Fix Commodity Price" : "Boost Price Range";
