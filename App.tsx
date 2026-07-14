@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v10.5.0
+ * VERSION: v10.5.1
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -1090,7 +1090,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v10.5.0 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v10.5.1 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -4422,7 +4422,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.5.0</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.5.1</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -4506,7 +4506,7 @@ export default function App() {
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v10.5.0 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v10.5.1 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -4832,7 +4832,7 @@ export default function App() {
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                          <p className="text-gray-500 font-mono text-[10px] uppercase">v10.5.0</p>
+                          <p className="text-gray-500 font-mono text-[10px] uppercase">v10.5.1</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -5761,7 +5761,7 @@ export default function App() {
                    <div className="flex-grow flex flex-col overflow-y-auto custom-scrollbar relative pt-20">
                         <div className="absolute top-0 right-0 flex flex-col items-end gap-2">
                             <div className="text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                                SYSTEM LOG: FABRICATION MATRIX v10.5.0 ACTIVE
+                                SYSTEM LOG: FABRICATION MATRIX v10.5.1 ACTIVE
                             </div>
                             <div className="bg-slate-950/90 border border-red-500/40 p-3 rounded-xl w-60 font-mono text-xs shadow-[0_0_15px_rgba(239,68,68,0.15)] flex flex-col gap-1 text-left">
                                 <div className="flex justify-between items-center text-red-400 font-bold tracking-wider">
@@ -6665,7 +6665,7 @@ export default function App() {
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v10.5.0</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v10.5.1</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -6795,7 +6795,7 @@ export default function App() {
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.5.0</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.5.1</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -6914,7 +6914,7 @@ export default function App() {
          </>
        )}
        
-       {modal.type === 'event_encounter' && (
+       {modal.type === 'event_encounter' && modal.data && (
            <div className="absolute inset-0 bg-black/95 flex items-center justify-center z-50 p-4">
                <div className="bg-slate-900 border border-red-600 p-8 rounded-2xl max-w-2xl w-full sci-fi-box animate-[shake_0.5s_ease-in-out]">
                    <h2 className="text-3xl font-scifi text-red-500 mb-4 animate-pulse uppercase">Alert: {modal.data.encounter.title}</h2>
@@ -6944,7 +6944,7 @@ export default function App() {
            </div>
        )}
 
-       {modal.type === 'encounter_resolution' && (
+       {modal.type === 'encounter_resolution' && modal.data && (
            <div className="absolute inset-0 bg-black/98 flex items-center justify-center z-50 p-4">
                <div className={`bg-slate-900 border-2 ${modal.data.outcomeType === 'danger' ? 'border-red-500' : (modal.data.outcomeType === 'profit' ? 'border-green-500' : 'border-blue-500')} p-10 rounded-2xl max-xl w-full sci-fi-box text-center shadow-2xl`}>
                    <div className="flex justify-center mb-6">
@@ -7061,7 +7061,7 @@ export default function App() {
            </div>
        )}
 
-       {modal.type === 'save_confirm' && (
+       {modal.type === 'save_confirm' && modal.data && (
            <div className="absolute inset-0 bg-black/95 flex items-center justify-center z-50 p-4">
                <div className="bg-slate-900 border border-blue-500 p-10 rounded-2xl max-w-md w-full sci-fi-box text-center shadow-2xl">
                    <div className="flex justify-center mb-6 text-green-400 animate-pulse"><Save size={64} /></div>
@@ -7118,11 +7118,11 @@ export default function App() {
            </div>
        )}
 
-       {modal.type === 'goal_achieved' && (
+       {modal.type === 'goal_achieved' && modal.data && (
            <div className="absolute inset-0 bg-black/95 flex items-center justify-center z-50 p-4"><div className="text-center max-w-2xl px-4"><h1 className="text-4xl md:text-6xl font-scifi text-yellow-400 mb-4">PHASE {modal.data.phase} COMPLETE!</h1><div className="text-2xl text-white mb-6 font-bold tracking-widest uppercase">Target Net Worth Achieved</div><div className="space-y-2 mb-10"><div className="text-lg md:text-xl text-cyan-300 italic opacity-95 leading-relaxed">BY Decree (G.O.D):</div><div className="text-2xl md:text-4xl text-green-400 font-bold animate-pulse uppercase tracking-tight">License extended +{modal.data.daysExtended} Days!</div><div className="text-xs text-white font-mono opacity-80 mt-4 uppercase">Neural verification complete. Advance to next threshold.</div></div><button onClick={()=>{ const { state: sData, nextPhase, report: rData } = modal.data; advancePhase(sData, nextPhase, rData); }} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 px-10 rounded-xl text-2xl shadow-[0_0_30px_rgba(16,185,129,0.6)] uppercase tracking-widest">Advance to Phase {modal.data.nextPhase}</button></div></div>
        )}
 
-       {modal.type === 'endgame' && (
+       {modal.type === 'endgame' && modal.data && (
            <div className="absolute inset-0 bg-black z-50 flex flex-col items-center justify-center p-4">
                <h1 className="text-5xl md:text-7xl font-scifi text-red-600 mb-4 uppercase">{modal.data.isHighScore ? "Legendary Status" : "Neural Link Severed"}</h1>
                <div className="text-2xl text-white mb-2 uppercase font-black">{modal.data.reason}</div>
@@ -7175,7 +7175,7 @@ export default function App() {
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.5.0</p>
+                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.5.1</p>
                </div>
            </div>
        )}
@@ -7213,7 +7213,7 @@ export default function App() {
            <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 p-4"><div className="bg-slate-900 border border-gray-500 p-8 rounded-2xl max-w-lg w-full sci-fi-box text-center relative shadow-2xl"><p className={`text-xl font-black mb-8 whitespace-pre-wrap leading-tight uppercase ${modal.color || 'text-white'}`}>{renderLogMessage(modal.data)}</p><button onClick={()=>{setModal({type:'none', data:null}); SFX.play('click');}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl text-xl shadow-lg action-btn uppercase">Acknowledge</button></div></div>
        )}
 
-       {modal.type === 'hostile_takeover_confirm' && (
+       {modal.type === 'hostile_takeover_confirm' && modal.data && (
            <div className="absolute inset-0 bg-black/95 flex items-center justify-center z-50 p-4">
                <div className="bg-slate-900 border-2 border-red-500 p-8 rounded-3xl max-w-xl w-full sci-fi-box text-center relative shadow-2xl animate-in zoom-in-95 duration-300">
                    <div className="text-red-500 text-5xl mb-4 animate-pulse font-scifi">⚠️</div>
@@ -7248,7 +7248,7 @@ export default function App() {
            </div>
        )}
 
-       {modal.type === 'hostile_takeover_resolution' && (
+       {modal.type === 'hostile_takeover_resolution' && modal.data && (
            <div className="absolute inset-0 bg-black/98 flex items-center justify-center z-50 p-4">
                <div className="bg-slate-900 border-2 border-cyan-500 p-8 rounded-3xl max-w-2xl w-full sci-fi-box relative shadow-2xl animate-in zoom-in-95 duration-500 overflow-y-auto max-h-[90vh]">
                    <h3 className="text-cyan-400 font-black text-3xl mb-6 text-center uppercase tracking-widest font-scifi">Takeover Assessment</h3>
@@ -7310,65 +7310,67 @@ export default function App() {
                        </div>
                    )}
 
-                   {modal.data.outcomeType === 'resistance' && (
-                       <div className="space-y-6 text-center">
-                           <div className="text-yellow-500 text-6xl animate-pulse">⚖️</div>
-                           <h4 className="text-yellow-400 font-bold text-xl uppercase tracking-wider font-scifi">Injunction Filed by Board</h4>
-                           <p className="text-gray-300 font-mono text-sm leading-relaxed uppercase">
-                               The Board is fighting back! They have hired an elite legal defense team and filed a federal antitrust injunction to freeze your shares.
-                           </p>
-                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
-                               <button
-                                   disabled={state.cash < 250000}
-                                   onClick={() => {
-                                       setState(prev => {
-                                           if (!prev || !prev.stocks) return null;
-                                           const updatedStocks = prev.stocks.map(st =>
-                                               st.name === modal.data.stockName ? { ...st, quantity: 0, availableQuantity: st.totalShares, takeoverSuccessful: true } : st
-                                           );
-                                           return {
-                                               ...prev,
-                                               cash: prev.cash - 250000,
-                                               dailyDividends: (prev.dailyDividends || 0) + 25000,
-                                               stocks: updatedStocks
-                                           };
-                                       });
-                                       log(`TAKEOVER: Overpowered litigation of ${modal.data.stockName} for $250,000. Permanent dividend of +$B 25,000 established.`, 'buy');
-                                       SFX.play('success');
-                                       setModal({ type: 'none', data: null });
-                                   }}
-                                   className="bg-blue-700 hover:bg-blue-600 disabled:bg-gray-800 disabled:opacity-50 text-white p-4 rounded-xl border border-blue-500 flex flex-col items-center justify-center transition-all action-btn"
-                               >
-                                   <span className="font-bold text-sm uppercase mb-1">Retain Elite Defense lawyers</span>
-                                   <span className="text-xs font-mono text-blue-200">Cost: -$B 250,000 || Yield: +$B 25,000 / Day</span>
-                               </button>
-                               <button
-                                   onClick={() => {
-                                       const soldCount = Math.floor(modal.data.sharesCount * 0.5);
-                                       const payout = soldCount * modal.data.stockPrice * 1.25;
-                                       setState(prev => {
-                                           if (!prev || !prev.stocks) return null;
-                                           const updatedStocks = prev.stocks.map(st =>
-                                               st.name === modal.data.stockName ? { ...st, quantity: st.quantity - soldCount, availableQuantity: (st.availableQuantity || 0) + soldCount } : st
-                                           );
-                                           return {
-                                               ...prev,
-                                               cash: prev.cash + payout,
-                                               stocks: updatedStocks
-                                           };
-                                       });
-                                       log(`TAKEOVER: Settled out of court with ${modal.data.stockName}. Sold ${soldCount.toLocaleString()} shares at 1.25x premium for +${formatCurrencyLog(payout)}.`, 'sell');
-                                       SFX.play('success');
-                                       setModal({ type: 'none', data: null });
-                                   }}
-                                   className="bg-yellow-700 hover:bg-yellow-600 text-white p-4 rounded-xl border border-yellow-500 flex flex-col items-center justify-center transition-all action-btn"
-                               >
-                                   <span className="font-bold text-sm uppercase mb-1">Settle & Divest Stake</span>
-                                   <span className="text-xs font-mono text-yellow-200">Payout: +<PriceDisplay value={payout} size="text-xs" compact /> (Divests 50%)</span>
-                               </button>
+                   {modal.data.outcomeType === 'resistance' && (() => {
+                       const soldCount = Math.floor(modal.data.sharesCount * 0.5);
+                       const payout = soldCount * modal.data.stockPrice * 1.25;
+                       return (
+                           <div className="space-y-6 text-center">
+                               <div className="text-yellow-500 text-6xl animate-pulse">⚖️</div>
+                               <h4 className="text-yellow-400 font-bold text-xl uppercase tracking-wider font-scifi">Injunction Filed by Board</h4>
+                               <p className="text-gray-300 font-mono text-sm leading-relaxed uppercase">
+                                   The Board is fighting back! They have hired an elite legal defense team and filed a federal antitrust injunction to freeze your shares.
+                               </p>
+                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                                   <button
+                                       disabled={state.cash < 250000}
+                                       onClick={() => {
+                                           setState(prev => {
+                                               if (!prev || !prev.stocks) return null;
+                                               const updatedStocks = prev.stocks.map(st =>
+                                                   st.name === modal.data.stockName ? { ...st, quantity: 0, availableQuantity: st.totalShares, takeoverSuccessful: true } : st
+                                               );
+                                               return {
+                                                   ...prev,
+                                                   cash: prev.cash - 250000,
+                                                   dailyDividends: (prev.dailyDividends || 0) + 25000,
+                                                   stocks: updatedStocks
+                                               };
+                                           });
+                                           log(`TAKEOVER: Overpowered litigation of ${modal.data.stockName} for $250,000. Permanent dividend of +$B 25,000 established.`, 'buy');
+                                           SFX.play('success');
+                                           setModal({ type: 'none', data: null });
+                                       }}
+                                       className="bg-blue-700 hover:bg-blue-600 disabled:bg-gray-800 disabled:opacity-50 text-white p-4 rounded-xl border border-blue-500 flex flex-col items-center justify-center transition-all action-btn"
+                                   >
+                                       <span className="font-bold text-sm uppercase mb-1">Retain Elite Defense lawyers</span>
+                                       <span className="text-xs font-mono text-blue-200">Cost: -$B 250,000 || Yield: +$B 25,000 / Day</span>
+                                   </button>
+                                   <button
+                                       onClick={() => {
+                                           setState(prev => {
+                                               if (!prev || !prev.stocks) return null;
+                                               const updatedStocks = prev.stocks.map(st =>
+                                                   st.name === modal.data.stockName ? { ...st, quantity: st.quantity - soldCount, availableQuantity: (st.availableQuantity || 0) + soldCount } : st
+                                               );
+                                               return {
+                                                   ...prev,
+                                                   cash: prev.cash + payout,
+                                                   stocks: updatedStocks
+                                               };
+                                           });
+                                           log(`TAKEOVER: Settled out of court with ${modal.data.stockName}. Sold ${soldCount.toLocaleString()} shares at 1.25x premium for +${formatCurrencyLog(payout)}.`, 'sell');
+                                           SFX.play('success');
+                                           setModal({ type: 'none', data: null });
+                                       }}
+                                       className="bg-yellow-700 hover:bg-yellow-600 text-white p-4 rounded-xl border border-yellow-500 flex flex-col items-center justify-center transition-all action-btn"
+                                   >
+                                       <span className="font-bold text-sm uppercase mb-1">Settle & Divest Stake</span>
+                                       <span className="text-xs font-mono text-yellow-200">Payout: +<PriceDisplay value={payout} size="text-xs" compact /> (Divests 50%)</span>
+                                   </button>
+                               </div>
                            </div>
-                       </div>
-                   )}
+                       );
+                   })()}
 
                    {modal.data.outcomeType === 'sabotage' && (
                        <div className="space-y-6 text-center">
@@ -7463,7 +7465,7 @@ export default function App() {
            </div>
        )}
 
-       {modal.type === 'cargo_capacity_ship_confirm' && (
+       {modal.type === 'cargo_capacity_ship_confirm' && modal.data && (
            <div className="absolute inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
                <div className="bg-slate-900 border-2 border-red-500 p-8 rounded-3xl max-w-xl w-full sci-fi-box text-center relative shadow-2xl">
                    <h3 className="text-red-400 font-bold text-2xl mb-4 uppercase tracking-widest font-scifi">
