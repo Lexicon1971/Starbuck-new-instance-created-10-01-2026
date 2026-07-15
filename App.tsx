@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v.10.5.3
+ * VERSION: v.10.5.4
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -823,6 +823,12 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (state && !state.isMutinyActive) {
+      setDismissedStrikeOverlay(false);
+    }
+  }, [state?.isMutinyActive]);
+
   const [hasSave, setHasSave] = useState(false);
   
   // B. UI & INPUT STATE
@@ -854,6 +860,7 @@ export default function App() {
   const [expandedCommodityPrices, setExpandedCommodityPrices] = useState<Record<string, boolean>>({});
   const [countdown, setCountdown] = useState(0);
   const [universalLeaderboard, setUniversalLeaderboard] = useState<any[]>([]);
+  const [dismissedStrikeOverlay, setDismissedStrikeOverlay] = useState(false);
   
   const consoleScrollRef = useRef<HTMLDivElement>(null);
   const [consoleScrollPosition, setConsoleScrollPosition] = useState(0);
@@ -1090,7 +1097,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v.10.5.3 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v.10.5.4 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -4401,6 +4408,103 @@ export default function App() {
   };
 
   /**
+   * Buys the PC Chips required to secure an end to the strike.
+   * Performs full transaction checks for market quantity, cash, and tax.
+   */
+  const handleBuyStrikeChips = () => {
+    SFX.play('click');
+    if (!state) return;
+
+    // 1. Calculate PC Chips required and owned
+    const pcChipsQuantity = state.markets[state.currentVenueIndex]?.["PC Chips"]?.quantity || 0;
+    const pcChipsRequirement = Math.floor((pcChipsQuantity * 0.22) / 5) * 5;
+    const playerOwnedChips = state.cargo["PC Chips"]?.quantity || 0;
+    const qtyToBuy = pcChipsRequirement - playerOwnedChips;
+
+    // If they already have enough PC Chips, notify them
+    if (qtyToBuy <= 0) {
+      SFX.play('error');
+      return setModal({
+        type: 'message',
+        data: `You already have enough PC Chips (${playerOwnedChips} units) in your cargo to meet the demands (${pcChipsRequirement} required). Make payment at I.B.A.N.K.`
+      });
+    }
+
+    // 2. Validate market item and availability
+    const mItem = state.markets[state.currentVenueIndex]?.["PC Chips"];
+    if (!mItem) {
+      SFX.play('error');
+      return setModal({ type: 'message', data: "PC Chips market data not found." });
+    }
+
+    if (mItem.quantity < qtyToBuy) {
+      SFX.play('error');
+      return setModal({
+        type: 'message',
+        data: `The market only has ${mItem.quantity} PC Chips, but you need to buy ${qtyToBuy} to end the strike. Try traveling to another system first.`
+      });
+    }
+
+    // 3. Calculate price and tax (frequent trading)
+    const price = mItem.price;
+    const cost = qtyToBuy * price;
+    const txKey = `${state.currentVenueIndex}_PC Chips`;
+    const txCount = state.dailyTransactions[txKey] || 0;
+    let tax = 0;
+    if (txCount > 0) {
+      tax = Math.floor(cost * 0.05);
+    }
+    const totalCost = cost + tax;
+
+    // 4. Overdraft check
+    if (state.cash < totalCost && (state.cash - totalCost < -10000)) {
+      SFX.play('error');
+      return setModal({
+        type: 'message',
+        data: `Overdraft limit exceeded. Cannot buy ${qtyToBuy} PC Chips. Total cost: ${formatCurrencyLog(totalCost)} (including any frequent trading taxes).`
+      });
+    }
+
+    // 5. Update state (cash, cargo, market quantity, transactions log)
+    const newM = [...state.markets];
+    newM[state.currentVenueIndex]["PC Chips"].quantity = Math.max(0, newM[state.currentVenueIndex]["PC Chips"].quantity - qtyToBuy);
+
+    const cur = state.cargo["PC Chips"] || { quantity: 0, averageCost: 0 };
+    const newTotal = cur.quantity + qtyToBuy;
+    const newAvg = ((cur.quantity * cur.averageCost) + (qtyToBuy * price)) / newTotal;
+
+    const weightDelta = qtyToBuy * 0.01; // Each PC Chip weighs 0.01 T
+
+    setState(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        cash: prev.cash - totalCost,
+        cargoWeight: prev.cargoWeight + weightDelta,
+        markets: newM,
+        cargo: {
+          ...prev.cargo,
+          "PC Chips": { quantity: newTotal, averageCost: newAvg }
+        },
+        dailyTransactions: {
+          ...prev.dailyTransactions,
+          [txKey]: txCount + 1
+        }
+      };
+    });
+
+    // Clean up buyQuantities input box for PC Chips
+    setBuyQuantities(prev => ({ ...prev, "PC Chips": '' }));
+
+    SFX.play('swipe');
+    log(`MUTINY: Bought ${qtyToBuy} PC Chips for ${formatCurrencyLog(totalCost)} to secure an end to the strike.`, 'buy');
+    setModal({
+      type: 'message',
+      data: `Successfully purchased ${qtyToBuy} PC Chips for ${formatCurrencyLog(totalCost)}. Go to the I.B.A.N.K. Hub to pay off the strike!`
+    });
+  };
+
+  /**
    * Calculates the cost to fully repair the ship's hull.
    * @returns The total repair cost.
    */
@@ -4426,7 +4530,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.10.5.3</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.10.5.4</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -4532,7 +4636,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.10.5.3 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.10.5.4 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -4858,7 +4962,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                          <p className="text-gray-500 font-mono text-[10px] uppercase">v.10.5.3</p>
+                          <p className="text-gray-500 font-mono text-[10px] uppercase">v.10.5.4</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -5345,6 +5449,14 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                                                     >
                                                         BUY
                                                     </button>
+                                                    {c.name === "PC Chips" && state.isMutinyActive && (
+                                                         <button
+                                                              onClick={() => handleBuyStrikeChips()}
+                                                              className="w-auto px-4 bg-red-600 hover:bg-red-500 text-white text-sm rounded font-bold py-1 action-btn animate-pulse"
+                                                         >
+                                                              STRIKE
+                                                         </button>
+                                                    )}
                                                     {availableContract && (
                                                         <button onClick={() => acceptContract(availableContract)} className="w-auto px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-sm rounded font-bold py-1 action-btn">
                                                             ACCEPT
@@ -5787,7 +5899,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                    <div className="flex-grow flex flex-col overflow-y-auto custom-scrollbar relative pt-20">
                         <div className="absolute top-0 right-0 flex flex-col items-end gap-2">
                             <div className="text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                                SYSTEM LOG: FABRICATION MATRIX v.10.5.3 ACTIVE
+                                SYSTEM LOG: FABRICATION MATRIX v.10.5.4 ACTIVE
                             </div>
                             <div className="bg-slate-950/90 border border-red-500/40 p-3 rounded-xl w-60 font-mono text-xs shadow-[0_0_15px_rgba(239,68,68,0.15)] flex flex-col gap-1 text-left">
                                 <div className="flex justify-between items-center text-red-400 font-bold tracking-wider">
@@ -6718,7 +6830,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v.10.5.3</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v.10.5.4</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -6842,13 +6954,24 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
   return (
     <div className="app-viewport flex flex-col p-2 md:p-4 space-y-4 no-scrollbar custom-scrollbar overflow-y-auto bg-transparent">
        <Starfield />
-       {state?.isMutinyActive && (() => {
+       {state?.isMutinyActive && !dismissedStrikeOverlay && (() => {
            const pcChipsQuantity = state.markets[state.currentVenueIndex]?.["PC Chips"]?.quantity || 0;
            const pcChipsRequirement = Math.floor((pcChipsQuantity * 0.22) / 5) * 5;
            const playerOwnedChips = state.cargo["PC Chips"]?.quantity || 0;
            return (
                <div className="fixed inset-0 bg-slate-950/95 z-[9999] flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-300">
                    <div className="max-w-xl w-full bg-red-950/40 border-2 border-red-500 rounded-3xl p-8 shadow-[0_0_50px_rgba(239,68,68,0.4)] relative overflow-hidden">
+                       {/* Minimize Button */}
+                       <button
+                           onClick={() => {
+                               SFX.play('click');
+                               setDismissedStrikeOverlay(true);
+                           }}
+                           className="absolute top-4 left-4 text-red-400 hover:text-red-300 font-mono text-xs uppercase border border-red-500/20 px-2 py-1 rounded transition-all active:scale-95 cursor-pointer z-50"
+                       >
+                           ✕ Minimize
+                       </button>
+
                        {/* Blinking red indicator */}
                        <div className="absolute top-4 right-4 flex items-center space-x-1">
                            <span className="w-3.5 h-3.5 rounded-full bg-red-500 animate-ping"></span>
@@ -6929,7 +7052,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                                }}
                                className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-4 rounded-xl text-xl uppercase transition-all shadow-lg active:scale-95"
                            >
-                               FULFILL DEMANDS & RESOLVE STRIKE
+                               MAKE PAYMENT AT I.B.A.N.K
                            </button>
                        </div>
                    </div>
@@ -6942,7 +7065,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.10.5.3</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.10.5.4</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -7322,7 +7445,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.10.5.3</p>
+                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.10.5.4</p>
                </div>
            </div>
        )}
