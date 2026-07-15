@@ -215,22 +215,22 @@ export const SHOP_ITEMS: EquipmentItem[] = [
   { id: 'shield_gen_mk3', name: 'Deflector Shields Mk III', type: 'defense', level: 3, cost: 500000, description: 'Total kinetic absorption matrix. Absolute protection.', owned: false },
 ];
 
-// SORTED ALPHABETICALLY
+// CUSTOM ORDERED BY ENHANCEMENT 154
 export const COMMODITIES: Commodity[] = [
-  { name: "Antimatter Rod", icon: "✨", unitWeight: 0.5, minPrice: 2500, maxPrice: 15000, rarity: 0.95, description: "A rod of pure energy, humming with the power of a thousand suns. Handle with care." },
-  { name: "Dark Matter", icon: "🌌", unitWeight: 0.75, minPrice: 5000, maxPrice: 50000, rarity: 0.98, description: "It's dark, it matters, and it's very, very expensive. Don't ask what it does." },
-  { name: "G.I.R.L (Lite) Matter", icon: "💥", unitWeight: 0.5, minPrice: 10000, maxPrice: 100000, rarity: 0.99, description: "Guaranteed Instability, Remarkably Lucrative. The 'Lite' version is only slightly less likely to explode." },
+  { name: "Allthemantium Ore", icon: "metal-lump", unitWeight: 5.0, minPrice: 50, maxPrice: 2500, rarity: 0.8, description: "The backbone of interstellar construction as it contains all the heavy metals needed for construction. Also makes a great paperweight." },
+  { name: "Synthetic Cloth", icon: "🧵", unitWeight: 0.25, minPrice: 100, maxPrice: 1000, rarity: 0.6, description: "Woven from the finest recycled plastics extracted from space dolphins who love eating plastic straws. Now available in 'slightly less scratchy'." },
   { name: H2O_NAME, icon: "💧", unitWeight: 1.0, minPrice: 5, maxPrice: 50, rarity: 0.1, description: "The elixir of life. Or, as the old-timers call it, 'water'." },
   { name: "Medical Kits", icon: "🩹", unitWeight: 0.01, minPrice: 400, maxPrice: 4000, rarity: 0.7, description: "For when you get a boo-boo. Now with extra space-bandages." },
   { name: NUTRI_PASTE_NAME, icon: "🍲", unitWeight: 0.5, minPrice: 10, maxPrice: 100, rarity: 0.1, description: "Tastes like chicken-flavored oatmeal. Or maybe oatmeal-flavored chicken. It's hard to tell." },
-  { name: "PC Chips", icon: "💾", unitWeight: 0.01, minPrice: 20, maxPrice: 2000, rarity: 0.65, description: "The building blocks of the digital age. Now with 1% less planned obsolescence." },
-  { name: POWER_CELL_NAME, icon: "🔋", unitWeight: 0.1, minPrice: 50, maxPrice: 250, rarity: 0.5, description: "Guaranteed to power your devices for at least a few hours. Or your money back (not really)." },
-  { name: "Spacetime Tea", icon: "☕", unitWeight: 0.1, minPrice: 7, maxPrice: 70000, rarity: 0.5, description: "A tea that allows you to experience all moments at once. Best not to drink it all at once." },
-  { name: FUEL_NAME, icon: "⛽", unitWeight: 0.20, minPrice: 10, maxPrice: 150, rarity: 0.2, description: "The lifeblood of the spacelanes. Smells faintly of cinnamon and regret." },
-  { name: "Stim-Packs", icon: "💉", unitWeight: 0.25, minPrice: 5000, maxPrice: 15000, rarity: 0.85, description: "For when you absolutely, positively have to stay awake for three days straight." },
-  { name: "Synthetic Cloth", icon: "🧵", unitWeight: 0.25, minPrice: 100, maxPrice: 1000, rarity: 0.6, description: "Woven from the finest recycled plastics. Now available in 'slightly less scratchy'." },
-  { name: "Allthemantium Ore", icon: "metal-lump", unitWeight: 5.0, minPrice: 50, maxPrice: 2500, rarity: 0.8, description: "The backbone of interstellar construction as it contains all the heavy metals needed for construction. Also makes a great paperweight." },
   { name: MESH_NAME, icon: "🕸️", unitWeight: 2.5, minPrice: 5000, maxPrice: 25000, rarity: 0.9, description: "A marvel of engineering, this mesh can expand your cargo hold beyond its limits. Just don't ask how." },
+  { name: "Stim-Packs", icon: "💉", unitWeight: 0.25, minPrice: 5000, maxPrice: 15000, rarity: 0.85, description: "For when you absolutely, positively have to stay awake for three days straight." },
+  { name: "Spacetime Tea", icon: "☕", unitWeight: 0.1, minPrice: 7, maxPrice: 70000, rarity: 0.5, description: "A tea that allows you to experience all moments at once. Best not to drink it all at once." },
+  { name: "G.I.R.L (Lite) Matter", icon: "💥", unitWeight: 0.5, minPrice: 10000, maxPrice: 100000, rarity: 0.99, description: "Guaranteed Instability, Remarkably Lucrative. The 'Lite' version is only slightly less likely to explode." },
+  { name: "Dark Matter", icon: "🌌", unitWeight: 0.75, minPrice: 5000, maxPrice: 50000, rarity: 0.98, description: "It's dark, it matters, and it's very, very expensive. Don't ask what it does." },
+  { name: "Antimatter Rod", icon: "✨", unitWeight: 0.5, minPrice: 2500, maxPrice: 15000, rarity: 0.95, description: "A rod of pure energy, humming with the power of a thousand suns. Handle with care." },
+  { name: "PC Chips", icon: "💾", unitWeight: 0.01, minPrice: 20, maxPrice: 2000, rarity: 0.65, description: "The building blocks of the digital age. Now with 1% less planned obsolescence." },
+  { name: POWER_CELL_NAME, icon: "🔋", unitWeight: 0.1, minPrice: 50, maxPrice: 250, rarity: 0.5, description: "Guaranteed to power your devices for at least a few H.O.U.R.S. Or your money back (not really)." },
+  { name: FUEL_NAME, icon: "⛽", unitWeight: 0.20, minPrice: 10, maxPrice: 150, rarity: 0.2, description: "The lifeblood of the spacelanes. Smells faintly of cinnamon and regret." },
 ];
 
 export const VENUES = [
