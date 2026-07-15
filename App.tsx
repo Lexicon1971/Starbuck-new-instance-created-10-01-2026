@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v10.5.2
+ * VERSION: v.10.5.3
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -1090,7 +1090,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v10.5.2 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v.10.5.3 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -3660,6 +3660,11 @@ export default function App() {
         return ac;
     });
 
+    if (stagedContract && stagedContract.id === c.id) {
+        setStagedContract(null);
+        setHighlightShippingItem(null);
+    }
+
     setState(prev => prev ? ({
         ...prev,
         cash: prev.cash + c.reward,
@@ -3734,7 +3739,6 @@ export default function App() {
     setHighlightShippingItem(c.commodity);
     setShippingQuantities(prev => ({ ...prev, [c.commodity]: c.quantity.toString() }));
     setShippingDestinations(prev => ({ ...prev, [c.commodity]: c.destinationIndex.toString() }));
-    setModal({ type: 'shipping', data: null });
   };
 
   /**
@@ -4422,7 +4426,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v10.5.2</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.10.5.3</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -4459,7 +4463,7 @@ export default function App() {
       { title: "The Rusty Redeemer", icon: Anchor, content: "The RR Firefox 22 'RustyRedeemer' is a decommissioned cargo frigate of the 60/40 class. It consists of 60% oxidation and 40% hope. Originally designed for short-range hauling, its isotope hummers have been modified to handle the stress of phase-shifting market dynamics." },
       { title: "The Starbucks Conglomerate", icon: Building2, content: "Underneath the glossy emerald corporate facade lies the ultimate hyper-capitalist machine. Operating under S.H.A.N.E. guidelines, the Conglomerate turns entire solar systems into drive-thru retail outlets. Their main mission is clear: absolute dominance of the space lanes, converting every planetary body into a standardized franchise." },
       { title: "The Espresso Bandits", icon: Skull, content: "A rogue syndicate of caffeine-deprived outlaws who terrorize the trade lanes. Led by the notorious 'Double-Shot' Barnaby, they target cargo vessels carrying high-value stimulants or synthetic materials. Installing sturdy kinetic cannons and defensive shields is the only proven method to deter their relentless boarding maneuvers." },
-      { title: "The Great Coffee Wars", icon: Swords, content: "A devastating sector-wide conflict that lasted over forty cycles. Fought between the elite Coffee Cartels and the synthetic Tea Alliance over the rights to fertile agricultural belts on Nexus Prime. The war concluded with the historic 'Mocha Accord,' establishing the current trade venue system and cementing Starbucks dominance across the galaxy." },
+      { title: "The Great Tea Wars", icon: Swords, content: "A devastating sector-wide conflict that lasted over 44 D.A.Y.S. and N.I.G.H.T.S. Fought between the elite Tea Cartels and the synthetic Tea Alliance over the rights to fertile agricultural belts on Nexus Prime. The war concluded with the historic 'I.N.D.I.A.N. Accord,' establishing the current trade of Spacetime Tea is strictly forbidden in all Star Systems. This is a reminder never to be found trading in Spacetime Tea." },
       { title: "S.H.A.N.E. Protocols", icon: Shield, content: "Sector Health, Allocation, & Network Enforcement (S.H.A.N.E.) governs all trade lanes. They enforce the Galactic Overlord Decree (G.O.D.), which dictates that any trader failing to meet net-worth thresholds within specific time cycles will have their license revoked and their vessel reclaimed by the state." },
       { title: "D.A.Y. (Depreciating Astrological Yardstick)", icon: Hourglass, content: "The D.A.Y. system is a key tracking framework mandated by the Galactic Overlord Department (G.O.D.). By mapping orbital star alignments against the physical degradation of your ship, the G.O.D. enforces a relentless, depreciating tracking scale. It treats your very existence as a steadily shrinking corporate asset, creating an ominous countdown that squeeze-charges your trade license duration." },
       { title: "Extraction Logic", icon: Zap, content: "Mining lasers (Upgrades Deck) allow for the harvesting of resources from asteroid belts during transit. Higher-tier lasers and 'Overload' toggles increase yield but drastically spike the risk of structural realignment failures or laser burnout. Yield is directly proportional to laser focal integrity." },
@@ -4468,7 +4472,26 @@ export default function App() {
       { title: "Void-Sickness", icon: Info, content: "Hauling massive cargo loads across unmapped dark systems often induces Void-Sickness. Affected crew members report hearing the faint, chilling voices of ancient marketing executives whispering long-forgotten quarterly sales targets in their minds. It is recommended to administer high-potency Stim-Packs to any crew showing signs of auditory advertising hallucinations." },
       { title: "Temporal Phase Shifts", icon: Rocket, content: "Advancing through Phase 1, Phase 2, and Phase 3 is not just a commercial progression—it is a literal spatial-temporal shift. The S.H.A.N.E. network employs quantum algorithms that rewrite the physics of trade: spiking fuel costs, increasing pirate encounter frequencies, and creating highly volatile stock market dynamics." },
       { title: "Crew Mutiny & Unrest", icon: Skull, content: "Mutant crew members working on the F.O.M.O. Engineering Deck are prone to severe unrest under intensive fabrication shifts. Their mutiny status increases with every fabrication done by the team and rises as temporal phases advance. If unrest reaches 100%, they will initiate a hostile mutiny, locking control of the F.O.M.O. and Upgrades decks! Resolving a mutiny event with an appeasing payment decreases their unrest, while paying their ransom at an I.B.A.N.K. Hub fully pacifies them." },
-      { title: "Spacetime Folding Anomalies", icon: Rocket, content: "Folding 4D spacetime during travel is a highly volatile process. If one of the universe's dimensional corners fails to fold correctly, a fold alignment failure occurs, diverting the ship to a completely random venue. While any pre-shipped cargo continues on its logistics vector to its original planned destination, onboard items not shipped remain in the ship cargo and safely arrive with you at the random coordinate anomaly." }
+      { title: "Spacetime Folding Anomalies", icon: Rocket, content: "Folding 4D spacetime during travel is a highly volatile process. If one of the universe's dimensional corners fails to fold correctly, a fold alignment failure occurs, diverting the ship to a completely random venue. While any pre-shipped cargo continues on its logistics vector to its original planned destination, onboard items not shipped remain in the ship cargo and safely arrive with you at the random coordinate anomaly." },
+      {
+        title: "PRODUCT SPECIFICATION: \"HOT ISOTOPE HUMMERS\"",
+        icon: Zap,
+        content: `Colloquially known as "Hummers" across the trade sectors due to the persistent, warm, low-frequency radioactive vibration they emit when slotted into a system drive.
+
+Official G.O.D. Designation: H.O.U.R.S.
+
+Full System Acronym: Hazardous Overcharged Utility Reactor Shunts
+
+COMMERCIAL WARRANTY & MERCHANDISING SLOGAN
+"Guaranteed to power your devices for at least a few H.O.U.R.S. Or your money back (not really)."
+
+OPERATIONAL HAZARD ADVISORY
+Vessel Integrity Risk: Slotting an active Hummer into your cargo bay will bypass standard power regulators, but the intense thermal output accelerates hull oxidation.
+
+Illicit Applications: Do not attempt to use the thermal output of a Hummer to boil water for illegal Spacetime Tea. Doing so violates the I.N.D.I.A.N. Accord and will result in localized atomic dispersion.
+
+Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planetary atmospheres. Please return them to a G.U.I.L.D. reclamation dock for standard bureaucratic recycling.`
+      }
     ];
 
     const venueDetails = [
@@ -4493,7 +4516,10 @@ export default function App() {
       { term: "G.I.G.O.", exp: "Garbage In, Garbage Out", desc: "The ship's main real-time communication antenna and system logging device. It captures live market volatility reports, event feed summaries, and wacky neural network broadcasts." },
       { term: "T.O.N.S.", exp: "Tactical Orbital Navigation & Storage", desc: "The standard metric unit (T) of mass used to measure cargo weight capacity and shipping logistics limits across all interstellar freighters." },
       { term: "I.B.A.N.K.", exp: "Interstellar Banking, Assets, & Net-worth Keepers", desc: "The centralized financial server that manages micro-loans, secure investment lockups, and real-time high-score Sync Registries." },
-      { term: "E.L.O.N.", exp: "Executive Lord of Orbital Networks", desc: "A legendary executive title awarded only to the absolute richest tycoon who successfully secures a hostile takeover of every single public corporation in the known galaxy." }
+      { term: "E.L.O.N.", exp: "Executive Lord of Orbital Networks", desc: "A legendary executive title awarded only to the absolute richest tycoon who successfully secures a hostile takeover of every single public corporation in the known galaxy." },
+      { term: "N.I.G.H.T.S.", exp: "Nebulous Injunction against Galactic Herbal Time Smuggling", desc: "Signed at the end of the 44 D.A.Y.s and N.I.G.H.T.S. war, this treaty is considered a \"nebulous\" injunction because of the massive legal loopholes. While it technically made trading Spacetime Tea completely illegal, it secretly allowed high-ranking G.O.D. executives to keep private cellars of the vintage leaves to extend their own lifespans." },
+      { term: "I.N.D.I.A.N.", exp: "Interstellar Neutralization Decree on Intransigent Agrarian Networks", desc: "Both the elite Tea Cartels and the synthetic Tea Alliance as stubborn, rogue \"Intransigent Agrarian Networks.\" G.O.D. didn't just stop the war; he forcefully neutralized the entire infrastructure to make sure nobody could farm temporal leaves again." },
+      { term: "H.O.U.R.S.", exp: "Hazardous Overcharged Utility Reactor Shunts", desc: "Colloquially known as \"Hummers\" across the trade sectors due to the persistent, warm, low-frequency radioactive vibration they emit when slotted into a system drive." }
     ];
 
     const broadcastTypes = Object.keys(QUIRKY_MESSAGES_DB) as Array<keyof typeof QUIRKY_MESSAGES_DB>;
@@ -4506,7 +4532,7 @@ export default function App() {
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v10.5.2 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.10.5.3 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -4722,7 +4748,7 @@ export default function App() {
                     { id: 'master_fabricator', name: "Master Fabricator", desc: "Fabricate 20 or more batches of items using the F.O.M.O. Engineering Deck.", reward: "Crafting mastery badge", icon: "🛠️" },
                     { id: 'corruption_master', name: "Corruption Master / Bribe Expert", desc: "Successfully bribe or pay off safety inspectors, customs checkpoints, and tax enforcers 5 or more times.", reward: "Waiver clearance badge", icon: "💼" },
                     { id: 'jetsetter', name: "and GOOD LUCK, MR. GORSKY", desc: "Successfully land on all 10 distinct venues in the Rusty Redeemer.", reward: "Good Luck, Mr. Gorsky badge", icon: <img src={gorskyIcon} className="w-12 h-12 object-contain rounded-full border border-yellow-500/30" alt="Gorsky" /> },
-                    { id: 'traveller', name: "Traveller Award", desc: "Spend 25 or more cycles travelling between solar systems.", reward: "Cosmic odometer badge", icon: "🚀" },
+                    { id: 'traveller', name: "Traveller Award", desc: "Spend 25 or more cycles travelling to trade venues in the Known star systems.", reward: "Cosmic odometer badge", icon: "🚀" },
                     { id: 'hermit', name: "Hermit Award", desc: "Remain anchored at the exact same venue for 3 or more days using stay-in-place actions.", reward: "Planetary anchor badge", icon: "🏡" },
                     { id: 'overachiever', name: "Overachiever Award", desc: "Advance to the final trading phase (Phase 4) in record time, before D.A.Y. 20.", reward: "Chronos speedrunner badge", icon: "⚡" },
                     { id: 'steel_hull', name: "Steel Hull Survivor", desc: "Survive or travel through danger zones with hull integrity depleted to 10% or less.", reward: "Unyielding chassis badge", icon: "🛡️" }
@@ -4832,7 +4858,7 @@ export default function App() {
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                          <p className="text-gray-500 font-mono text-[10px] uppercase">v10.5.2</p>
+                          <p className="text-gray-500 font-mono text-[10px] uppercase">v.10.5.3</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -5761,7 +5787,7 @@ export default function App() {
                    <div className="flex-grow flex flex-col overflow-y-auto custom-scrollbar relative pt-20">
                         <div className="absolute top-0 right-0 flex flex-col items-end gap-2">
                             <div className="text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                                SYSTEM LOG: FABRICATION MATRIX v10.5.2 ACTIVE
+                                SYSTEM LOG: FABRICATION MATRIX v.10.5.3 ACTIVE
                             </div>
                             <div className="bg-slate-950/90 border border-red-500/40 p-3 rounded-xl w-60 font-mono text-xs shadow-[0_0_15px_rgba(239,68,68,0.15)] flex flex-col gap-1 text-left">
                                 <div className="flex justify-between items-center text-red-400 font-bold tracking-wider">
@@ -5924,18 +5950,45 @@ export default function App() {
                                <button onClick={()=>{ if(state.activeLoans.length > 0) { SFX.play('error'); return setModal({type:'message', data:"Regulatory Block: Capital deposits are prohibited while holding active liabilities."}); } const amtVal = parseInt(bankInvestAmount); const termVal = parseInt(bankInvestTerm); if(isNaN(amtVal) || amtVal<=0 || state.cash<amtVal) { SFX.play('error'); return; } const ratesDict: any = {1:0.05, 2:0.20, 3:0.50}; const rateVal = ratesDict[termVal]; const matVal = Math.floor(amtVal * (1 + rateVal)); const invEntry = {id:Date.now(), amount:amtVal, daysRemaining:termVal, maturityValue:matVal, interestRate:rateVal}; setState(prev=>prev?({...prev, cash:prev.cash-amtVal, investments:[...prev.investments, invEntry]}):null); setBankInvestAmount(''); SFX.play('coin'); log(`INVESTMENT: Locked ${formatCurrencyLog(amtVal)} for ${termVal} days.`, 'investment'); setModal({ type: 'banking_transaction_success', data: { message: `Successfully deposited ${formatCurrencyLog(amtVal)}` } }); }} className="w-full bg-green-600 hover:bg-green-500 text-white font-black py-5 rounded-2xl text-2xl transition-all shadow-lg shadow-green-900/20 action-btn uppercase">INITIATE LOCKUP</button>
                                <p className="text-[9px] text-gray-500 text-center mt-4 italic uppercase tracking-widest opacity-60">All fixed-term investments are non-liquid until settlement day.</p>
                            </div>
-                            {state.isMutinyActive && (
-                                <div className="bg-red-900/20 p-6 rounded-2xl border border-red-500/30 animate-pulse mt-6">
-                                    <h4 className="text-red-400 font-bold mb-4 text-lg uppercase tracking-tighter">Crew Demands</h4>
-                                    <p className="text-red-200 text-sm mb-4">The crew demands a ransom of {formatCurrencyLog(50000)} to unlock the F.O.M.O. and Upgrades decks.</p>
-                                    <button onClick={() => {
-                                        if (state.cash < 50000) return setModal({type:'message', data: "Insufficient funds to pay ransom."});
-                                        setState(prev => prev ? ({ ...prev, cash: prev.cash - 50000, isMutinyActive: false, survivedMutiny: true, mutantUnrest: 10 }) : null);
-                                        log(`MUTINY: Paid crew ransom. F.O.M.O. & Upgrades unlocked.`, 'buy');
-                                        SFX.play('success');
-                                    }} className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-3 rounded-xl text-lg uppercase">PAY RANSOM</button>
-                                </div>
-                            )}
+                            {state.isMutinyActive && (() => {
+                                const pcChipsQuantity = state.markets[state.currentVenueIndex]?.["PC Chips"]?.quantity || 0;
+                                const pcChipsRequirement = Math.floor((pcChipsQuantity * 0.22) / 5) * 5;
+                                const playerOwnedChips = state.cargo["PC Chips"]?.quantity || 0;
+                                return (
+                                    <div className="bg-red-900/20 p-6 rounded-2xl border border-red-500/30 animate-pulse mt-6">
+                                        <h4 className="text-red-400 font-bold mb-4 text-lg uppercase tracking-tighter">Crew Demands</h4>
+                                        <p className="text-red-200 text-sm mb-4">
+                                            The crew demands a ransom of {formatCurrencyLog(50000)} and {pcChipsRequirement} PC Chips to unlock the F.O.M.O. and Upgrades decks.
+                                        </p>
+                                        <button onClick={() => {
+                                            if (state.cash < 50000) return setModal({type:'message', data: "Insufficient funds to pay ransom."});
+                                            if (playerOwnedChips < pcChipsRequirement) return setModal({type:'message', data: `Insufficient PC Chips in cargo hold to meet demands (Need ${pcChipsRequirement}).`});
+
+                                            const newCargo = { ...state.cargo };
+                                            let weightDeduction = 0;
+                                            if (pcChipsRequirement > 0) {
+                                                newCargo["PC Chips"].quantity -= pcChipsRequirement;
+                                                weightDeduction = pcChipsRequirement * 0.01;
+                                                if (newCargo["PC Chips"].quantity <= 0) {
+                                                    delete newCargo["PC Chips"];
+                                                }
+                                            }
+
+                                            setState(prev => prev ? ({
+                                                ...prev,
+                                                cash: prev.cash - 50000,
+                                                cargo: newCargo,
+                                                cargoWeight: Math.max(0, prev.cargoWeight - weightDeduction),
+                                                isMutinyActive: false,
+                                                survivedMutiny: true,
+                                                mutantUnrest: 10
+                                            }) : null);
+                                            log(`MUTINY: Paid crew ransom ($50,000) and delivered ${pcChipsRequirement} PC Chips. F.O.M.O. & Upgrades unlocked.`, 'buy');
+                                            SFX.play('success');
+                                        }} className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-3 rounded-xl text-lg uppercase">PAY RANSOM</button>
+                                    </div>
+                                );
+                            })()}
                        </div>
                   </div>
                   )}
@@ -6665,7 +6718,7 @@ export default function App() {
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v10.5.2</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v.10.5.3</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -6789,13 +6842,107 @@ export default function App() {
   return (
     <div className="app-viewport flex flex-col p-2 md:p-4 space-y-4 no-scrollbar custom-scrollbar overflow-y-auto bg-transparent">
        <Starfield />
+       {state?.isMutinyActive && (() => {
+           const pcChipsQuantity = state.markets[state.currentVenueIndex]?.["PC Chips"]?.quantity || 0;
+           const pcChipsRequirement = Math.floor((pcChipsQuantity * 0.22) / 5) * 5;
+           const playerOwnedChips = state.cargo["PC Chips"]?.quantity || 0;
+           return (
+               <div className="fixed inset-0 bg-slate-950/95 z-[9999] flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-300">
+                   <div className="max-w-xl w-full bg-red-950/40 border-2 border-red-500 rounded-3xl p-8 shadow-[0_0_50px_rgba(239,68,68,0.4)] relative overflow-hidden">
+                       {/* Blinking red indicator */}
+                       <div className="absolute top-4 right-4 flex items-center space-x-1">
+                           <span className="w-3.5 h-3.5 rounded-full bg-red-500 animate-ping"></span>
+                           <span className="w-3.5 h-3.5 rounded-full bg-red-500 absolute"></span>
+                       </div>
+
+                       {/* Large Banner */}
+                       <h1 className="text-5xl md:text-6xl font-scifi font-black text-red-500 animate-pulse uppercase tracking-wider mb-6">
+                           ON STRIKE
+                       </h1>
+
+                       <p className="text-red-200 font-mono text-sm mb-8 uppercase tracking-wide leading-relaxed">
+                           The mutant crew has shut down vital ship decks! They refuse to lift their strike until their demands are fully met.
+                       </p>
+
+                       {/* Demands Details */}
+                       <div className="bg-slate-900/90 border border-red-500/30 p-6 rounded-2xl mb-8 text-left space-y-4">
+                           <h3 className="text-md font-bold text-red-400 uppercase tracking-wider border-b border-red-500/20 pb-2">Crew Settlement Requirements:</h3>
+
+                           <div className="flex justify-between items-center text-sm md:text-base">
+                               <span className="text-gray-400 font-mono uppercase">Ransom Funds:</span>
+                               <span className={`font-mono font-bold ${state.cash >= 50000 ? 'text-green-400' : 'text-red-400'}`}>
+                                   {formatCurrencyLog(50000)} / {formatCurrencyLog(state.cash)}
+                               </span>
+                           </div>
+
+                           <div className="flex justify-between items-center text-sm md:text-base">
+                               <span className="text-gray-400 font-mono uppercase">PC Chips Required:</span>
+                               <span className={`font-mono font-bold ${playerOwnedChips >= pcChipsRequirement ? 'text-green-400' : 'text-red-400'}`}>
+                                   {pcChipsRequirement} units / {playerOwnedChips} owned
+                               </span>
+                           </div>
+
+                           <p className="text-[10px] text-gray-500 italic uppercase tracking-wider pt-2 border-t border-red-500/10">
+                               * Requirements are calculated based on 22% (rounded down to the nearest 5) of the PC Chips available at the current venue ({pcChipsQuantity} units).
+                           </p>
+                       </div>
+
+                       {/* Button to Fulfill Demands */}
+                       <div className="flex flex-col gap-3">
+                           <button
+                               onClick={() => {
+                                   if (state.cash < 50000) {
+                                       SFX.play('error');
+                                       return setModal({ type: 'message', data: "Insufficient Star Bucks to pay ransom." });
+                                   }
+                                   if (playerOwnedChips < pcChipsRequirement) {
+                                       SFX.play('error');
+                                       return setModal({ type: 'message', data: "Insufficient PC Chips in cargo hold to meet demands." });
+                                   }
+
+                                   // Deduct ransom and PC Chips
+                                   const newCargo = { ...state.cargo };
+                                   let weightDeduction = 0;
+                                   if (pcChipsRequirement > 0) {
+                                       newCargo["PC Chips"].quantity -= pcChipsRequirement;
+                                       weightDeduction = pcChipsRequirement * 0.01; // PC Chips weight is 0.01
+                                       if (newCargo["PC Chips"].quantity <= 0) {
+                                           delete newCargo["PC Chips"];
+                                       }
+                                   }
+
+                                   setState(prev => {
+                                       if (!prev) return null;
+                                       return {
+                                           ...prev,
+                                           cash: prev.cash - 50000,
+                                           cargo: newCargo,
+                                           cargoWeight: Math.max(0, prev.cargoWeight - weightDeduction),
+                                           isMutinyActive: false,
+                                           survivedMutiny: true,
+                                           mutantUnrest: 10
+                                       };
+                                   });
+
+                                   log(`MUTINY: Paid crew ransom ($50,000) and delivered ${pcChipsRequirement} PC Chips. Strike resolved.`, 'buy');
+                                   SFX.play('success');
+                               }}
+                               className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-4 rounded-xl text-xl uppercase transition-all shadow-lg active:scale-95"
+                           >
+                               FULFILL DEMANDS & RESOLVE STRIKE
+                           </button>
+                       </div>
+                   </div>
+               </div>
+           );
+       })()}
        {modal.type !== 'welcome' && (
          <>
            <header className="flex flex-col md:flex-row justify-between items-center px-4 py-2 gap-4 border-b border-gray-800 bg-gray-900/50 backdrop-blur-md sticky top-0 z-30 sci-fi-box">
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v10.5.2</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.10.5.3</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -7175,7 +7322,7 @@ export default function App() {
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v10.5.2</p>
+                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.10.5.3</p>
                </div>
            </div>
        )}
