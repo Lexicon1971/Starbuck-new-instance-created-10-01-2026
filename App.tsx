@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v.10.5.4
+ * VERSION: v.10.5.5
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -639,16 +639,33 @@ const VerticalToggle = ({ checked, onChange, disabled, label, rightContent }: { 
         {label && <span className="text-[9px] text-gray-400 uppercase font-black text-left leading-tight w-20">{label}</span>}
         <div 
             onClick={() => !disabled && onChange({ target: { checked: !checked } })} 
-            className={`relative w-5 h-10 rounded-lg cursor-pointer border-2 border-gray-700 bg-gray-900 overflow-hidden shadow-inner transition-all ${checked ? 'border-green-500/50' : 'border-red-500/50'}`}
+            className={`relative w-5 h-10 rounded-lg cursor-pointer border-2 transition-all duration-300 overflow-hidden ${
+                checked
+                    ? 'border-green-400 bg-green-950 shadow-[0_0_12px_rgba(0,255,102,0.85)]'
+                    : 'border-red-500 bg-red-950 shadow-[0_0_12px_rgba(255,0,51,0.85)]'
+            }`}
         >
-            <div className={`absolute left-0 w-full h-1/2 flex items-center justify-center transition-opacity ${checked ? 'bg-green-600 opacity-100' : 'opacity-0'}`}>
-                <ChevronUp size={10} className="text-white" />
+            <div className={`absolute left-0 w-full h-1/2 flex items-center justify-center transition-all duration-300 ${
+                checked
+                    ? 'bg-green-500 text-white shadow-[inset_0_0_4px_#00ff66]'
+                    : 'bg-transparent text-gray-700 opacity-20'
+            }`}>
+                <ChevronUp size={10} style={checked ? { filter: 'drop-shadow(0 0 4px #00ff66)' } : undefined} />
             </div>
-            <div className={`absolute bottom-0 left-0 w-full h-1/2 flex items-center justify-center transition-opacity ${checked ? 'opacity-0' : 'bg-red-600 opacity-100'}`}>
-                <ChevronDown size={10} className="text-white" />
+            <div className={`absolute bottom-0 left-0 w-full h-1/2 flex items-center justify-center transition-all duration-300 ${
+                checked
+                    ? 'bg-transparent text-gray-700 opacity-20'
+                    : 'bg-red-500 text-white shadow-[inset_0_0_4px_#ff0033]'
+            }`}>
+                <ChevronDown size={10} style={!checked ? { filter: 'drop-shadow(0 0 4px #ff0033)' } : undefined} />
             </div>
             {/* Handle/Knob */}
-            <div className={`absolute left-0 w-full h-1/3 bg-gray-600 border-y border-gray-400 transition-all duration-300 z-10`} style={{ top: checked ? '0%' : '66.6%' }}></div>
+            <div
+                className={`absolute left-0 w-full h-1/3 bg-gray-950 border-y transition-all duration-300 z-10 ${
+                    checked ? 'border-green-400' : 'border-red-500'
+                }`}
+                style={{ top: checked ? '0%' : '66.6%' }}
+            ></div>
         </div>
         {rightContent && <div className="ml-1">{rightContent}</div>}
     </div>
@@ -1097,7 +1114,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v.10.5.4 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v.10.5.5 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -4000,10 +4017,7 @@ export default function App() {
     if (!commodity) return;
 
     const cargoQty = state.cargo[commodityName]?.quantity || 0;
-    const totalWarehouseStock = Object.values(state.warehouse).reduce((total, venue) => {
-        return total + (venue[commodityName]?.quantity || 0);
-    }, 0);
-    const totalSectorStock = cargoQty + totalWarehouseStock;
+    const totalSectorStock = cargoQty;
     const unitWeight = commodity.unitWeight;
     const totalWeight = totalSectorStock * unitWeight;
     const logisticsFee = Math.ceil(totalWeight * 100);
@@ -4019,10 +4033,7 @@ export default function App() {
       const prevCargoQty = prev.cargo[commodityName]?.quantity || 0;
       const prevCargoAvgCost = prev.cargo[commodityName]?.averageCost || 0;
 
-      const totalWarehouseStock = Object.values(prev.warehouse).reduce((total, venue) => {
-          return total + (venue[commodityName]?.quantity || 0);
-      }, 0);
-      const totalSectorStock = prevCargoQty + totalWarehouseStock;
+      const totalSectorStock = prevCargoQty;
       const unitWeight = commodity.unitWeight;
       const totalWeight = totalSectorStock * unitWeight;
       const logisticsFee = Math.ceil(totalWeight * 100);
@@ -4031,20 +4042,24 @@ export default function App() {
       newState.cash -= logisticsFee;
 
       const newWarehouse: Warehouse = JSON.parse(JSON.stringify(newState.warehouse));
-      // Remove from all warehouses
-      Object.keys(newWarehouse).forEach(vIdx => {
-        const vIdxInt = parseInt(vIdx);
-        if (newWarehouse[vIdxInt] && newWarehouse[vIdxInt][commodityName]) {
-          delete newWarehouse[vIdxInt][commodityName];
-        }
-      });
 
       // Add to destination warehouse
       if (!newWarehouse[destinationIndex]) newWarehouse[destinationIndex] = {};
+      const existingWare = newWarehouse[destinationIndex][commodityName];
+      let newArrivalDay = prev.day + 1; // 1-day shipping
+      let newAvgCostVal = prevCargoAvgCost;
+      let newQtyVal = totalSectorStock;
+
+      if (existingWare) {
+          newArrivalDay = Math.max(existingWare.arrivalDay, newArrivalDay);
+          newAvgCostVal = ((existingWare.quantity * existingWare.originalAvgCost) + (totalSectorStock * prevCargoAvgCost)) / (existingWare.quantity + totalSectorStock);
+          newQtyVal += existingWare.quantity;
+      }
+
       newWarehouse[destinationIndex][commodityName] = {
-        quantity: totalSectorStock,
-        originalAvgCost: prevCargoAvgCost,
-        arrivalDay: prev.day + 1 // 1-day shipping
+        quantity: newQtyVal,
+        originalAvgCost: newAvgCostVal,
+        arrivalDay: newArrivalDay
       };
 
       const newCargo = { ...newState.cargo };
@@ -4530,7 +4545,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.10.5.4</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.10.5.5</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -4636,7 +4651,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.10.5.4 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.10.5.5 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -4962,7 +4977,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                          <p className="text-gray-500 font-mono text-[10px] uppercase">v.10.5.4</p>
+                          <p className="text-gray-500 font-mono text-[10px] uppercase">v.10.5.5</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -5468,7 +5483,13 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                                                     <input type="number" min="0" placeholder="Qty" className="w-[170px] bg-gray-800 text-white text-center rounded border border-gray-600 text-sm p-1.5" value={sellQuantities[c.name]||''} onChange={e=>setSellQuantities({...sellQuantities, [c.name]: e.target.value})} />
                                                     <button onClick={()=>setSellQuantities({...sellQuantities, [c.name]: owned.quantity.toString()})} disabled={owned.quantity===0} className="w-auto px-4 bg-gray-700 hover:bg-gray-600 disabled:opacity-30 text-sm text-white rounded py-1 action-btn">ALL</button>
                                                      <button onClick={()=>mItem && handleTrade('sell', c, mItem, owned)} disabled={owned.quantity===0} className="w-auto px-4 bg-green-700 hover:bg-green-600 disabled:opacity-30 text-white text-sm rounded font-bold py-1 action-btn">SELL</button>
-                                                    <button onClick={() => { const ownedQuantity = state.cargo[c.name]?.quantity || 0; setShippingQuantities(prev => ({ ...prev, [c.name]: ownedQuantity.toString() })); setModal({ type: 'shipping', data: null }); setLogisticsTab('shipping'); setShippingPriorityItem(c.name); }} className="w-auto px-4 bg-cyan-600 hover:bg-cyan-500 text-white text-sm rounded font-bold py-1 action-btn">SHIP</button>
+                                                    <button
+                                                        disabled={owned.quantity===0}
+                                                        onClick={() => { const ownedQuantity = state.cargo[c.name]?.quantity || 0; setShippingQuantities(prev => ({ ...prev, [c.name]: ownedQuantity.toString() })); setModal({ type: 'shipping', data: null }); setLogisticsTab('shipping'); setShippingPriorityItem(c.name); }}
+                                                        className="w-auto px-4 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-30 text-white text-sm rounded font-bold py-1 action-btn"
+                                                    >
+                                                        SHIP
+                                                    </button>
                                                     {activeContract && !isCovered && (
                                                         <button onClick={() => handleFulfill(activeContract)} disabled={owned.quantity < activeContract.quantity || pulsingContractId !== null} className={`w-auto px-4 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 disabled:opacity-50 text-white text-sm rounded font-bold py-1 action-btn ${pulsingContractId === activeContract.id ? 'animate-pulse' : ''}`}>FULFILL</button>
                                                     )}
@@ -5899,7 +5920,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                    <div className="flex-grow flex flex-col overflow-y-auto custom-scrollbar relative pt-20">
                         <div className="absolute top-0 right-0 flex flex-col items-end gap-2">
                             <div className="text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                                SYSTEM LOG: FABRICATION MATRIX v.10.5.4 ACTIVE
+                                SYSTEM LOG: FABRICATION MATRIX v.10.5.5 ACTIVE
                             </div>
                             <div className="bg-slate-950/90 border border-red-500/40 p-3 rounded-xl w-60 font-mono text-xs shadow-[0_0_15px_rgba(239,68,68,0.15)] flex flex-col gap-1 text-left">
                                 <div className="flex justify-between items-center text-red-400 font-bold tracking-wider">
@@ -6039,35 +6060,14 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                        <div className="space-y-6">
                            <h3 className="text-xl font-bold text-white flex items-center border-l-4 border-green-500 pl-4 uppercase tracking-widest">Capital Growth</h3>
                            {state.investments.length > 0 && (<div className="space-y-3">{state.investments.map(inv => (<div key={inv.id} className="bg-green-900/10 border border-green-500/30 p-5 rounded-2xl flex justify-between items-center shadow-inner animate-pulse"><div className="text-sm"><span className="text-gray-400 block uppercase text-[9px] tracking-widest font-black">Mature In</span><span className="text-green-400 font-black text-xl">{inv.daysRemaining} D.A.Y.s</span></div><div className="text-right"><span className="text-gray-400 block uppercase text-[9px] tracking-widest font-black">Value</span><PriceDisplay value={inv.maturityValue} size="text-xl"/></div></div>))}</div>)}
-                           <div className="bg-slate-800/80 p-8 rounded-3xl border border-green-500/20 shadow-xl">
-                               <h4 className="text-green-400 font-bold mb-6 text-lg uppercase tracking-tighter">New Term Deposit (CD)</h4>
-                               <div className="flex flex-col gap-6 mb-8">
-                                   <div className="space-y-2">
-                                       <label className="text-[10px] text-gray-500 uppercase tracking-widest ml-1 font-black">Principal Investment</label>
-                                       <div className="flex gap-3">
-                                           {/* Expanded quantity input for phase 4 values (10 digits + scroll room) */}
-                                           <input type="number" value={bankInvestAmount || ''} onChange={(e) => setBankInvestAmount(e.target.value)} min="1" placeholder="Amount..." className="flex-grow min-w-[180px] bg-gray-900 text-white p-4 rounded-xl border border-gray-700 focus:border-green-500 outline-none transition-all text-xl font-mono" />
-                                           <button onClick={() => setBankInvestAmount(Math.floor(Math.max(0, state.cash)).toString())} className="bg-gray-700 hover:bg-gray-600 px-6 rounded-xl text-white font-black text-xs uppercase border border-gray-600 transition-all shadow-md">MAX</button>
-                                       </div>
-                                   </div>
-                                   <div className="space-y-2">
-                                       <label className="text-[10px] text-gray-500 uppercase tracking-widest ml-1 font-black">Maturity Window</label>
-                                       <select value={bankInvestTerm || '1'} onChange={(e) => setBankInvestTerm(e.target.value)} className="w-full bg-gray-900 text-white p-4 rounded-xl border border-gray-700 focus:border-green-500 outline-none transition-all text-lg font-mono">
-                                          <option value="1">1 D.A.Y. (5% Yield)</option>
-                                          <option value="2">2 D.A.Y.s (20% Yield)</option>
-                                          <option value="3">3 D.A.Y.s (50% Yield)</option>
-                                       </select>
-                                   </div>
-                               </div>
-                               <button onClick={()=>{ if(state.activeLoans.length > 0) { SFX.play('error'); return setModal({type:'message', data:"Regulatory Block: Capital deposits are prohibited while holding active liabilities."}); } const amtVal = parseInt(bankInvestAmount); const termVal = parseInt(bankInvestTerm); if(isNaN(amtVal) || amtVal<=0 || state.cash<amtVal) { SFX.play('error'); return; } const ratesDict: any = {1:0.05, 2:0.20, 3:0.50}; const rateVal = ratesDict[termVal]; const matVal = Math.floor(amtVal * (1 + rateVal)); const invEntry = {id:Date.now(), amount:amtVal, daysRemaining:termVal, maturityValue:matVal, interestRate:rateVal}; setState(prev=>prev?({...prev, cash:prev.cash-amtVal, investments:[...prev.investments, invEntry]}):null); setBankInvestAmount(''); SFX.play('coin'); log(`INVESTMENT: Locked ${formatCurrencyLog(amtVal)} for ${termVal} days.`, 'investment'); setModal({ type: 'banking_transaction_success', data: { message: `Successfully deposited ${formatCurrencyLog(amtVal)}` } }); }} className="w-full bg-green-600 hover:bg-green-500 text-white font-black py-5 rounded-2xl text-2xl transition-all shadow-lg shadow-green-900/20 action-btn uppercase">INITIATE LOCKUP</button>
-                               <p className="text-[9px] text-gray-500 text-center mt-4 italic uppercase tracking-widest opacity-60">All fixed-term investments are non-liquid until settlement day.</p>
-                           </div>
-                            {state.isMutinyActive && (() => {
+
+                           {/* Ransom demand placed ABOVE Term Deposit (CD) */}
+                           {state.isMutinyActive && (() => {
                                 const pcChipsQuantity = state.markets[state.currentVenueIndex]?.["PC Chips"]?.quantity || 0;
                                 const pcChipsRequirement = Math.floor((pcChipsQuantity * 0.22) / 5) * 5;
                                 const playerOwnedChips = state.cargo["PC Chips"]?.quantity || 0;
                                 return (
-                                    <div className="bg-red-900/20 p-6 rounded-2xl border border-red-500/30 animate-pulse mt-6">
+                                    <div className="bg-red-900/20 p-6 rounded-2xl border border-red-500/30 animate-pulse">
                                         <h4 className="text-red-400 font-bold mb-4 text-lg uppercase tracking-tighter">Crew Demands</h4>
                                         <p className="text-red-200 text-sm mb-4">
                                             The crew demands a ransom of {formatCurrencyLog(50000)} and {pcChipsRequirement} PC Chips to unlock the F.O.M.O. and Upgrades decks.
@@ -6097,10 +6097,38 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                                             }) : null);
                                             log(`MUTINY: Paid crew ransom ($50,000) and delivered ${pcChipsRequirement} PC Chips. F.O.M.O. & Upgrades unlocked.`, 'buy');
                                             SFX.play('success');
+                                            setModal({
+                                                type: 'message',
+                                                data: `STRIKE RESOLVED: Paid crew ransom ($50,000) and delivered ${pcChipsRequirement} PC Chips. Demands fully pacified. Returning to Console.`
+                                            });
                                         }} className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-3 rounded-xl text-lg uppercase">PAY RANSOM</button>
                                     </div>
                                 );
                             })()}
+
+                           <div className="bg-slate-800/80 p-8 rounded-3xl border border-green-500/20 shadow-xl">
+                               <h4 className="text-green-400 font-bold mb-6 text-lg uppercase tracking-tighter">New Term Deposit (CD)</h4>
+                               <div className="flex flex-col gap-6 mb-8">
+                                   <div className="space-y-2">
+                                       <label className="text-[10px] text-gray-500 uppercase tracking-widest ml-1 font-black">Principal Investment</label>
+                                       <div className="flex gap-3">
+                                           {/* Expanded quantity input for phase 4 values (10 digits + scroll room) */}
+                                           <input type="number" value={bankInvestAmount || ''} onChange={(e) => setBankInvestAmount(e.target.value)} min="1" placeholder="Amount..." className="flex-grow min-w-[180px] bg-gray-900 text-white p-4 rounded-xl border border-gray-700 focus:border-green-500 outline-none transition-all text-xl font-mono" />
+                                           <button onClick={() => setBankInvestAmount(Math.floor(Math.max(0, state.cash)).toString())} className="bg-gray-700 hover:bg-gray-600 px-6 rounded-xl text-white font-black text-xs uppercase border border-gray-600 transition-all shadow-md">MAX</button>
+                                       </div>
+                                   </div>
+                                   <div className="space-y-2">
+                                       <label className="text-[10px] text-gray-500 uppercase tracking-widest ml-1 font-black">Maturity Window</label>
+                                       <select value={bankInvestTerm || '1'} onChange={(e) => setBankInvestTerm(e.target.value)} className="w-full bg-gray-900 text-white p-4 rounded-xl border border-gray-700 focus:border-green-500 outline-none transition-all text-lg font-mono">
+                                          <option value="1">1 D.A.Y. (5% Yield)</option>
+                                          <option value="2">2 D.A.Y.s (20% Yield)</option>
+                                          <option value="3">3 D.A.Y.s (50% Yield)</option>
+                                       </select>
+                                   </div>
+                               </div>
+                               <button onClick={()=>{ if(state.activeLoans.length > 0) { SFX.play('error'); return setModal({type:'message', data:"Regulatory Block: Capital deposits are prohibited while holding active liabilities."}); } const amtVal = parseInt(bankInvestAmount); const termVal = parseInt(bankInvestTerm); if(isNaN(amtVal) || amtVal<=0 || state.cash<amtVal) { SFX.play('error'); return; } const ratesDict: any = {1:0.05, 2:0.20, 3:0.50}; const rateVal = ratesDict[termVal]; const matVal = Math.floor(amtVal * (1 + rateVal)); const invEntry = {id:Date.now(), amount:amtVal, daysRemaining:termVal, maturityValue:matVal, interestRate:rateVal}; setState(prev=>prev?({...prev, cash:prev.cash-amtVal, investments:[...prev.investments, invEntry]}):null); setBankInvestAmount(''); SFX.play('coin'); log(`INVESTMENT: Locked ${formatCurrencyLog(amtVal)} for ${termVal} days.`, 'investment'); setModal({ type: 'banking_transaction_success', data: { message: `Successfully deposited ${formatCurrencyLog(amtVal)}` } }); }} className="w-full bg-green-600 hover:bg-green-500 text-white font-black py-5 rounded-2xl text-2xl transition-all shadow-lg shadow-green-900/20 action-btn uppercase">INITIATE LOCKUP</button>
+                               <p className="text-[9px] text-gray-500 text-center mt-4 italic uppercase tracking-widest opacity-60">All fixed-term investments are non-liquid until settlement day.</p>
+                           </div>
                        </div>
                   </div>
                   )}
@@ -6712,7 +6740,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                                             </button>
                                             <button
                                               onClick={() => omniShip(commodityName, i)}
-                                              disabled={!((state.cargo[commodityName]?.quantity || 0) > 0 || totalWarehouseStock > 0)}
+                                              disabled={!((state.cargo[commodityName]?.quantity || 0) > 0)}
                                               className="bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-700 text-white font-bold py-2 px-4 rounded text-xs"
                                             >
                                               SET DESTINATION
@@ -6830,7 +6858,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v.10.5.4</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v.10.5.5</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -7049,6 +7077,10 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
 
                                    log(`MUTINY: Paid crew ransom ($50,000) and delivered ${pcChipsRequirement} PC Chips. Strike resolved.`, 'buy');
                                    SFX.play('success');
+                                   setModal({
+                                       type: 'message',
+                                       data: `STRIKE RESOLVED: Successfully paid crew ransom ($50,000) and delivered ${pcChipsRequirement} PC Chips. Demands fully pacified. Returning to Console.`
+                                   });
                                }}
                                className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-4 rounded-xl text-xl uppercase transition-all shadow-lg active:scale-95"
                            >
@@ -7065,7 +7097,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.10.5.4</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.10.5.5</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -7445,7 +7477,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.10.5.4</p>
+                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.10.5.5</p>
                </div>
            </div>
        )}
