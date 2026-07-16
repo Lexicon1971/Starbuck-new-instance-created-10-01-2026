@@ -164,6 +164,7 @@ export interface GameState {
   sectorPasses: string[]; // Grants free passage or bonuses in certain sectors
   isMutinyActive?: boolean; // Locks F.O.M.O. and Upgrades decks
   mutantUnrest?: number; // Tracks mutant crew unrest intensity (0 - 100)
+  mutinyPcChipsRequirement?: number;
   
   pendingTrade?: PendingTrade; // For tax confirmation
 

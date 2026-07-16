@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v.10.5.5
+ * VERSION: v.10.5.6
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -866,6 +866,7 @@ export default function App() {
   const [cargoUpgradeQty, setCargoUpgradeQty] = useState<string>('1');
   const [fomoQty, setFomoQty] = useState<string>(''); 
   const [fomoStimQty, setFomoStimQty] = useState<string>(''); 
+  const [donateChipsQty, setDonateChipsQty] = useState<string>('');
   const [claimQuantities, setClaimQuantities] = useState<Record<string, string>>({});
   const [shippingPriorityItem, setShippingPriorityItem] = useState<string | null>(null);
   const [bankInvestAmount, setBankInvestAmount] = useState<string>('');
@@ -1114,7 +1115,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v.10.5.5 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v.10.5.6 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -2331,6 +2332,8 @@ export default function App() {
                 } else {
                     s.isMutinyActive = true;
                     s.mutantUnrest = 100;
+                    const pcChipsQuantity = s.markets[s.currentVenueIndex]?.["PC Chips"]?.quantity || 0;
+                    s.mutinyPcChipsRequirement = Math.floor((pcChipsQuantity * 0.22) / 5) * 5;
                     outcomeMsg = `MUTINY: The crew has seized control of the F.O.M.O. and Upgrades decks! You must pay their ransom at an I.B.A.N.K. Hub to regain access.`;
                     outcomeType = 'critical';
                     r.events.push(`CRITICAL: Crew mutiny! F.O.M.O. & Upgrades locked.`);
@@ -2724,6 +2727,8 @@ export default function App() {
     if (s.mutantUnrest >= 100 && !s.isMutinyActive) {
         s.isMutinyActive = true;
         s.mutantUnrest = 100;
+        const pcChipsQuantity = s.markets[s.currentVenueIndex]?.["PC Chips"]?.quantity || 0;
+        s.mutinyPcChipsRequirement = Math.floor((pcChipsQuantity * 0.22) / 5) * 5;
         report.events.push(`MUTINY DECLARED: Mutant crew unrest reached 100%! F.O.M.O. and Upgrades decks have been locked.`);
     }
 
@@ -3953,6 +3958,8 @@ export default function App() {
     const commodity = COMMODITIES.find(c => c.name === commodityName);
     if (!commodity) return;
 
+    // Strict separation check: Only ship owned stock from the current venue's cargo hold.
+    // Explicitly exclude any stored or warehouse stock of said item from other venues.
     const qtyOwned = state.cargo[commodityName]?.quantity || 0;
     if (qtyOwned <= 0) {
       SFX.play('error');
@@ -4016,6 +4023,8 @@ export default function App() {
     const commodity = COMMODITIES.find(c => c.name === commodityName);
     if (!commodity) return;
 
+    // Strict separation check: Only ship owned stock from the current venue's cargo hold.
+    // Explicitly exclude any stored or warehouse stock of said item from other venues.
     const cargoQty = state.cargo[commodityName]?.quantity || 0;
     const totalSectorStock = cargoQty;
     const unitWeight = commodity.unitWeight;
@@ -4198,16 +4207,25 @@ export default function App() {
     const nextUnrest = Math.min(100, prevUnrest + unrestIncrease);
     const mutinyTriggered = nextUnrest >= 100 && !state.isMutinyActive;
 
-    setState(prev => prev ? ({
-      ...prev,
-      cash: prev.cash - totalCost,
-      cargo: newCargo,
-      cargoWeight: prev.cargoWeight + weightDelta,
-      fomoDailyUse: { ...prev.fomoDailyUse, mesh: true },
-      fabricationCount: (prev.fabricationCount || 0) + 1,
-      mutantUnrest: nextUnrest,
-      isMutinyActive: mutinyTriggered ? true : prev.isMutinyActive
-    }) : null);
+    setState(prev => {
+      if (!prev) return null;
+      let pcChipsReq = prev.mutinyPcChipsRequirement;
+      if (mutinyTriggered) {
+          const pcChipsQuantity = prev.markets[prev.currentVenueIndex]?.["PC Chips"]?.quantity || 0;
+          pcChipsReq = Math.floor((pcChipsQuantity * 0.22) / 5) * 5;
+      }
+      return {
+        ...prev,
+        cash: prev.cash - totalCost,
+        cargo: newCargo,
+        cargoWeight: prev.cargoWeight + weightDelta,
+        fomoDailyUse: { ...prev.fomoDailyUse, mesh: true },
+        fabricationCount: (prev.fabricationCount || 0) + 1,
+        mutantUnrest: nextUnrest,
+        isMutinyActive: mutinyTriggered ? true : prev.isMutinyActive,
+        mutinyPcChipsRequirement: pcChipsReq
+      };
+    });
 
     log(`FABRICATION: Used ${h2oNeeded} ${H2O_NAME}, ${oreNeeded} Allthemantium Ore, and ${clothNeeded} Synthetic Cloth to produce ${q} units of ${MESH_NAME}. (Crew Unrest: ${nextUnrest}%)`, 'mining');
     setFomoQty('');
@@ -4280,16 +4298,25 @@ export default function App() {
     const nextUnrest = Math.min(100, prevUnrest + unrestIncrease);
     const mutinyTriggered = nextUnrest >= 100 && !state.isMutinyActive;
 
-    setState(prev => prev ? ({
-      ...prev,
-      cash: prev.cash - totalCost,
-      cargo: newCargo,
-      cargoWeight: prev.cargoWeight + weightDelta,
-      fomoDailyUse: { ...prev.fomoDailyUse, stims: true },
-      fabricationCount: (prev.fabricationCount || 0) + 1,
-      mutantUnrest: nextUnrest,
-      isMutinyActive: mutinyTriggered ? true : prev.isMutinyActive
-    }) : null);
+    setState(prev => {
+      if (!prev) return null;
+      let pcChipsReq = prev.mutinyPcChipsRequirement;
+      if (mutinyTriggered) {
+          const pcChipsQuantity = prev.markets[prev.currentVenueIndex]?.["PC Chips"]?.quantity || 0;
+          pcChipsReq = Math.floor((pcChipsQuantity * 0.22) / 5) * 5;
+      }
+      return {
+        ...prev,
+        cash: prev.cash - totalCost,
+        cargo: newCargo,
+        cargoWeight: prev.cargoWeight + weightDelta,
+        fomoDailyUse: { ...prev.fomoDailyUse, stims: true },
+        fabricationCount: (prev.fabricationCount || 0) + 1,
+        mutantUnrest: nextUnrest,
+        isMutinyActive: mutinyTriggered ? true : prev.isMutinyActive,
+        mutinyPcChipsRequirement: pcChipsReq
+      };
+    });
 
     log(`FABRICATION: Used ${h2oNeeded} ${H2O_NAME}, ${pasteNeeded} ${NUTRI_PASTE_NAME}, and ${medKitsNeeded} Medical Kits to produce ${q} Stim-Packs. (Crew Unrest: ${nextUnrest}%)`, 'mining');
     setFomoStimQty('');
@@ -4431,8 +4458,10 @@ export default function App() {
     if (!state) return;
 
     // 1. Calculate PC Chips required and owned
-    const pcChipsQuantity = state.markets[state.currentVenueIndex]?.["PC Chips"]?.quantity || 0;
-    const pcChipsRequirement = Math.floor((pcChipsQuantity * 0.22) / 5) * 5;
+    const pcChipsRequirement = state.mutinyPcChipsRequirement !== undefined ? state.mutinyPcChipsRequirement : (() => {
+        const pcChipsQuantity = state.markets[state.currentVenueIndex]?.["PC Chips"]?.quantity || 0;
+        return Math.floor((pcChipsQuantity * 0.22) / 5) * 5;
+    })();
     const playerOwnedChips = state.cargo["PC Chips"]?.quantity || 0;
     const qtyToBuy = pcChipsRequirement - playerOwnedChips;
 
@@ -4520,6 +4549,59 @@ export default function App() {
   };
 
   /**
+   * Donates PC Chips to mutants to subdue their unrest.
+   * Each PC Chip reduces unrest by 2%. If unrest falls below 100%, mutiny is pacified.
+   */
+  const handleDonateChips = (qty: number) => {
+    SFX.play('click');
+    if (!state) return;
+
+    const ownedChips = state.cargo["PC Chips"]?.quantity || 0;
+    if (qty <= 0) return;
+    if (ownedChips < qty) {
+      SFX.play('error');
+      setModal({ type: 'message', data: `Insufficient PC Chips in cargo hold to donate (Have ${ownedChips}, need ${qty}).` });
+      return;
+    }
+
+    const currentUnrest = state.mutantUnrest || 0;
+    const reduction = qty * 2; // 2% per chip
+    const nextUnrest = Math.max(0, currentUnrest - reduction);
+    const resolvedMutiny = nextUnrest < 100 && state.isMutinyActive;
+
+    const newCargo = { ...state.cargo };
+    newCargo["PC Chips"].quantity -= qty;
+    const weightLost = qty * 0.01;
+    if (newCargo["PC Chips"].quantity <= 0) {
+      delete newCargo["PC Chips"];
+    }
+
+    setState(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        cargo: newCargo,
+        cargoWeight: Math.max(0, prev.cargoWeight - weightLost),
+        mutantUnrest: nextUnrest,
+        isMutinyActive: nextUnrest >= 100 ? prev.isMutinyActive : false,
+        survivedMutiny: resolvedMutiny ? true : prev.survivedMutiny,
+        mutinyPcChipsRequirement: nextUnrest >= 100 ? prev.mutinyPcChipsRequirement : undefined
+      };
+    });
+
+    setDonateChipsQty('');
+    SFX.play('success');
+    log(`MUTINY: Donated ${qty} PC Chips to subdue mutant crew unrest. Unrest reduced by ${reduction}% to ${nextUnrest}%.`, 'buy');
+    if (resolvedMutiny) {
+      log(`MUTINY PACIFIED: Mutant crew unrest dropped below 100%. Decks unlocked. Returning to Console.`, 'profit');
+      setModal({
+        type: 'message',
+        data: `MUTINY PACIFIED: Your generous donation of ${qty} PC Chips has pacified the crew! Unrest reduced to ${nextUnrest}%. Returning to Console.`
+      });
+    }
+  };
+
+  /**
    * Calculates the cost to fully repair the ship's hull.
    * @returns The total repair cost.
    */
@@ -4545,7 +4627,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.10.5.5</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.10.5.6</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -4591,6 +4673,15 @@ export default function App() {
       { title: "Void-Sickness", icon: Info, content: "Hauling massive cargo loads across unmapped dark systems often induces Void-Sickness. Affected crew members report hearing the faint, chilling voices of ancient marketing executives whispering long-forgotten quarterly sales targets in their minds. It is recommended to administer high-potency Stim-Packs to any crew showing signs of auditory advertising hallucinations." },
       { title: "Temporal Phase Shifts", icon: Rocket, content: "Advancing through Phase 1, Phase 2, and Phase 3 is not just a commercial progression—it is a literal spatial-temporal shift. The S.H.A.N.E. network employs quantum algorithms that rewrite the physics of trade: spiking fuel costs, increasing pirate encounter frequencies, and creating highly volatile stock market dynamics." },
       { title: "Crew Mutiny & Unrest", icon: Skull, content: "Mutant crew members working on the F.O.M.O. Engineering Deck are prone to severe unrest under intensive fabrication shifts. Their mutiny status increases with every fabrication done by the team and rises as temporal phases advance. If unrest reaches 100%, they will initiate a hostile mutiny, locking control of the F.O.M.O. and Upgrades decks! Resolving a mutiny event with an appeasing payment decreases their unrest, while paying their ransom at an I.B.A.N.K. Hub fully pacifies them." },
+      {
+        title: "PC Chip Donations & Mutant Diet",
+        icon: HelpCircle,
+        content: `While humans and standard humanoids view PC Chips as crucial semiconductor boards for navigation and digital trading, the mutant crew members working in the hot, radioactive depths of the F.O.M.O. deck consider them a gourmet delicacy.
+
+Highly crunchy, with a delightful electric metallic tang, these chips are valued by mutants far more than organic food—as they are, in their own words, "Better than Peanuts!"
+
+Providing PC Chips directly to the mutants via the F.O.M.O. interface immediately quells their psychological and biological unrest, reducing the mutant unrest meter and preventing costly mutinies and strikes without needing complex banking ransom settlements.`
+      },
       { title: "Spacetime Folding Anomalies", icon: Rocket, content: "Folding 4D spacetime during travel is a highly volatile process. If one of the universe's dimensional corners fails to fold correctly, a fold alignment failure occurs, diverting the ship to a completely random venue. While any pre-shipped cargo continues on its logistics vector to its original planned destination, onboard items not shipped remain in the ship cargo and safely arrive with you at the random coordinate anomaly." },
       {
         title: "PRODUCT SPECIFICATION: \"HOT ISOTOPE HUMMERS\"",
@@ -4651,7 +4742,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.10.5.5 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.10.5.6 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -4977,7 +5068,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                          <p className="text-gray-500 font-mono text-[10px] uppercase">v.10.5.5</p>
+                           <p className="text-gray-500 font-mono text-[10px] uppercase">v.10.5.6</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -5902,6 +5993,57 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
           const availResources = [H2O_NAME, NUTRI_PASTE_NAME, "Medical Kits", "Allthemantium Ore", "Synthetic Cloth"];
           return (
               <div className="p-4 md:p-8 flex h-full gap-8 max-w-full overflow-hidden">
+                   {/* Mutant PC Chips Donation Box (Subdue Unrest) */}
+                   <div className="w-56 flex flex-col shrink-0 overflow-y-auto custom-scrollbar bg-black/20 p-4 rounded-3xl border border-red-500/20">
+                        <h3 className="text-red-400 font-scifi text-lg mb-6 uppercase border-b border-red-500/40 pb-2">Subdue Unrest</h3>
+                        <div className="flex-grow flex flex-col justify-between">
+                            <div className="space-y-4">
+                                <p className="text-xs text-gray-400 font-mono uppercase leading-tight">
+                                    Donate PC Chips to satisfy the mutant crew's craving.
+                                </p>
+                                <div className="bg-slate-900/60 p-3 rounded-xl border border-gray-700 shadow-inner flex flex-col">
+                                    <span className="text-gray-400 text-[10px] uppercase font-bold mb-1 tracking-widest">PC Chips Owned</span>
+                                    <span className="text-white font-mono text-xl">{state.cargo["PC Chips"]?.quantity || 0}</span>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[10px] text-gray-500 uppercase tracking-widest font-black">Quantity</label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            placeholder="Qty"
+                                            className="w-full bg-gray-900 text-white p-2 rounded border border-gray-700 text-sm font-bold text-center"
+                                            value={donateChipsQty || ''}
+                                            onChange={e => setDonateChipsQty(e.target.value)}
+                                        />
+                                        <button
+                                            onClick={() => setDonateChipsQty((state.cargo["PC Chips"]?.quantity || 0).toString())}
+                                            className="bg-gray-700 hover:bg-gray-600 px-3 rounded text-white font-black text-xs uppercase"
+                                        >
+                                            MAX
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-6">
+                                <button
+                                    onClick={() => {
+                                        const qVal = parseInt(donateChipsQty);
+                                        if (!isNaN(qVal) && qVal > 0) {
+                                            handleDonateChips(qVal);
+                                        }
+                                    }}
+                                    className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-2.5 rounded-xl text-sm uppercase transition-colors"
+                                >
+                                    Donate Chips
+                                </button>
+                                <p className="text-[10px] text-gray-400 italic mt-2 text-center">"Better than Peanuts!"</p>
+                            </div>
+                        </div>
+                   </div>
+
                    <div className="w-56 flex flex-col shrink-0 overflow-y-auto custom-scrollbar bg-black/20 p-4 rounded-3xl border border-orange-500/20">
                         <h3 className="text-orange-400 font-scifi text-lg mb-6 uppercase border-b border-orange-500/40 pb-2">Commodities</h3>
                         <div className="space-y-4">
@@ -5920,7 +6062,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                    <div className="flex-grow flex flex-col overflow-y-auto custom-scrollbar relative pt-20">
                         <div className="absolute top-0 right-0 flex flex-col items-end gap-2">
                             <div className="text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                                SYSTEM LOG: FABRICATION MATRIX v.10.5.5 ACTIVE
+                                SYSTEM LOG: FABRICATION MATRIX v.10.5.6 ACTIVE
                             </div>
                             <div className="bg-slate-950/90 border border-red-500/40 p-3 rounded-xl w-60 font-mono text-xs shadow-[0_0_15px_rgba(239,68,68,0.15)] flex flex-col gap-1 text-left">
                                 <div className="flex justify-between items-center text-red-400 font-bold tracking-wider">
@@ -6030,7 +6172,57 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                   </div>
 
                   {bankingTab === 'loans' && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 flex-grow overflow-y-auto custom-scrollbar">
+                    <div className="flex flex-col flex-grow overflow-y-auto custom-scrollbar space-y-6">
+                       {/* Ransom demand placed ABOVE everything in the Loans tab */}
+                       {state.isMutinyActive && (() => {
+                             const pcChipsRequirement = state.mutinyPcChipsRequirement !== undefined ? state.mutinyPcChipsRequirement : (() => {
+                                 const pcChipsQuantity = state.markets[state.currentVenueIndex]?.["PC Chips"]?.quantity || 0;
+                                 return Math.floor((pcChipsQuantity * 0.22) / 5) * 5;
+                             })();
+                             const playerOwnedChips = state.cargo["PC Chips"]?.quantity || 0;
+                             return (
+                                 <div className="bg-red-900/20 p-6 rounded-2xl border border-red-500/30 animate-pulse">
+                                     <h4 className="text-red-400 font-bold mb-4 text-lg uppercase tracking-tighter">Crew Demands</h4>
+                                     <p className="text-red-200 text-sm mb-4">
+                                         The crew demands a ransom of {formatCurrencyLog(50000)} and {pcChipsRequirement} PC Chips to unlock the F.O.M.O. and Upgrades decks.
+                                     </p>
+                                     <button onClick={() => {
+                                         if (state.cash < 50000) return setModal({type:'message', data: "Insufficient funds to pay ransom."});
+                                         if (playerOwnedChips < pcChipsRequirement) return setModal({type:'message', data: `Insufficient PC Chips in cargo hold to meet demands (Need ${pcChipsRequirement}).`});
+
+                                         const newCargo = { ...state.cargo };
+                                         let weightDeduction = 0;
+                                         if (pcChipsRequirement > 0) {
+                                             newCargo["PC Chips"].quantity -= pcChipsRequirement;
+                                             weightDeduction = pcChipsRequirement * 0.01;
+                                             if (newCargo["PC Chips"].quantity <= 0) {
+                                                 delete newCargo["PC Chips"];
+                                             }
+                                         }
+
+                                         setState(prev => prev ? ({
+                                             ...prev,
+                                             cash: prev.cash - 50000,
+                                             cargo: newCargo,
+                                             cargoWeight: Math.max(0, prev.cargoWeight - weightDeduction),
+                                             isMutinyActive: false,
+                                             survivedMutiny: true,
+                                             mutantUnrest: 10,
+                                             mutinyPcChipsRequirement: undefined
+                                         }) : null);
+                                         log(`MUTINY: Paid crew ransom ($50,000) and delivered ${pcChipsRequirement} PC Chips. F.O.M.O. & Upgrades unlocked.`, 'buy');
+                                         SFX.play('success');
+                                          setDismissedStrikeOverlay(false);
+                                         setModal({
+                                             type: 'message',
+                                             data: `STRIKE RESOLVED: Paid crew ransom ($50,000) and delivered ${pcChipsRequirement} PC Chips. Demands fully pacified. Returning to Console.`
+                                         });
+                                     }} className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-3 rounded-xl text-lg uppercase">PAY RANSOM</button>
+                                 </div>
+                             );
+                        })()}
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                        <div className="space-y-6">
                            <h3 className="text-xl font-bold text-white flex items-center border-l-4 border-red-500 pl-4 uppercase tracking-widest">Liabilities</h3>
                            {state.activeLoans.length === 0 && <div className="p-8 border border-dashed border-gray-700 rounded-2xl text-gray-500 text-center italic">No outstanding credit.</div>}
@@ -6061,51 +6253,6 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                            <h3 className="text-xl font-bold text-white flex items-center border-l-4 border-green-500 pl-4 uppercase tracking-widest">Capital Growth</h3>
                            {state.investments.length > 0 && (<div className="space-y-3">{state.investments.map(inv => (<div key={inv.id} className="bg-green-900/10 border border-green-500/30 p-5 rounded-2xl flex justify-between items-center shadow-inner animate-pulse"><div className="text-sm"><span className="text-gray-400 block uppercase text-[9px] tracking-widest font-black">Mature In</span><span className="text-green-400 font-black text-xl">{inv.daysRemaining} D.A.Y.s</span></div><div className="text-right"><span className="text-gray-400 block uppercase text-[9px] tracking-widest font-black">Value</span><PriceDisplay value={inv.maturityValue} size="text-xl"/></div></div>))}</div>)}
 
-                           {/* Ransom demand placed ABOVE Term Deposit (CD) */}
-                           {state.isMutinyActive && (() => {
-                                const pcChipsQuantity = state.markets[state.currentVenueIndex]?.["PC Chips"]?.quantity || 0;
-                                const pcChipsRequirement = Math.floor((pcChipsQuantity * 0.22) / 5) * 5;
-                                const playerOwnedChips = state.cargo["PC Chips"]?.quantity || 0;
-                                return (
-                                    <div className="bg-red-900/20 p-6 rounded-2xl border border-red-500/30 animate-pulse">
-                                        <h4 className="text-red-400 font-bold mb-4 text-lg uppercase tracking-tighter">Crew Demands</h4>
-                                        <p className="text-red-200 text-sm mb-4">
-                                            The crew demands a ransom of {formatCurrencyLog(50000)} and {pcChipsRequirement} PC Chips to unlock the F.O.M.O. and Upgrades decks.
-                                        </p>
-                                        <button onClick={() => {
-                                            if (state.cash < 50000) return setModal({type:'message', data: "Insufficient funds to pay ransom."});
-                                            if (playerOwnedChips < pcChipsRequirement) return setModal({type:'message', data: `Insufficient PC Chips in cargo hold to meet demands (Need ${pcChipsRequirement}).`});
-
-                                            const newCargo = { ...state.cargo };
-                                            let weightDeduction = 0;
-                                            if (pcChipsRequirement > 0) {
-                                                newCargo["PC Chips"].quantity -= pcChipsRequirement;
-                                                weightDeduction = pcChipsRequirement * 0.01;
-                                                if (newCargo["PC Chips"].quantity <= 0) {
-                                                    delete newCargo["PC Chips"];
-                                                }
-                                            }
-
-                                            setState(prev => prev ? ({
-                                                ...prev,
-                                                cash: prev.cash - 50000,
-                                                cargo: newCargo,
-                                                cargoWeight: Math.max(0, prev.cargoWeight - weightDeduction),
-                                                isMutinyActive: false,
-                                                survivedMutiny: true,
-                                                mutantUnrest: 10
-                                            }) : null);
-                                            log(`MUTINY: Paid crew ransom ($50,000) and delivered ${pcChipsRequirement} PC Chips. F.O.M.O. & Upgrades unlocked.`, 'buy');
-                                            SFX.play('success');
-                                            setModal({
-                                                type: 'message',
-                                                data: `STRIKE RESOLVED: Paid crew ransom ($50,000) and delivered ${pcChipsRequirement} PC Chips. Demands fully pacified. Returning to Console.`
-                                            });
-                                        }} className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-3 rounded-xl text-lg uppercase">PAY RANSOM</button>
-                                    </div>
-                                );
-                            })()}
-
                            <div className="bg-slate-800/80 p-8 rounded-3xl border border-green-500/20 shadow-xl">
                                <h4 className="text-green-400 font-bold mb-6 text-lg uppercase tracking-tighter">New Term Deposit (CD)</h4>
                                <div className="flex flex-col gap-6 mb-8">
@@ -6130,6 +6277,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                                <p className="text-[9px] text-gray-500 text-center mt-4 italic uppercase tracking-widest opacity-60">All fixed-term investments are non-liquid until settlement day.</p>
                            </div>
                        </div>
+                   </div>
                   </div>
                   )}
 
@@ -6858,7 +7006,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v.10.5.5</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v.10.5.6</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -6983,8 +7131,10 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
     <div className="app-viewport flex flex-col p-2 md:p-4 space-y-4 no-scrollbar custom-scrollbar overflow-y-auto bg-transparent">
        <Starfield />
        {state?.isMutinyActive && !dismissedStrikeOverlay && (() => {
-           const pcChipsQuantity = state.markets[state.currentVenueIndex]?.["PC Chips"]?.quantity || 0;
-           const pcChipsRequirement = Math.floor((pcChipsQuantity * 0.22) / 5) * 5;
+            const pcChipsRequirement = state.mutinyPcChipsRequirement !== undefined ? state.mutinyPcChipsRequirement : (() => {
+                const pcChipsQuantity = state.markets[state.currentVenueIndex]?.["PC Chips"]?.quantity || 0;
+                return Math.floor((pcChipsQuantity * 0.22) / 5) * 5;
+            })();
            const playerOwnedChips = state.cargo["PC Chips"]?.quantity || 0;
            return (
                <div className="fixed inset-0 bg-slate-950/95 z-[9999] flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-300">
@@ -7077,6 +7227,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
 
                                    log(`MUTINY: Paid crew ransom ($50,000) and delivered ${pcChipsRequirement} PC Chips. Strike resolved.`, 'buy');
                                    SFX.play('success');
+                                    setDismissedStrikeOverlay(false);
                                    setModal({
                                        type: 'message',
                                        data: `STRIKE RESOLVED: Successfully paid crew ransom ($50,000) and delivered ${pcChipsRequirement} PC Chips. Demands fully pacified. Returning to Console.`
@@ -7097,7 +7248,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.10.5.5</span>
+                     <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.10.5.6</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -7477,7 +7628,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                  <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.10.5.5</p>
+                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.10.5.6</p>
                </div>
            </div>
        )}
@@ -7579,7 +7730,8 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                                        });
                                        log(`TAKEOVER: Successfully liquidated ${modal.data.stockName} for Golden Parachute payout of +${formatCurrencyLog(val)}!`, 'sell');
                                        SFX.play('success');
-                                       setModal({ type: 'none', data: null });
+                                        setModal({ type: 'banking', data: null });
+                                        setBankingTab('stocks');
                                    }}
                                    className="bg-green-700 hover:bg-green-600 text-white p-4 rounded-xl border border-green-500 flex flex-col items-center justify-center transition-all action-btn"
                                >
@@ -7601,7 +7753,8 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                                        });
                                        log(`TAKEOVER: Secured control of ${modal.data.stockName}. Permanent daily dividend of +$B 25,000 established.`, 'buy');
                                        SFX.play('success');
-                                       setModal({ type: 'none', data: null });
+                                        setModal({ type: 'banking', data: null });
+                                        setBankingTab('stocks');
                                    }}
                                    className="bg-cyan-700 hover:bg-cyan-600 text-white p-4 rounded-xl border border-cyan-500 flex flex-col items-center justify-center transition-all action-btn"
                                >
@@ -7640,7 +7793,8 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                                            });
                                            log(`TAKEOVER: Overpowered litigation of ${modal.data.stockName} for $250,000. Permanent dividend of +$B 25,000 established.`, 'buy');
                                            SFX.play('success');
-                                           setModal({ type: 'none', data: null });
+                                            setModal({ type: 'banking', data: null });
+                                            setBankingTab('stocks');
                                        }}
                                        className="bg-blue-700 hover:bg-blue-600 disabled:bg-gray-800 disabled:opacity-50 text-white p-4 rounded-xl border border-blue-500 flex flex-col items-center justify-center transition-all action-btn"
                                    >
@@ -7662,7 +7816,8 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                                            });
                                            log(`TAKEOVER: Settled out of court with ${modal.data.stockName}. Sold ${soldCount.toLocaleString()} shares at 1.25x premium for +${formatCurrencyLog(payout)}.`, 'sell');
                                            SFX.play('success');
-                                           setModal({ type: 'none', data: null });
+                                            setModal({ type: 'banking', data: null });
+                                            setBankingTab('stocks');
                                        }}
                                        className="bg-yellow-700 hover:bg-yellow-600 text-white p-4 rounded-xl border border-yellow-500 flex flex-col items-center justify-center transition-all action-btn"
                                    >
@@ -7710,11 +7865,12 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                                        });
                                        log(`TAKEOVER: ${modal.data.stockName} executives sabotaged the firm. Salvaged +${formatCurrencyLog(consolidationCash)} cash, 15 Mesh, and 50 Allthemantium Ore.`, 'maintenance');
                                        SFX.play('explosion');
-                                       setModal({ type: 'none', data: null });
+                                        setModal({ type: 'banking', data: null });
+                                        setBankingTab('stocks');
                                    }}
                                    className="w-full bg-red-700 hover:bg-red-600 text-white font-black py-4 rounded-xl text-lg uppercase tracking-widest shadow-lg action-btn"
                                >
-                                   RETURN TO TERMINAL CONSOLE
+                                    RETURN TO I.B.A.N.K. HUB
                                </button>
                            </div>
                        </div>
@@ -7754,11 +7910,12 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                                        });
                                        log(`TAKEOVER: Monopolization fine paid (-$150,000). Forced divestment of ${divestedShares.toLocaleString()} shares of ${modal.data.stockName} for +${formatCurrencyLog(divestmentRevenue)}.`, 'maintenance');
                                        SFX.play('laser');
-                                       setModal({ type: 'none', data: null });
+                                        setModal({ type: 'banking', data: null });
+                                        setBankingTab('stocks');
                                    }}
                                    className="w-full bg-red-700 hover:bg-red-600 text-white font-black py-4 rounded-xl text-lg uppercase tracking-widest shadow-lg action-btn"
                                >
-                                   RETURN TO TERMINAL CONSOLE
+                                    RETURN TO I.B.A.N.K. HUB
                                </button>
                            </div>
                        </div>
