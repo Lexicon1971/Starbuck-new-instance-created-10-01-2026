@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v.10.5.6
+ * VERSION: v.10.5.7
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -1115,7 +1115,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v.10.5.6 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v.10.5.7 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -4627,7 +4627,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.10.5.6</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.10.5.7</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -4742,7 +4742,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.10.5.6 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.10.5.7 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -5068,7 +5068,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                           <p className="text-gray-500 font-mono text-[10px] uppercase">v.10.5.6</p>
+                           <p className="text-gray-500 font-mono text-[10px] uppercase">v.10.5.7</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -5992,12 +5992,12 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
       if (modal.type === 'fomo') {
           const availResources = [H2O_NAME, NUTRI_PASTE_NAME, "Medical Kits", "Allthemantium Ore", "Synthetic Cloth"];
           return (
-              <div className="p-4 md:p-8 flex h-full gap-8 max-w-full overflow-hidden">
+              <div className="p-3 md:p-4 flex h-full gap-4 md:gap-6 max-w-full overflow-hidden">
                    {/* Mutant PC Chips Donation Box (Subdue Unrest) */}
-                   <div className="w-56 flex flex-col shrink-0 overflow-y-auto custom-scrollbar bg-black/20 p-4 rounded-3xl border border-red-500/20">
-                        <h3 className="text-red-400 font-scifi text-lg mb-6 uppercase border-b border-red-500/40 pb-2">Subdue Unrest</h3>
+                   <div className="w-56 flex flex-col shrink-0 overflow-y-auto custom-scrollbar bg-black/20 p-3 rounded-2xl border border-red-500/20">
+                        <h3 className="text-red-400 font-scifi text-base mb-4 uppercase border-b border-red-500/40 pb-1.5">Subdue Unrest</h3>
                         <div className="flex-grow flex flex-col justify-between">
-                            <div className="space-y-4">
+                            <div className="space-y-3">
                                 <p className="text-xs text-gray-400 font-mono uppercase leading-tight">
                                     Donate PC Chips to satisfy the mutant crew's craving.
                                 </p>
@@ -6027,7 +6027,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                                 </div>
                             </div>
 
-                            <div className="mt-6">
+                            <div className="mt-4">
                                 <button
                                     onClick={() => {
                                         const qVal = parseInt(donateChipsQty);
@@ -6035,18 +6035,18 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                                             handleDonateChips(qVal);
                                         }
                                     }}
-                                    className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-2.5 rounded-xl text-sm uppercase transition-colors"
+                                    className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-2 rounded-xl text-sm uppercase transition-colors"
                                 >
                                     Donate Chips
                                 </button>
-                                <p className="text-[10px] text-gray-400 italic mt-2 text-center">"Better than Peanuts!"</p>
+                                <p className="text-[10px] text-gray-400 italic mt-1.5 text-center">"Better than Peanuts!"</p>
                             </div>
                         </div>
                    </div>
 
-                   <div className="w-56 flex flex-col shrink-0 overflow-y-auto custom-scrollbar bg-black/20 p-4 rounded-3xl border border-orange-500/20">
-                        <h3 className="text-orange-400 font-scifi text-lg mb-6 uppercase border-b border-orange-500/40 pb-2">Commodities</h3>
-                        <div className="space-y-4">
+                   <div className="w-56 flex flex-col shrink-0 overflow-y-auto custom-scrollbar bg-black/20 p-3 rounded-2xl border border-orange-500/20">
+                        <h3 className="text-orange-400 font-scifi text-base mb-4 uppercase border-b border-orange-500/40 pb-1.5">Commodities</h3>
+                        <div className="space-y-3">
                             {availResources.map(name => {
                                 const qtyOwned = state.cargo[name]?.quantity || 0;
                                 return (
@@ -6059,42 +6059,54 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                         </div>
                    </div>
 
-                   <div className="flex-grow flex flex-col overflow-y-auto custom-scrollbar relative pt-20">
-                        <div className="absolute top-0 right-0 flex flex-col items-end gap-2">
-                            <div className="text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                                SYSTEM LOG: FABRICATION MATRIX v.10.5.6 ACTIVE
+                   <div className="flex-grow flex flex-col overflow-y-auto custom-scrollbar">
+                        {/* Top Header Row containing Title on the left and Mutant Unrest Box on the right */}
+                        <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-4 shrink-0">
+                            {/* F.O.M.O Title Block: Realigned to be physically between the "Commodities box" (left) and the "Mutant unrest" box (right) */}
+                            <div className="text-left space-y-1">
+                                <h2 className="text-3xl md:text-4xl font-scifi text-orange-400 uppercase tracking-tighter leading-none">F.O.M.O. Fabrication</h2>
+                                <p className="text-orange-600 font-mono text-xs tracking-widest uppercase italic">Sector Efficiency Matrix</p>
                             </div>
-                            <div className="bg-slate-950/90 border border-red-500/40 p-3 rounded-xl w-60 font-mono text-xs shadow-[0_0_15px_rgba(239,68,68,0.15)] flex flex-col gap-1 text-left">
-                                <div className="flex justify-between items-center text-red-400 font-bold tracking-wider">
-                                    <span>👾 MUTANT UNREST</span>
-                                    <span className="animate-pulse font-mono text-[10px]">{state.mutantUnrest || 10}%</span>
+
+                            {/* Mutant Unrest HUD Block on the right */}
+                            <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                <div className="text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
+                                    SYSTEM LOG: FABRICATION MATRIX v.10.5.7 ACTIVE
                                 </div>
-                                <div className="w-full bg-gray-900 rounded-full h-2 overflow-hidden border border-red-950">
-                                    <div
-                                        className={`h-full transition-all duration-300 ${(state.mutantUnrest || 10) >= 80 ? 'bg-red-500 animate-pulse' : ((state.mutantUnrest || 10) >= 50 ? 'bg-yellow-500' : 'bg-emerald-500')}`}
-                                        style={{ width: `${state.mutantUnrest || 10}%` }}
-                                    />
-                                </div>
-                                <div className="text-[9px] text-gray-500 uppercase tracking-tight flex justify-between mt-1">
-                                    <span>Status:</span>
-                                    <span className={state.isMutinyActive ? 'text-red-500 font-bold animate-pulse' : 'text-emerald-500'}>
-                                        {state.isMutinyActive ? 'MUTINY ACTIVE' : 'PACIFIED'}
-                                    </span>
+                                <div className="bg-slate-950/90 border border-red-500/40 p-2.5 rounded-xl w-56 font-mono text-xs shadow-[0_0_15px_rgba(239,68,68,0.15)] flex flex-col gap-1 text-left">
+                                    <div className="flex justify-between items-center text-red-400 font-bold tracking-wider">
+                                        <span>👾 MUTANT UNREST</span>
+                                        <span className="animate-pulse font-mono text-[10px]">{state.mutantUnrest || 10}%</span>
+                                    </div>
+                                    <div className="w-full bg-gray-900 rounded-full h-2 overflow-hidden border border-red-950">
+                                        <div
+                                            className={`h-full transition-all duration-300 ${(state.mutantUnrest || 10) >= 80 ? 'bg-red-500 animate-pulse' : ((state.mutantUnrest || 10) >= 50 ? 'bg-yellow-500' : 'bg-emerald-500')}`}
+                                            style={{ width: `${state.mutantUnrest || 10}%` }}
+                                        />
+                                    </div>
+                                    <div className="text-[9px] text-gray-500 uppercase tracking-tight flex justify-between mt-0.5">
+                                        <span>Status:</span>
+                                        <span className={state.isMutinyActive ? 'text-red-500 font-bold animate-pulse' : 'text-emerald-500'}>
+                                            {state.isMutinyActive ? 'MUTINY ACTIVE' : 'PACIFIED'}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="text-center space-y-2 mb-10">
-                            <h2 className="text-5xl font-scifi text-orange-400 uppercase tracking-tighter">F.O.M.O. Fabrication</h2>
-                            <p className="text-orange-600 font-mono text-sm tracking-widest uppercase italic">Sector Efficiency Matrix</p>
+                        {/* WARNING: Batch Limit Policy Enforced (moved above the fabrication boxes) */}
+                        <div className="mb-4 text-center">
+                            <span className="text-base md:text-lg text-orange-500 font-black uppercase tracking-[0.2em] animate-pulse">
+                                WARNING: Batch Limit Policy Enforced.
+                            </span>
                         </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
-                            <div className="bg-slate-800/80 p-8 rounded-3xl border border-orange-500/30 flex flex-col justify-between hover:border-orange-500/60 transition-all shadow-xl min-h-[380px]">
-                                <div className="space-y-4 mb-8">
-                                    <h3 className="text-2xl font-bold text-white flex items-center"><Box className="mr-3 text-orange-400"/> {MESH_NAME}</h3>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 w-full">
+                            <div className="bg-slate-800/80 p-5 rounded-2xl border border-orange-500/30 flex flex-col justify-between hover:border-orange-500/60 transition-all shadow-xl min-h-[330px]">
+                                <div className="space-y-3 mb-4">
+                                    <h3 className="text-xl md:text-2xl font-bold text-white flex items-center"><Box className="mr-3 text-orange-400"/> {MESH_NAME}</h3>
                                     <p className="text-gray-400 text-sm leading-relaxed">Advanced structural weaving for cargo expansion modules. Essential for ship upgrades.</p>
-                                    <div className="bg-black/40 p-4 rounded-2xl border border-orange-500/10 space-y-1.5">
+                                    <div className="bg-black/40 p-3 rounded-xl border border-orange-500/10 space-y-1">
                                         <div className="flex justify-between text-xs"><span className="text-gray-500 uppercase font-bold">Input A:</span><span className="text-white font-bold">1x {H2O_NAME}</span></div>
                                         <div className="flex justify-between text-xs"><span className="text-gray-500 uppercase font-bold">Input B:</span><span className="text-white font-bold">1x Allthemantium Ore</span></div>
                                         <div className="flex justify-between text-xs"><span className="text-gray-500 uppercase font-bold">Input C:</span><span className="text-white font-bold">1x Synthetic Cloth</span></div>
@@ -6116,11 +6128,11 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                                 </div>
                             </div>
 
-                            <div className="bg-slate-800/80 p-8 rounded-3xl border border-orange-500/30 flex flex-col justify-between hover:border-orange-500/60 transition-all shadow-xl min-h-[380px]">
-                                <div className="space-y-4 mb-8">
-                                    <h3 className="text-2xl font-bold text-white flex items-center"><Pill className="mr-3 text-orange-400"/> Stim-Packs</h3>
+                            <div className="bg-slate-800/80 p-5 rounded-2xl border border-orange-500/30 flex flex-col justify-between hover:border-orange-500/60 transition-all shadow-xl min-h-[330px]">
+                                <div className="space-y-3 mb-4">
+                                    <h3 className="text-xl md:text-2xl font-bold text-white flex items-center"><Pill className="mr-3 text-orange-400"/> Stim-Packs</h3>
                                     <p className="text-gray-400 text-sm leading-relaxed">Medical Grade adrenaline synthesizers. Highly valuable for biological trade hubs.</p>
-                                    <div className="bg-black/40 p-4 rounded-2xl border border-orange-500/10 space-y-1.5">
+                                    <div className="bg-black/40 p-3 rounded-xl border border-orange-500/10 space-y-1">
                                         <div className="flex justify-between text-xs"><span className="text-gray-500 uppercase font-bold">Input A:</span><span className="text-white font-bold">1x {H2O_NAME}</span></div>
                                         <div className="flex justify-between text-xs"><span className="text-gray-500 uppercase font-bold">Input B:</span><span className="text-white font-bold">2x {NUTRI_PASTE_NAME}</span></div>
                                         <div className="flex justify-between text-xs"><span className="text-gray-500 uppercase font-bold">Input C:</span><span className="text-white font-bold">1x Medical Kits</span></div>
@@ -6141,10 +6153,6 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                                     <button onClick={()=>{ const qVal = parseInt(fomoStimQty); if(!isNaN(qVal) && qVal>0) fabricateStimPacks(qVal); }} disabled={state.fomoDailyUse.stims} className="flex-grow bg-orange-600 hover:bg-orange-500 disabled:bg-gray-700 text-white font-black rounded-xl text-xl shadow-lg action-btn uppercase">{state.fomoDailyUse.stims ? 'LOCKOUT' : 'SYNTHESIZE'}</button>
                                 </div>
                             </div>
-                        </div>
-
-                        <div className="mt-12 text-center">
-                            <span className="text-xl md:text-2xl text-orange-900 font-black uppercase tracking-[0.3em] animate-pulse">WARNING: Batch Limit Policy Enforced.</span>
                         </div>
                    </div>
               </div>
@@ -7006,7 +7014,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v.10.5.6</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v.10.5.7</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -7248,7 +7256,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                     <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.10.5.6</span>
+                     <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.10.5.7</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -7628,7 +7636,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.10.5.6</p>
+                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.10.5.7</p>
                </div>
            </div>
        )}
