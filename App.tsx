@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v.10.5.7
+ * VERSION: v.11.5.7
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -1115,7 +1115,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v.10.5.7 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v.11.5.7 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -4235,7 +4235,7 @@ export default function App() {
       log(`MUTINY: Mutant crew has revolted! F.O.M.O. and Upgrades decks are locked.`, 'critical');
       setModal({
         type: 'message',
-        data: `MUTINY DECLARED: Mutant crew unrest reached 100% due to fabrication strain! The crew has mutinied and locked the F.O.M.O. and Upgrades decks. You must pay their ransom at an I.B.A.N.K. Hub to pacify them.`,
+        data: `ON STRIKE: Mutant crew unrest reached 100% due to fabrication strain! The crew has mutinied and locked the F.O.M.O. and Upgrades decks. You must pay their ransom at an I.B.A.N.K. Hub to pacify them.`,
         color: 'text-red-500'
       });
       SFX.play('alarm');
@@ -4326,7 +4326,7 @@ export default function App() {
       log(`MUTINY: Mutant crew has revolted! F.O.M.O. and Upgrades decks are locked.`, 'critical');
       setModal({
         type: 'message',
-        data: `MUTINY DECLARED: Mutant crew unrest reached 100% due to synthesis strain! The crew has mutinied and locked the F.O.M.O. and Upgrades decks. You must pay their ransom at an I.B.A.N.K. Hub to pacify them.`,
+        data: `ON STRIKE: Mutant crew unrest reached 100% due to synthesis strain! The crew has mutinied and locked the F.O.M.O. and Upgrades decks. You must pay their ransom at an I.B.A.N.K. Hub to pacify them.`,
         color: 'text-red-500'
       });
       SFX.play('alarm');
@@ -4627,7 +4627,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.10.5.7</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.11.5.7</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -4668,7 +4668,7 @@ export default function App() {
       { title: "S.H.A.N.E. Protocols", icon: Shield, content: "Sector Health, Allocation, & Network Enforcement (S.H.A.N.E.) governs all trade lanes. They enforce the Galactic Overlord Decree (G.O.D.), which dictates that any trader failing to meet net-worth thresholds within specific time cycles will have their license revoked and their vessel reclaimed by the state." },
       { title: "D.A.Y. (Depreciating Astrological Yardstick)", icon: Hourglass, content: "The D.A.Y. system is a key tracking framework mandated by the Galactic Overlord Department (G.O.D.). By mapping orbital star alignments against the physical degradation of your ship, the G.O.D. enforces a relentless, depreciating tracking scale. It treats your very existence as a steadily shrinking corporate asset, creating an ominous countdown that squeeze-charges your trade license duration." },
       { title: "Extraction Logic", icon: Zap, content: "Mining lasers (Upgrades Deck) allow for the harvesting of resources from asteroid belts during transit. Higher-tier lasers and 'Overload' toggles increase yield but drastically spike the risk of structural realignment failures or laser burnout. Yield is directly proportional to laser focal integrity." },
-      { title: "F.O.M.O. Engineering", icon: Factory, content: "Fabricate Output Management Operations allows captains to synthesize raw materials into high-value commodities. Z@onflex Weave Mesh is critical for cargo bay expansions, while Stim-Packs are in high demand by biological colonies throughout the sector." },
+      { title: "F.O.M.O. Engineering", icon: Factory, content: "Fabricate Output Management Operations allows captains to synthesize raw materials into high-value commodities. Z@onflex Weave Mesh is critical for cargo bay expansions, while Stim-Packs are in high demand by biological colonies throughout the sector. Don't miss out on using it each D.A.Y." },
       { title: "Void-Ex Logistics", icon: Truck, content: "Shipping goods across the void via Private or Corporate contracts is the most reliable way to secure multi-million credit payouts. Beware of auto-seizure policies: goods left in third-party warehouses for more than 3 cycles are sold to defray storage costs." },
       { title: "Void-Sickness", icon: Info, content: "Hauling massive cargo loads across unmapped dark systems often induces Void-Sickness. Affected crew members report hearing the faint, chilling voices of ancient marketing executives whispering long-forgotten quarterly sales targets in their minds. It is recommended to administer high-potency Stim-Packs to any crew showing signs of auditory advertising hallucinations." },
       { title: "Temporal Phase Shifts", icon: Rocket, content: "Advancing through Phase 1, Phase 2, and Phase 3 is not just a commercial progression—it is a literal spatial-temporal shift. The S.H.A.N.E. network employs quantum algorithms that rewrite the physics of trade: spiking fuel costs, increasing pirate encounter frequencies, and creating highly volatile stock market dynamics." },
@@ -4742,7 +4742,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.10.5.7 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.11.5.7 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -5068,7 +5068,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                           <p className="text-gray-500 font-mono text-[10px] uppercase">v.10.5.7</p>
+                           <p className="text-gray-500 font-mono text-[10px] uppercase">v.11.5.7</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -6071,7 +6071,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                             {/* Mutant Unrest HUD Block on the right */}
                             <div className="flex flex-col items-end gap-1.5 shrink-0">
                                 <div className="text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                                    SYSTEM LOG: FABRICATION MATRIX v.10.5.7 ACTIVE
+                                    SYSTEM LOG: FABRICATION MATRIX v.11.5.7 ACTIVE
                                 </div>
                                 <div className="bg-slate-950/90 border border-red-500/40 p-2.5 rounded-xl w-56 font-mono text-xs shadow-[0_0_15px_rgba(239,68,68,0.15)] flex flex-col gap-1 text-left">
                                     <div className="flex justify-between items-center text-red-400 font-bold tracking-wider">
@@ -7014,7 +7014,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v.10.5.7</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v.11.5.7</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -7256,7 +7256,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                     <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.10.5.7</span>
+                     <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.11.5.7</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -7580,7 +7580,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
        )}
 
        {modal.type === 'goal_achieved' && modal.data && (
-           <div className="absolute inset-0 bg-black/95 flex items-center justify-center z-50 p-4"><div className="text-center max-w-2xl px-4"><h1 className="text-4xl md:text-6xl font-scifi text-yellow-400 mb-4">PHASE {modal.data.phase} COMPLETE!</h1><div className="text-2xl text-white mb-6 font-bold tracking-widest uppercase">Target Net Worth Achieved</div><div className="space-y-2 mb-10"><div className="text-lg md:text-xl text-cyan-300 italic opacity-95 leading-relaxed">BY Decree (G.O.D):</div><div className="text-2xl md:text-4xl text-green-400 font-bold animate-pulse uppercase tracking-tight">License extended +{modal.data.daysExtended} Days!</div><div className="text-xs text-white font-mono opacity-80 mt-4 uppercase">Neural verification complete. Advance to next threshold.</div></div><button onClick={()=>{ const { state: sData, nextPhase, report: rData } = modal.data; advancePhase(sData, nextPhase, rData); }} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 px-10 rounded-xl text-2xl shadow-[0_0_30px_rgba(16,185,129,0.6)] uppercase tracking-widest">Advance to Phase {modal.data.nextPhase}</button></div></div>
+           <div className="absolute inset-0 bg-black/95 flex items-center justify-center z-50 p-4"><div className="text-center max-w-2xl px-4"><h1 className="text-4xl md:text-6xl font-scifi text-yellow-400 mb-4">PHASE {modal.data.phase} COMPLETE!</h1><div className="text-2xl text-white mb-6 font-bold tracking-widest uppercase">Target Net Worth Achieved</div><div className="space-y-2 mb-10"><div className="text-lg md:text-xl text-cyan-300 italic opacity-95 leading-relaxed">BY Decree (G.O.D - Galactic Overlord Department / Galactic Overlord Decree):</div><div className="text-2xl md:text-4xl text-green-400 font-bold animate-pulse uppercase tracking-tight">License extended +{modal.data.daysExtended} D.A.Y.s (Depreciating Astrological Yardsticks)!</div><div className="text-xs text-white font-mono opacity-80 mt-4 uppercase">Neural verification complete. Advance to next threshold.</div></div><button onClick={()=>{ const { state: sData, nextPhase, report: rData } = modal.data; advancePhase(sData, nextPhase, rData); }} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 px-10 rounded-xl text-2xl shadow-[0_0_30px_rgba(16,185,129,0.6)] uppercase tracking-widest">Advance to Phase {modal.data.nextPhase}</button></div></div>
        )}
 
        {modal.type === 'endgame' && modal.data && (
@@ -7636,7 +7636,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.10.5.7</p>
+                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.11.5.7</p>
                </div>
            </div>
        )}
@@ -7671,7 +7671,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
        )}
 
        {modal.type === 'message' && (
-           <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 p-4"><div className="bg-slate-900 border border-gray-500 p-8 rounded-2xl max-w-lg w-full sci-fi-box text-center relative shadow-2xl"><p className={`text-xl font-black mb-8 whitespace-pre-wrap leading-tight uppercase ${modal.color || 'text-white'}`}>{renderLogMessage(modal.data)}</p><button onClick={()=>{setModal({type:'none', data:null}); SFX.play('click');}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl text-xl shadow-lg action-btn uppercase">Acknowledge</button></div></div>
+           <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 p-4"><div className="bg-slate-900 border border-gray-500 p-8 rounded-2xl max-w-lg w-full sci-fi-box text-center relative shadow-2xl"><p className={`text-xl font-black mb-8 whitespace-pre-wrap leading-tight uppercase ${modal.color || 'text-white'}`}>{renderLogMessage(modal.data)}</p><button onClick={()=>{setModal({type:'none', data:null}); SFX.play('click'); if (state?.isMutinyActive) { setDismissedStrikeOverlay(true); } }} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl text-xl shadow-lg action-btn uppercase">Acknowledge</button></div></div>
        )}
 
        {modal.type === 'hostile_takeover_confirm' && modal.data && (
