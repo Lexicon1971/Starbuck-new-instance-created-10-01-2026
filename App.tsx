@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v.12.5.7
+ * VERSION: v.12.5.8
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -1115,7 +1115,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v.12.5.7 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v.12.5.8 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -1135,6 +1135,8 @@ export default function App() {
         scannerConsecutiveDays: 0,
         fixedCommodity: undefined,
         boostedCommodity: undefined,
+        pendingFixedCommodity: undefined,
+        pendingBoostedCommodity: undefined,
         stocks: [],
         achievements: [],
         fabricationCount: 0,
@@ -2717,6 +2719,33 @@ export default function App() {
    * @param report The daily report object.
    */
   const processDay = (s: GameState, report: DailyReport) => {
+    // Apply pending scanner changes for the new day
+    if (s.pendingFixedCommodity) {
+      s.fixedCommodity = s.pendingFixedCommodity;
+      s.pendingFixedCommodity = undefined;
+    } else {
+      s.fixedCommodity = undefined;
+    }
+
+    if (s.pendingBoostedCommodity) {
+      const boost = 1.15 + Math.random() * 0.15;
+      const c = COMMODITIES.find(item => item.name === s.pendingBoostedCommodity!.name);
+      if (c) {
+          const currentMin = s.commodityPriceOverrides?.[c.name]?.min || c.minPrice;
+          const currentMax = s.commodityPriceOverrides?.[c.name]?.max || c.maxPrice;
+          const newMin = currentMin * boost;
+          const newMax = currentMax * boost;
+          s.commodityPriceOverrides = {
+              ...s.commodityPriceOverrides,
+              [c.name]: { min: newMin, max: newMax }
+          };
+      }
+      s.boostedCommodity = s.pendingBoostedCommodity;
+      s.pendingBoostedCommodity = undefined;
+    } else {
+      s.boostedCommodity = undefined;
+    }
+
     s.dailyTransactions = {};
     s.fomoDailyUse = { mesh: false, stims: false };
     s.hasSpokenOptimalVenue = false;
@@ -2905,9 +2934,6 @@ export default function App() {
         }
     });
 
-    if (s.fixedCommodity && s.day > s.fixedCommodity.daySet + 1) {
-      s.fixedCommodity = undefined;
-    }
 
     if (s.scannerLastUsedDay !== s.day -1) {
       s.scannerConsecutiveDays = 0;
@@ -4627,7 +4653,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.12.5.7</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.12.5.8</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -4742,7 +4768,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.12.5.7 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.12.5.8 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -5068,7 +5094,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                           <p className="text-gray-500 font-mono text-[10px] uppercase">v.12.5.7</p>
+                           <p className="text-gray-500 font-mono text-[10px] uppercase">v.12.5.8</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -5366,22 +5392,24 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                         <span className="text-[10px] text-cyan-800 font-mono uppercase mt-2">Directive: 098-ALPHA</span>
                       </div>
                       
-                      <div className="space-y-6 text-xl md:text-2xl font-bold text-gray-200 leading-snug max-w-4xl">
-                          <div className="flex items-start"><span className="text-cyan-500 mr-4 font-black">1.)</span> Take out another loan from I.B.A.N.K. Hub to continue trading.</div>
-                          <div className="flex items-start"><span className="text-cyan-500 mr-4 font-black">2.)</span> Do some fabricating in the F.O.M.O deck.</div>
-                          <div className="flex items-start"><span className="text-cyan-500 mr-4 font-black">3.)</span> Buy some commodities Low and stock up on fuel (Space Spice) and cells (Hot Isotope Hummers) to mine asteroids.</div>
-                          <div className="flex items-start"><span className="text-cyan-500 mr-4 font-black">4.)</span> Buy a mining laser and protection for the ship from the upgrade deck.</div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start w-full max-w-6xl">
+                          <div className="space-y-4 text-lg md:text-xl font-bold text-gray-200 leading-snug">
+                              <div className="flex items-start"><span className="text-cyan-500 mr-4 font-black">1.)</span> Take out another loan from I.B.A.N.K. Hub to continue trading.</div>
+                              <div className="flex items-start"><span className="text-cyan-500 mr-4 font-black">2.)</span> Do some fabricating in the F.O.M.O deck.</div>
+                              <div className="flex items-start"><span className="text-cyan-500 mr-4 font-black">3.)</span> Buy some commodities Low and stock up on fuel (Space Spice) and cells (Hot Isotope Hummers) to mine asteroids.</div>
+                              <div className="flex items-start"><span className="text-cyan-500 mr-4 font-black">4.)</span> Buy a mining laser and protection for the ship from the upgrade deck.</div>
+                          </div>
                           
-                          <div className="bg-cyan-950/20 border-l-4 border-cyan-500 p-6 space-y-4">
+                          <div className="bg-cyan-950/20 border-l-4 border-cyan-500 p-6 space-y-4 rounded-r-lg">
                               <p className="text-yellow-400 font-black uppercase tracking-widest text-sm">Most important: Keep your Trading license for as many days as possible.</p>
                               <p className="text-emerald-400 font-black italic">Don't forget to buy commodities low and sell high.</p>
                           </div>
                       </div>
 
-                      <div className="mt-auto pt-10 border-t border-cyan-900/30 flex flex-col items-center">
-                          <div className="text-gray-500 font-mono text-[10px] uppercase tracking-[0.5em] mb-4">By order</div>
-                          <div className="text-cyan-600 font-scifi text-lg md:text-2xl tracking-[0.2em] font-black uppercase text-center mb-8">Sector Health, Allocation, & Network Enforcement (S.H.A.N.E.).</div>
-                          <button onClick={() => { setPriorityAcknowledged(true); SFX.play('success'); }} className="w-full md:w-1/2 bg-cyan-600 hover:bg-cyan-500 text-white font-black py-5 rounded-xl text-2xl shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all action-btn">ACKNOWLEDGE DIRECTIVE</button>
+                      <div className="mt-auto pt-6 border-t border-cyan-900/30 flex flex-col items-center">
+                          <div className="text-gray-500 font-mono text-[10px] uppercase tracking-[0.5em] mb-2">By order</div>
+                          <div className="text-cyan-600 font-scifi text-lg md:text-xl tracking-[0.2em] font-black uppercase text-center mb-6">Sector Health, Allocation, & Network Enforcement (S.H.A.N.E.).</div>
+                          <button onClick={() => { setPriorityAcknowledged(true); SFX.play('success'); }} className="w-full md:w-1/2 bg-cyan-600 hover:bg-cyan-500 text-white font-black py-4 rounded-xl text-xl shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all action-btn">ACKNOWLEDGE DIRECTIVE</button>
                       </div>
                   </div>
               );
@@ -5788,6 +5816,26 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
             { id: 'cannon', name: 'Offensive Deterrent Systems', icon: Swords, color: 'text-red-400', items: ['plasma_cannon_mk1', 'plasma_cannon_mk2', 'plasma_cannon_mk3'] }
           ];
 
+          const getUpgradeLevelText = (groupItems: string[]) => {
+              const owned = groupItems.filter(id => state.equipment[id]);
+              if (owned.length === 0) return "UNOWNED";
+              const highestId = owned[owned.length - 1];
+              const item = SHOP_ITEMS.find(s => s.id === highestId);
+              return `LVL ${item?.level || 0} (${item?.name})`;
+          };
+
+          const laserLvl = getUpgradeLevelText(['laser_mk1', 'laser_mk2', 'laser_mk3']);
+          const scannerLvl = getUpgradeLevelText(['scanner', 'scanner_mk2', 'scanner_mk3']);
+          const shieldLvl = getUpgradeLevelText(['shield_gen_mk1', 'shield_gen_mk2', 'shield_gen_mk3']);
+          const cannonLvl = getUpgradeLevelText(['plasma_cannon_mk1', 'plasma_cannon_mk2', 'plasma_cannon_mk3']);
+
+          const frozenComm = state.fixedCommodity ? state.fixedCommodity.name : 'NONE';
+          const pendingFrozen = state.pendingFixedCommodity ? state.pendingFixedCommodity.name : 'NONE';
+          const boostedComm = state.boostedCommodity ? state.boostedCommodity.name : 'NONE';
+          const pendingBoosted = state.pendingBoostedCommodity ? state.pendingBoostedCommodity.name : 'NONE';
+
+          const upgradesTickerText = `DECK STATUS MATRIX // MINING LASER: ${laserLvl} • SCANNER: ${scannerLvl} • SHIELDS: ${shieldLvl} • CANNONS: ${cannonLvl} // INTEL TELEMETRY // CURRENT PRICE FREEZE: ${frozenComm} • PENDING PRICE FREEZE: ${pendingFrozen} • CURRENT RANGE BOOST: ${boostedComm} • PENDING RANGE BOOST: ${pendingBoosted}`;
+
           return (
               <div className="p-4 md:p-6 custom-scrollbar overflow-y-auto h-full">
                 <div className="flex justify-between items-center mb-6">
@@ -5795,6 +5843,14 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                    <div className="flex-grow flex justify-center"><PriceDisplay value={state.cash} size="text-2xl" colored /></div>
                    <span className="text-xs text-gray-500 font-mono">MODULE: SHIP_REPAIR_v5.8.0</span>
                 </div>
+
+                {/* Upgrades Deck Retro LED Ticker */}
+                <div className="shrink-0 mb-6 led-ticker-container border-purple-500/50 shadow-[0_0_10px_rgba(168,85,247,0.3)]">
+                    <div className="led-ticker-text text-purple-400">
+                        {upgradesTickerText}
+                    </div>
+                </div>
+
                 <div className="bg-slate-800/80 p-4 rounded-xl border border-lime-700/50 shadow-lg mb-4">
                     <h3 className="text-lime-400 font-bold mb-4 flex items-center text-lg"><Wrench size={20} className="mr-2"/> Dockyard Repairs</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -5880,10 +5936,14 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                               setModal({ type: 'scanner_actions', data: { level: 2 } });
                             }
                           }}
-                          disabled={!hasScanner2(state) || state.gamePhase < 2 || !!state.fixedCommodity}
-                          className="bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg text-xs transition-all shadow-md border-b-4 border-cyan-900 action-btn"
+                          disabled={!hasScanner2(state) || state.gamePhase < 2}
+                          className="bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg text-xs transition-all shadow-md border-b-4 border-cyan-900 action-btn animate-in fade-in"
                         >
-                          {state.fixedCommodity ? `Price Fixed: ${state.fixedCommodity.name}` : 'Fix Commodity Price (Lvl 2)'}
+                          {state.pendingFixedCommodity
+                            ? `Fix for Tomorrow: ${state.pendingFixedCommodity.name}`
+                            : state.fixedCommodity
+                            ? `Currently Price Fixed: ${state.fixedCommodity.name} (Reopen)`
+                            : 'Fix Commodity Price (Lvl 2)'}
                         </button>
                         <button
                           onClick={() => {
@@ -5893,10 +5953,14 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                               setModal({ type: 'scanner_actions', data: { level: 3 } });
                             }
                           }}
-                          disabled={!hasScanner3(state) || state.gamePhase < 3 || !!state.boostedCommodity}
-                          className="bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg text-xs transition-all shadow-md border-b-4 border-cyan-900 action-btn"
+                          disabled={!hasScanner3(state) || state.gamePhase < 3}
+                          className="bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg text-xs transition-all shadow-md border-b-4 border-cyan-900 action-btn animate-in fade-in"
                         >
-                          {state.boostedCommodity ? `Range Boosted: ${state.boostedCommodity.name}` : 'Boost Price Range (Lvl 3)'}
+                          {state.pendingBoostedCommodity
+                            ? `Boost for Tomorrow: ${state.pendingBoostedCommodity.name}`
+                            : state.boostedCommodity
+                            ? `Currently Range Boosted: ${state.boostedCommodity.name} (Reopen)`
+                            : 'Boost Price Range (Lvl 3)'}
                         </button>
                       </div>
                       <p className="text-[9px] text-gray-500 text-center mt-4 italic uppercase">Level 2 requires Phase 2. Level 3 requires Phase 3.</p>
@@ -6071,7 +6135,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                             {/* Mutant Unrest HUD Block on the right */}
                             <div className="flex flex-col items-end gap-1.5 shrink-0">
                                 <div className="text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                                    SYSTEM LOG: FABRICATION MATRIX v.12.5.7 ACTIVE
+                                    SYSTEM LOG: FABRICATION MATRIX v.12.5.8 ACTIVE
                                 </div>
                                 <div className="bg-slate-950/90 border border-red-500/40 p-2.5 rounded-xl w-56 font-mono text-xs shadow-[0_0_15px_rgba(239,68,68,0.15)] flex flex-col gap-1 text-left">
                                     <div className="flex justify-between items-center text-red-400 font-bold tracking-wider">
@@ -6153,6 +6217,33 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                                     <button onClick={()=>{ const qVal = parseInt(fomoStimQty); if(!isNaN(qVal) && qVal>0) fabricateStimPacks(qVal); }} disabled={state.fomoDailyUse.stims} className="flex-grow bg-orange-600 hover:bg-orange-500 disabled:bg-gray-700 text-white font-black rounded-xl text-xl shadow-lg action-btn uppercase">{state.fomoDailyUse.stims ? 'LOCKOUT' : 'SYNTHESIZE'}</button>
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Request Additional Fabrication Button */}
+                        <div className="mt-6 flex justify-center w-full">
+                            <button
+                                onClick={() => {
+                                    SFX.play('alarm');
+                                    const nw = getNetWorth(state);
+                                    setState(prev => {
+                                        if (!prev) return null;
+                                        return { ...prev, gameOver: true };
+                                    });
+                                    setModal({
+                                        type: 'endgame',
+                                        data: {
+                                            reason: " Like your former Partner, you were stupid enough to request addition work to be done for your Mutant workers. Pretty sure given another chance you would have avoided being killed by them. R.I.P",
+                                            netWorth: nw,
+                                            stats: state.stats,
+                                            isHighScore: false,
+                                            days: state.day
+                                        }
+                                    });
+                                }}
+                                className="w-full md:w-2/3 bg-red-700 hover:bg-red-600 hover:scale-105 border-2 border-red-500 text-white font-black py-4 px-6 rounded-xl text-lg md:text-xl shadow-[0_0_20px_rgba(239,68,68,0.4)] transition-all uppercase tracking-wider action-btn"
+                            >
+                                Request Additional Fabrication Per Day
+                            </button>
                         </div>
                    </div>
               </div>
@@ -7014,7 +7105,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v.12.5.7</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v.12.5.8</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -7254,7 +7345,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                     <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.12.5.7</span>
+                     <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.12.5.8</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -7634,7 +7725,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.12.5.7</p>
+                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.12.5.8</p>
                </div>
            </div>
        )}
@@ -8225,30 +8316,35 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                                   onClick={() => {
                                       if (level === 2) {
                                           const prices = state.markets.map(m => m?.[c.name]?.price || 0);
-                                          setState(prev => prev ? ({
-                                              ...prev,
-                                              fixedCommodity: { name: c.name, venuePrices: prices, daySet: prev.day },
-                                              scannerLastUsedDay: prev.day,
-                                              scannerConsecutiveDays: (prev.scannerLastUsedDay === prev.day - 1) ? (prev.scannerConsecutiveDays || 0) + 1 : 1
-                                          }) : null);
+                                          setState(prev => {
+                                              if (!prev) return null;
+                                              let consecutive = prev.scannerConsecutiveDays || 0;
+                                              if (prev.scannerLastUsedDay !== prev.day) {
+                                                  consecutive = (prev.scannerLastUsedDay === prev.day - 1) ? consecutive + 1 : 1;
+                                              }
+                                              return {
+                                                  ...prev,
+                                                  pendingFixedCommodity: { name: c.name, venuePrices: prices, daySet: prev.day },
+                                                  scannerLastUsedDay: prev.day,
+                                                  scannerConsecutiveDays: consecutive
+                                              };
+                                          });
                                           log(`SCANNER: Price of ${c.name} fixed for next day.`, 'info');
                                       } else {
-                                        const boost = 1.15 + Math.random() * 0.15;
-                                        const currentMin = state.commodityPriceOverrides?.[c.name]?.min || c.minPrice;
-                                        const currentMax = state.commodityPriceOverrides?.[c.name]?.max || c.maxPrice;
-                                        const newMin = currentMin * boost;
-                                        const newMax = currentMax * boost;
-                                          setState(prev => prev ? ({
-                                              ...prev,
-                                              commodityPriceOverrides: {
-                                                ...prev.commodityPriceOverrides,
-                                                [c.name]: { min: newMin, max: newMax }
-                                              },
-                                              boostedCommodity: { name: c.name, boostedDay: prev.day },
-                                              scannerLastUsedDay: prev.day,
-                                              scannerConsecutiveDays: (prev.scannerLastUsedDay === prev.day - 1) ? (prev.scannerConsecutiveDays || 0) + 1 : 1
-                                          }) : null);
-                                          log(`SCANNER: Price range of ${c.name} permanently boosted.`, 'info');
+                                          setState(prev => {
+                                              if (!prev) return null;
+                                              let consecutive = prev.scannerConsecutiveDays || 0;
+                                              if (prev.scannerLastUsedDay !== prev.day) {
+                                                  consecutive = (prev.scannerLastUsedDay === prev.day - 1) ? consecutive + 1 : 1;
+                                              }
+                                              return {
+                                                  ...prev,
+                                                  pendingBoostedCommodity: { name: c.name, boostedDay: prev.day },
+                                                  scannerLastUsedDay: prev.day,
+                                                  scannerConsecutiveDays: consecutive
+                                              };
+                                          });
+                                          log(`SCANNER: Price range of ${c.name} permanently boosted for next day.`, 'info');
                                       }
                                       SFX.play('success');
                                       setModal({ type: 'shop', data: null });

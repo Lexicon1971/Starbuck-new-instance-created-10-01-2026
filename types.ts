@@ -174,8 +174,18 @@ export interface GameState {
   fixedCommodity?: {
     name: string;
     venuePrices: number[];
+    daySet?: number;
   };
   boostedCommodity?: {
+    name: string;
+    boostedDay: number;
+  };
+  pendingFixedCommodity?: {
+    name: string;
+    venuePrices: number[];
+    daySet?: number;
+  };
+  pendingBoostedCommodity?: {
     name: string;
     boostedDay: number;
   };
