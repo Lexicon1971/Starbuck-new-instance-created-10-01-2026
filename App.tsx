@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v.12.5.8
+ * VERSION: v.12.5.9
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -707,6 +707,8 @@ const StatusDial = ({ value, max, icon: Icon, color, label, isPercent }: { value
     if (textColorClass.includes('green')) return '#22c55e'; // green-500
     if (textColorClass.includes('blue')) return '#3b82f6';  // blue-500
     if (textColorClass.includes('red')) return '#ef4444';   // red-500
+    if (textColorClass.includes('orange')) return '#f97316'; // orange-500
+    if (textColorClass.includes('yellow')) return '#eab308'; // yellow-500
     return '#4b5563'; // gray-600
   };
 
@@ -1075,6 +1077,12 @@ export default function App() {
         {list.includes('steel_hull') && (
           <span className="inline-flex items-center justify-center bg-emerald-900 text-emerald-300 font-bold rounded-full w-5 h-5 text-xs border border-emerald-500" title="Steel Hull Survivor (Survived with <= 10% Hull)">🛡️</span>
         )}
+        {list.includes('death') && (
+          <span className="inline-flex items-center justify-center bg-black text-red-500 font-bold rounded-full w-5 h-5 text-xs border border-red-600 animate-pulse" title="Deceased (Killed in Sector)">💀</span>
+        )}
+        {list.includes('outlaw') && (
+          <span className="inline-flex items-center justify-center bg-orange-950 text-orange-400 font-bold rounded-full w-5 h-5 text-xs border border-orange-500 animate-pulse" title="Sector Outlaw (Arrest Warrant Active)">🚨</span>
+        )}
       </span>
     );
   };
@@ -1090,6 +1098,8 @@ export default function App() {
       case 'hermit': return 'Hermit Award';
       case 'overachiever': return 'Overachiever Award';
       case 'steel_hull': return 'Steel Hull Survivor';
+      case 'death': return 'Killed in Action / Deceased';
+      case 'outlaw': return 'Sector Outlaw';
       default: return id;
     }
   };
@@ -1115,7 +1125,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v.12.5.8 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v.12.5.9 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -1423,6 +1433,10 @@ export default function App() {
         }
         add('steel_hull');
       }
+      // 10. Sector Outlaw (warrantLevel > 0)
+      if (s.warrantLevel > 0) {
+        add('outlaw');
+      }
 
       if (updated) {
         setState(prev => prev ? ({
@@ -1442,7 +1456,8 @@ export default function App() {
     state?.daysStayedCount,
     state?.reachedPhase4BeforeDay20,
     state?.shipHealth,
-    state?.survivedCriticalHull
+    state?.survivedCriticalHull,
+    state?.warrantLevel
   ]);
 
   // Automatically switches to the warehouse tab after a shipment is made (Removed in v10.4.4 for direct console return).
@@ -2106,26 +2121,43 @@ export default function App() {
         let riskMult = ins ? 1.5 : 4.0; 
         const shieldLv = s.equipment['shield_gen_mk3'] ? 3 : (s.equipment['shield_gen_mk2'] ? 2 : (s.equipment['shield_gen_mk1'] ? 1 : 0));
         
+        const activeWarrant = s.warrantLevel || 0;
         switch(typeEncounter) {
             case 'visa_audit':
                 encounter.title = 'V.I.S.A. Safety Audit (Code 22-V)';
                 encounter.description = `Enforcers flag your 60% oxidation as a "Public Hazard." They demand a "Refurbishment Waiver" payment.`;
                 encounter.demandAmount = Math.floor(s.cash * 0.22);
+                if (activeWarrant > 0) {
+                    encounter.description = `[WARRANT OUTLAW DETECTED] Galactic patrols have recognized your active arrest record! ` + encounter.description;
+                    encounter.demandAmount = Math.floor(encounter.demandAmount * (1 + activeWarrant * 0.20));
+                }
                 break;
             case 'scam_customs':
                 encounter.title = 'S.C.A.M. Customs Inspection';
                 encounter.description = `Galactic Police perform a "Surprise Scan" for unregulated goods. They suggest a "Processing Fee" to look the other way.`;
                 encounter.demandAmount = Math.floor(s.cash * 0.25);
+                if (activeWarrant > 0) {
+                    encounter.description = `[WARRANT OUTLAW DETECTED] Galactic patrols have recognized your active arrest record! ` + encounter.description;
+                    encounter.demandAmount = Math.floor(encounter.demandAmount * (1 + activeWarrant * 0.20));
+                }
                 break;
             case 'god_license':
                 encounter.title = 'The G.O.D. License Check';
                 encounter.description = `The Galactic Overlord Department checks your operating license and ship compliance data.`;
                 encounter.demandAmount = 5000 * s.gamePhase;
+                if (activeWarrant > 0) {
+                    encounter.description = `[WARRANT OUTLAW DETECTED] Galactic patrols have recognized your active arrest record! ` + encounter.description;
+                    encounter.demandAmount = Math.floor(encounter.demandAmount * (1 + activeWarrant * 0.20));
+                }
                 break;
             case 'cargo_tax':
                 encounter.title = 'Sector Cargo Tax';
                 encounter.description = `A surprise checkpoint levies a transit tax based on total cargo weight. Efficiency is expensive.`;
                 encounter.demandAmount = Math.ceil(s.cargoWeight * 15);
+                if (activeWarrant > 0) {
+                    encounter.description = `[WARRANT OUTLAW DETECTED] Galactic patrols have recognized your active arrest record! ` + encounter.description;
+                    encounter.demandAmount = Math.floor(encounter.demandAmount * (1 + activeWarrant * 0.20));
+                }
                 break;
             case 'pirate':
                 encounter.title = 'Crimson Fleet Interdiction';
@@ -2212,6 +2244,10 @@ export default function App() {
               } else {
                   s.laserHealth = Math.max(0, s.laserHealth - 50);
                   outcomeMsg = `AUDIT FAILURE: You refused to pay. They remotely "shorted" your Hot Isotope Hummers. Laser integrity halved.`;
+                  if (activeWarrant > 0) {
+                      s.warrantLevel = (s.warrantLevel || 0) + 1;
+                      outcomeMsg += ` Refusing enforcers while wanted has increased your warrant level!`;
+                  }
                   outcomeType = 'danger';
                   r.events.push(`ENCOUNTER: V.I.S.A. audit failed. Hummers shorted.`);
               }
@@ -2236,6 +2272,11 @@ export default function App() {
                       }
                   });
                   outcomeMsg = itemLost ? `CONFISCATED: They found ${itemLost} and seized the entire lot.` : `LUCKY: They scanned, but your cargo was too worthless for them to bother with a seizure.`;
+                  if (activeWarrant > 0) {
+                      s.shipHealth = Math.max(0, s.shipHealth - 15);
+                      s.warrantLevel = (s.warrantLevel || 0) + 1;
+                      outcomeMsg += ` Resisting search while wanted resulted in live weapon fire! Sustained 15% Hull damage and warrant level increased!`;
+                  }
                   outcomeType = 'danger';
               }
               break;
@@ -2305,10 +2346,15 @@ export default function App() {
                     r.events.push(`ENCOUNTER: Paid G.O.D. license check of ${formatCurrencyLog(encounter.demandAmount)}.`);
                     s.bribeCount = (s.bribeCount || 0) + 1;
                 } else {
-                    s.shipHealth = Math.max(0, s.shipHealth - 30);
-                    outcomeMsg = `LICENSE REVOCATION: You refused compliance. G.O.D enforcers remotely fried your hull shields. Sustained 30% damage.`;
+                    const baseDmg = activeWarrant > 0 ? 40 : 30;
+                    s.shipHealth = Math.max(0, s.shipHealth - baseDmg);
+                    outcomeMsg = `LICENSE REVOCATION: You refused compliance. G.O.D enforcers remotely fried your hull shields. Sustained ${baseDmg}% damage.`;
+                    if (activeWarrant > 0) {
+                        s.warrantLevel = (s.warrantLevel || 0) + 1;
+                        outcomeMsg += ` Non-compliance by a known fugitive has escalated your warrant level!`;
+                    }
                     outcomeType = 'danger';
-                    r.events.push(`ENCOUNTER: Refused G.O.D. check. 30% damage.`);
+                    r.events.push(`ENCOUNTER: Refused G.O.D. check. ${baseDmg}% damage.`);
                 }
                 break;
             case 'cargo_tax':
@@ -2318,10 +2364,15 @@ export default function App() {
                     r.events.push(`ENCOUNTER: Paid cargo tax of ${formatCurrencyLog(encounter.demandAmount)}.`);
                     s.bribeCount = (s.bribeCount || 0) + 1;
                 } else {
-                    s.shipHealth = Math.max(0, s.shipHealth - 25);
-                    outcomeMsg = `TAX EVASION: Refused tax payment. Customs officers fired warning shots, grazing your cargo hold. Sustained 25% damage.`;
+                    const baseDmg = activeWarrant > 0 ? 35 : 25;
+                    s.shipHealth = Math.max(0, s.shipHealth - baseDmg);
+                    outcomeMsg = `TAX EVASION: Refused tax payment. Customs officers fired warning shots, grazing your cargo hold. Sustained ${baseDmg}% damage.`;
+                    if (activeWarrant > 0) {
+                        s.warrantLevel = (s.warrantLevel || 0) + 1;
+                        outcomeMsg += ` Tax evasion while wanted has further escalated your warrant level!`;
+                    }
                     outcomeType = 'danger';
-                    r.events.push(`ENCOUNTER: Evaded cargo tax. 25% damage.`);
+                    r.events.push(`ENCOUNTER: Evaded cargo tax. ${baseDmg}% damage.`);
                 }
                 break;
             case 'mutiny':
@@ -4653,7 +4704,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.12.5.8</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.12.5.9</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -4768,7 +4819,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.12.5.8 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.12.5.9 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -4987,7 +5038,9 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                     { id: 'traveller', name: "Traveller Award", desc: "Spend 25 or more cycles travelling to trade venues in the Known star systems.", reward: "Cosmic odometer badge", icon: "🚀" },
                     { id: 'hermit', name: "Hermit Award", desc: "Remain anchored at the exact same venue for 3 or more days using stay-in-place actions.", reward: "Planetary anchor badge", icon: "🏡" },
                     { id: 'overachiever', name: "Overachiever Award", desc: "Advance to the final trading phase (Phase 4) in record time, before D.A.Y. 20.", reward: "Chronos speedrunner badge", icon: "⚡" },
-                    { id: 'steel_hull', name: "Steel Hull Survivor", desc: "Survive or travel through danger zones with hull integrity depleted to 10% or less.", reward: "Unyielding chassis badge", icon: "🛡️" }
+                    { id: 'steel_hull', name: "Steel Hull Survivor", desc: "Survive or travel through danger zones with hull integrity depleted to 10% or less.", reward: "Unyielding chassis badge", icon: "🛡️" },
+                    { id: 'outlaw', name: "Sector Outlaw", desc: "Attract the attention of law enforcement by carrying an arrest warrant in your name.", reward: "Outlaw Badge of Infamy", icon: "🚨" },
+                    { id: 'death', name: "Killed in Action / Deceased", desc: "Meet your tragic demise through structural failure or mutant worker uprising in the StarBucks Sector.", reward: "Tombstone Memorial in Sector", icon: "💀" }
                   ].map(ach => {
                     const isUnlocked = state.achievements?.includes(ach.id);
                     return (
@@ -5094,7 +5147,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                           <p className="text-gray-500 font-mono text-[10px] uppercase">v.12.5.8</p>
+                           <p className="text-gray-500 font-mono text-[10px] uppercase">v.12.5.9</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -6135,7 +6188,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                             {/* Mutant Unrest HUD Block on the right */}
                             <div className="flex flex-col items-end gap-1.5 shrink-0">
                                 <div className="text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                                    SYSTEM LOG: FABRICATION MATRIX v.12.5.8 ACTIVE
+                                    SYSTEM LOG: FABRICATION MATRIX v.12.5.9 ACTIVE
                                 </div>
                                 <div className="bg-slate-950/90 border border-red-500/40 p-2.5 rounded-xl w-56 font-mono text-xs shadow-[0_0_15px_rgba(239,68,68,0.15)] flex flex-col gap-1 text-left">
                                     <div className="flex justify-between items-center text-red-400 font-bold tracking-wider">
@@ -6225,22 +6278,24 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                                 onClick={() => {
                                     SFX.play('alarm');
                                     const nw = getNetWorth(state);
+                                    const isHS = state.highScores.length < 100 || nw > (state.highScores[state.highScores.length - 1]?.score || 0);
+                                    const updatedAchievements = Array.from(new Set([...(state.achievements || []), 'death']));
                                     setState(prev => {
                                         if (!prev) return null;
-                                        return { ...prev, gameOver: true };
+                                        return { ...prev, gameOver: true, achievements: updatedAchievements };
                                     });
                                     setModal({
                                         type: 'endgame',
                                         data: {
-                                            reason: " Like your former Partner, you were stupid enough to request addition work to be done for your Mutant workers. Pretty sure given another chance you would have avoided being killed by them. R.I.P",
+                                            reason: " Like your former Partner, you were stupid enough to request additional work to be done for you by your Mutant workers. They don't seem to like being asked. Pretty sure given another chance you would have avoided being killed by them. R.I.P",
                                             netWorth: nw,
                                             stats: state.stats,
-                                            isHighScore: false,
+                                            isHighScore: isHS,
                                             days: state.day
                                         }
                                     });
                                 }}
-                                className="w-full md:w-2/3 bg-red-700 hover:bg-red-600 hover:scale-105 border-2 border-red-500 text-white font-black py-4 px-6 rounded-xl text-lg md:text-xl shadow-[0_0_20px_rgba(239,68,68,0.4)] transition-all uppercase tracking-wider action-btn"
+                                className="w-full md:w-2/3 bg-red-500 hover:bg-red-400 border-2 border-red-400 text-white font-black py-4 px-6 rounded-xl text-lg md:text-xl shadow-[0_0_25px_rgba(239,68,68,0.8)] transition-all uppercase tracking-wider action-btn animate-pulse"
                             >
                                 Request Additional Fabrication Per Day
                             </button>
@@ -7105,7 +7160,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v.12.5.8</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v.12.5.9</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -7345,7 +7400,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                     <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.12.5.8</span>
+                     <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.12.5.9</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -7382,6 +7437,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
               </div>
 
               <div className="flex items-center justify-center md:justify-end md:w-1/4 space-x-1">
+                 <StatusDial value={state.warrantLevel || 0} max={5} icon={AlertTriangle} color={(state.warrantLevel || 0) > 0 ? "text-orange-500 animate-pulse font-bold" : "text-gray-600 font-bold"} label="Warrant" />
                  <StatusDial value={Math.round(state.shipHealth)} max={150} icon={Heart} color="text-green-500" label="Hull" isPercent />
                  <StatusDial value={(state.cargo[FUEL_NAME]?.quantity||0)} max={200} icon={Fuel} color="text-blue-500" label="Fuel" />
                  <StatusDial value={hasLaser(state) ? Math.round(state.laserHealth || 0) : 0} max={100} icon={Crosshair} color={hasLaser(state)?'text-red-500':'text-gray-600'} label={hasLaser(state)?'Laser':'Off'} isPercent />
@@ -7509,7 +7565,10 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                         if (sData) {
                             if (sData.shipHealth <= 0) {
                                 sData.gameOver = true;
-                                setModal({ type: 'endgame', data: { reason: "Structural Integrity Failure: Ship Destroyed", netWorth: getNetWorth(sData), stats: sData.stats, isHighScore: false, days: sData.day } });
+                                const nw = getNetWorth(sData);
+                                const isHS = sData.highScores.length < 100 || nw > (sData.highScores[sData.highScores.length - 1]?.score || 0);
+                                sData.achievements = Array.from(new Set([...(sData.achievements || []), 'death']));
+                                setModal({ type: 'endgame', data: { reason: "Structural Integrity Failure: Ship Destroyed", netWorth: nw, stats: sData.stats, isHighScore: isHS, days: sData.day } });
                             } else {
                                 finalizeJump(sData, rData, destIdx, mine, overload);
                             }
@@ -7725,7 +7784,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.12.5.8</p>
+                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.12.5.9</p>
                </div>
            </div>
        )}
