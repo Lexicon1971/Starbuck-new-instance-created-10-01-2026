@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v.13.0.1
+ * VERSION: v.13.0.2
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -65,6 +65,16 @@ const VENUE_IMAGES: Record<string, string> = {
   "Serenity Valley": new URL('./Serenity_Valley.png', import.meta.url).href,
   "Trantor Promenade": new URL('./Trantor_Promenade.png', import.meta.url).href,
 };
+
+// Map terminal screens and tabs to background image files
+const ibankBg = new URL('./IBANK.png', import.meta.url).href;
+const gigoBg = new URL('./GIGO.png', import.meta.url).href;
+const catBg = new URL('./CAT_station.png', import.meta.url).href;
+const codexBg = new URL('./Codex.png', import.meta.url).href;
+const upgradesBg = new URL('./Upgrades.png', import.meta.url).href;
+const logisticBg = new URL('./Logistic.png', import.meta.url).href;
+const fomoBg = new URL('./FOMO.png', import.meta.url).href;
+const strikeBg = new URL('./On_Strike.png', import.meta.url).href;
 
 // --- BLOCK 1: EXTERNAL SERVICES (FIREBASE & AUDIO) --------------------------
 // This block handles the integration of external services, specifically Firebase for data persistence
@@ -1156,7 +1166,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v.13.0.1 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v.13.0.2 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -4772,7 +4782,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.13.0.1</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.13.0.2</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -4887,7 +4897,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.13.0.1 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.13.0.2 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -5170,20 +5180,38 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
-                    { id: 'shop', title: "Fixathing'u'ma Jig Deck (Upgrades)", desc: "Buy, install, and upgrade the Mining Laser. Repair your Ship Hull and Laser focal lenses. Acquire Shields, Cannons, and scanners. Expand cargo bay to maximum size using Z@onflex Weave Mesh (to be bought at the market) before expanding. (Pro tip: Cargo bay limits expand at each Phase threshold)." },
-                    { id: 'banking', title: "I.B.A.N.K. Hub (Banking)", desc: "Manage your Starbucks Financial needs. Take out institution-specific loans (max 3 total, up to 1 per day). Invest idle capital in high-interest fixed-term deposits (1, 2, or 3 days) for guaranteed returns (only if debt-free!)." },
-                    { id: 'travel', title: "C.A.T. Station (Travel & Jump)", desc: "Chart flight paths and warp. Check lane Risk levels (High risk increases Crimson Fleet pirates and asteroid storm chances). Purchase warp transit cargo insurance. Place 95% of cash in safe 1-day CDs at 5% interest (debt-free only!)." },
-                    { id: 'shipping', title: "Void-Ex Logistics (Logistics & Contracts)", desc: "Access high-paying Corporate contracts and private logistics transfers. Corporate contracts require shipping exact commodity quantities to destination venues before the deadline. Failed contracts result in market trade bans and heavy liquidated damages fines. Private logistics allows 1-day express storage transfers to local warehouses. Warning: Unmoved warehouse stock is sold off after 3 cycles." },
-                    { id: 'comms', title: "G.I.G.O. Panel (Communications)", desc: "Garbage In, Garbage Out. Access and monitor system logs, galactic volatility feeds, space-news flashcasts, and intercept signals." },
-                    { id: 'fomo', title: "F.O.M.O. Engineering Deck (Fabrication)", desc: "Craft valuable Z@onflex Weave Mesh and high-potency Stim-Packs from basic mined raw materials and cargo stock. Fabrication is restricted to one batch run per item type per cycle. Maximize your batch sizes to optimize yield!" },
+                    { id: 'shop', title: "Fixathing'u'ma Jig Deck (Upgrades)", desc: "Buy, install, and upgrade the Mining Laser. Repair your Ship Hull and Laser focal lenses. Acquire Shields, Cannons, and scanners. Expand cargo bay to maximum size using Z@onflex Weave Mesh (to be bought at the market) before expanding. (Pro tip: Cargo bay limits expand at each Phase threshold).", image: upgradesBg },
+                    { id: 'banking', title: "I.B.A.N.K. Hub (Banking)", desc: "Manage your Starbucks Financial needs. Take out institution-specific loans (max 3 total, up to 1 per day). Invest idle capital in high-interest fixed-term deposits (1, 2, or 3 days) for guaranteed returns (only if debt-free!).", image: ibankBg },
+                    { id: 'travel', title: "C.A.T. Station (Travel & Jump)", desc: "Chart flight paths and warp. Check lane Risk levels (High risk increases Crimson Fleet pirates and asteroid storm chances). Purchase warp transit cargo insurance. Place 95% of cash in safe 1-day CDs at 5% interest (debt-free only!).", image: catBg },
+                    { id: 'shipping', title: "Void-Ex Logistics (Logistics & Contracts)", desc: "Access high-paying Corporate contracts and private logistics transfers. Corporate contracts require shipping exact commodity quantities to destination venues before the deadline. Failed contracts result in market trade bans and heavy liquidated damages fines. Private logistics allows 1-day express storage transfers to local warehouses. Warning: Unmoved warehouse stock is sold off after 3 cycles.", image: logisticBg },
+                    { id: 'comms', title: "G.I.G.O. Panel (Communications)", desc: "Garbage In, Garbage Out. Access and monitor system logs, galactic volatility feeds, space-news flashcasts, and intercept signals.", image: gigoBg },
+                    { id: 'fomo', title: "F.O.M.O. Engineering Deck (Fabrication)", desc: "Craft valuable Z@onflex Weave Mesh and high-potency Stim-Packs from basic mined raw materials and cargo stock. Fabrication is restricted to one batch run per item type per cycle. Maximize your batch sizes to optimize yield!", image: fomoBg },
                     { id: 'highscores', title: "Galactic Legends Registry (Universal Sync)", desc: "High-resolution registry of the top 100 interstellar tycoons. Syncs real-time net-worth indexes to the Universal I.B.A.N.K. Leaderboard." },
-                    { id: 'wiki', title: "Sector Codex Explorer (Wiki Systems)", desc: "Your universal repository of galactic lore, corporate compliance regulations, acronym directories, and achievement records." }
+                    { id: 'wiki', title: "Sector Codex Explorer (Wiki Systems)", desc: "Your universal repository of galactic lore, corporate compliance regulations, acronym directories, and achievement records.", image: codexBg }
                   ].map(panel => {
                     return (
                       <div key={panel.id} className="bg-slate-900/40 p-4 rounded-xl border border-slate-800/80 flex flex-col justify-between hover:border-cyan-500/20 transition-all">
-                        <div className="mb-4">
-                          <h4 className="text-sm font-black text-cyan-400 uppercase tracking-wide mb-2">{panel.title}</h4>
-                          <p className="text-gray-300 font-mono text-xs leading-relaxed">{panel.desc}</p>
+                        <div className="flex gap-4 mb-4 items-start">
+                          {panel.image && (
+                            <div
+                              onClick={() => {
+                                  SFX.play('click');
+                                  setModal({ type: 'view_guide_image', data: { title: panel.title, image: panel.image } });
+                              }}
+                              className="w-16 h-16 shrink-0 overflow-hidden rounded-xl border border-gray-700/50 cursor-pointer hover:border-orange-500 hover:scale-105 active:scale-95 transition-all shadow-md bg-black/40"
+                              title="Click to view full-screen guide preview"
+                            >
+                              <img
+                                  src={panel.image}
+                                  alt={panel.title}
+                                  className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+                          <div className="flex-grow min-w-0">
+                            <h4 className="text-sm font-black text-cyan-400 uppercase tracking-wide mb-2">{panel.title}</h4>
+                            <p className="text-gray-300 font-mono text-xs leading-relaxed">{panel.desc}</p>
+                          </div>
                         </div>
                         <button
                           onClick={() => {
@@ -5233,7 +5261,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                           <p className="text-gray-500 font-mono text-[10px] uppercase">v.13.0.1</p>
+                           <p className="text-gray-500 font-mono text-[10px] uppercase">v.13.0.2</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -6288,7 +6316,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                             {/* Mutant Unrest HUD Block on the right */}
                             <div className="flex flex-col items-end gap-1.5 shrink-0">
                                 <div className="text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                                    SYSTEM LOG: FABRICATION MATRIX v.13.0.1 ACTIVE
+                                    SYSTEM LOG: FABRICATION MATRIX v.13.0.2 ACTIVE
                                 </div>
                                 <div className="bg-slate-950/90 border border-red-500/40 p-2.5 rounded-xl w-56 font-mono text-xs shadow-[0_0_15px_rgba(239,68,68,0.15)] flex flex-col gap-1 text-left">
                                     <div className="flex justify-between items-center text-red-400 font-bold tracking-wider">
@@ -6395,9 +6423,9 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                                         }
                                     });
                                 }}
-                                className="w-full md:w-2/3 bg-red-500 hover:bg-red-400 border-2 border-red-400 text-white font-black py-4 px-6 rounded-xl text-lg md:text-xl shadow-[0_0_25px_rgba(239,68,68,0.8)] transition-all uppercase tracking-wider action-btn animate-pulse"
+                                className="w-full md:w-2/3 bg-red-600 hover:bg-red-500 border-2 border-red-500 text-white font-black py-4 px-6 rounded-xl text-lg md:text-xl shadow-[0_0_25px_rgba(220,38,38,1)] transition-all uppercase tracking-wider action-btn animate-pulse"
                             >
-                                Request Additional Fabrication Per Day
+                                Request Additional Fabrication per D.A.Y.
                             </button>
                         </div>
                    </div>
@@ -7260,7 +7288,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v.13.0.1</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v.13.0.2</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -7383,25 +7411,67 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
 
   return (
     <div className="app-viewport flex flex-col p-2 md:p-4 space-y-4 no-scrollbar custom-scrollbar overflow-y-auto bg-transparent">
-       {state ? (
-         <div
-           className="fixed inset-0 z-[-1] transition-all duration-1000"
-           style={{
-             backgroundImage: `url(${VENUE_IMAGES[VENUES[state.currentVenueIndex]]})`,
-             backgroundSize: 'cover',
-             backgroundPosition: 'center',
-             backgroundRepeat: 'no-repeat',
-           }}
-         />
-       ) : (
-         <Starfield />
-       )}
+       {(() => {
+         let bgImage: string | null = null;
+         let useStarfield = false;
+
+         if (!state) {
+           useStarfield = true;
+         } else {
+           if (modal.type === 'highscores' || modal.type === 'save_prompt' || modal.type === 'save_confirm') {
+             useStarfield = true;
+           } else if (modal.type === 'none' && priorityAcknowledged) {
+             bgImage = VENUE_IMAGES[VENUES[state.currentVenueIndex]];
+           } else if (modal.type === 'banking') {
+             bgImage = ibankBg;
+           } else if (modal.type === 'comms') {
+             bgImage = gigoBg;
+           } else if (modal.type === 'travel') {
+             bgImage = catBg;
+           } else if (modal.type === 'wiki' || modal.type === 'view_venue_codex') {
+             bgImage = codexBg;
+           } else if (modal.type === 'shop') {
+             bgImage = upgradesBg;
+           } else if (modal.type === 'shipping') {
+             bgImage = logisticBg;
+           } else if (modal.type === 'fomo') {
+             bgImage = state.isMutinyActive ? strikeBg : fomoBg;
+           } else {
+             useStarfield = true;
+           }
+         }
+
+         if (useStarfield) {
+           return <Starfield />;
+         } else if (bgImage) {
+           return (
+             <div
+               className="fixed inset-0 z-[-1] transition-all duration-1000"
+               style={{
+                 backgroundImage: `url(${bgImage})`,
+                 backgroundSize: 'cover',
+                 backgroundPosition: 'center',
+                 backgroundRepeat: 'no-repeat',
+               }}
+             />
+           );
+         }
+         return null;
+       })()}
        {state?.isMutinyActive && modal.type !== 'message' && !dismissedStrikeOverlay && (() => {
            const pcChipsQuantity = state.markets[state.currentVenueIndex]?.["PC Chips"]?.quantity || 0;
            const pcChipsRequirement = state.mutinyPcChipsRequirement !== undefined ? state.mutinyPcChipsRequirement : Math.floor((pcChipsQuantity * 0.22) / 5) * 5;
            const playerOwnedChips = state.cargo["PC Chips"]?.quantity || 0;
            return (
-               <div className="fixed inset-0 bg-slate-950/95 z-[9999] flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-300">
+               <div
+                   className="fixed inset-0 z-[9999] flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-300"
+                   style={{
+                       backgroundImage: `linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.85)), url(${strikeBg})`,
+                       backgroundSize: 'cover',
+                       backgroundPosition: 'center',
+                       backgroundRepeat: 'no-repeat',
+                   }}
+               >
                    <div className="max-w-xl w-full bg-red-950/40 border-2 border-red-500 rounded-3xl p-8 shadow-[0_0_50px_rgba(239,68,68,0.4)] relative overflow-hidden">
                        {/* Minimize Button */}
                        <button
@@ -7512,7 +7582,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                     <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.13.0.1</span>
+                     <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.13.0.2</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -7658,6 +7728,31 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                            <button onClick={() => resolveEncounterOutcome('ignore')} className="bg-gray-700 hover:bg-gray-600 text-white font-black py-5 rounded-xl text-2xl action-btn uppercase">Acknowledge Status</button>
                        )}
                    </div>
+               </div>
+           </div>
+       )}
+
+       {modal.type === 'view_guide_image' && modal.data && (
+           <div className="fixed inset-0 bg-black/95 flex flex-col items-center justify-center z-[9999] p-4 md:p-8 animate-in fade-in duration-300">
+               <div className="max-w-4xl w-full h-[85vh] flex flex-col bg-slate-900 border border-orange-500 rounded-3xl p-6 sci-fi-box relative shadow-[0_0_50px_rgba(234,88,12,0.3)]">
+                   <h2 className="text-3xl font-scifi text-orange-400 mb-4 text-center uppercase tracking-widest">{modal.data.title}</h2>
+                   <div className="flex-grow overflow-hidden rounded-2xl border border-orange-500/20 bg-black/40 flex items-center justify-center p-2 mb-6">
+                       <img
+                           src={modal.data.image}
+                           alt={modal.data.title}
+                           className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
+                       />
+                   </div>
+                   <button
+                       onClick={() => {
+                           SFX.play('click');
+                           setWikiTab('frontpanels');
+                           setModal({ type: 'wiki', data: null });
+                       }}
+                       className="w-full bg-orange-600 hover:bg-orange-500 text-white font-black py-4 rounded-xl text-xl shadow-lg uppercase transition-all active:scale-95 shrink-0 cursor-pointer"
+                   >
+                       Return to Codex
+                   </button>
                </div>
            </div>
        )}
@@ -7945,7 +8040,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.13.0.1</p>
+                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.13.0.2</p>
                </div>
            </div>
        )}
@@ -7980,7 +8075,22 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
        )}
 
        {modal.type === 'message' && (
-           <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 p-4"><div className="bg-slate-900 border border-gray-500 p-8 rounded-2xl max-w-lg w-full sci-fi-box text-center relative shadow-2xl"><p className={`text-xl font-black mb-8 whitespace-pre-wrap leading-tight uppercase ${modal.color || 'text-white'}`}>{renderLogMessage(modal.data)}</p><button onClick={()=>{setModal({type:'none', data:null}); SFX.play('click'); if (state?.isMutinyActive) { setDismissedStrikeOverlay(true); } }} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl text-xl shadow-lg action-btn uppercase">Acknowledge</button></div></div>
+           <div
+               className="absolute inset-0 flex items-center justify-center z-50 p-4"
+               style={state?.isMutinyActive ? {
+                   backgroundImage: `linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.85)), url(${strikeBg})`,
+                   backgroundSize: 'cover',
+                   backgroundPosition: 'center',
+                   backgroundRepeat: 'no-repeat',
+               } : {
+                   backgroundColor: 'rgba(0,0,0,0.8)'
+               }}
+           >
+               <div className="bg-slate-900 border border-gray-500 p-8 rounded-2xl max-w-lg w-full sci-fi-box text-center relative shadow-2xl">
+                   <p className={`text-xl font-black mb-8 whitespace-pre-wrap leading-tight uppercase ${modal.color || 'text-white'}`}>{renderLogMessage(modal.data)}</p>
+                   <button onClick={()=>{setModal({type:'none', data:null}); SFX.play('click'); if (state?.isMutinyActive) { setDismissedStrikeOverlay(true); } }} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl text-xl shadow-lg action-btn uppercase">Acknowledge</button>
+               </div>
+           </div>
        )}
 
        {modal.type === 'hostile_takeover_confirm' && modal.data && (
