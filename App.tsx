@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v.12.5.9
+ * VERSION: v.13.0.1
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -51,6 +51,20 @@ import { db } from './src/firebase';
 // Resolve path to intro_ship.png correctly for Vite environment (including GitHub Pages base path)
 const introShip = new URL('./intro_ship.png', import.meta.url).href;
 const gorskyIcon = new URL('./gorsky.png', import.meta.url).href;
+
+// Map venues to their respective PNG files
+const VENUE_IMAGES: Record<string, string> = {
+  "Acheron LV-426": new URL('./Acheron_LV-426.png', import.meta.url).href,
+  "Cantina Mos Eisley": new URL('./Cantina_Mos_Eisley.png', import.meta.url).href,
+  "Centauri Prime": new URL('./Centauri_Prime.png', import.meta.url).href,
+  "Corellia Shipyards": new URL('./Corellia_Shipyards.png', import.meta.url).href,
+  "Deep Space 9 1/2": new URL('./Deep_Space_9.png', import.meta.url).href,
+  "Giedi Plaza": new URL('./Giedi_Plaza.png', import.meta.url).href,
+  "High Charity": new URL('./High_Charity.png', import.meta.url).href,
+  "New Babylon": new URL('./New_Babylon.png', import.meta.url).href,
+  "Serenity Valley": new URL('./Serenity_Valley.png', import.meta.url).href,
+  "Trantor Promenade": new URL('./Trantor_Promenade.png', import.meta.url).href,
+};
 
 // --- BLOCK 1: EXTERNAL SERVICES (FIREBASE & AUDIO) --------------------------
 // This block handles the integration of external services, specifically Firebase for data persistence
@@ -744,6 +758,23 @@ export default function App() {
    * @param perkType The type of perk to check (logistics or banking).
    * @returns A multiplier (e.g. 0.85 for a 15% discount, or 1.0 for no perk).
    */
+  const hasCorporateSynergy = (currentState: GameState | null, companyKeyword: 'weyland' | 'starfleet' | 'hutt'): boolean => {
+    if (!currentState || !currentState.stocks) return false;
+    const threshold = 0.22; // >22% total shares
+
+    // Find any stock whose name matches the keyword (e.g. "Weyland", "Starfleet", "Hutt")
+    const matchingStocks = currentState.stocks.filter(s => s.name.toLowerCase().includes(companyKeyword));
+    for (const stock of matchingStocks) {
+      if (stock.quantity > 0 && stock.totalShares) {
+        const ownershipPercentage = stock.quantity / stock.totalShares;
+        if (ownershipPercentage > threshold) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
   const useCorporateSynergy = (perkType: 'logistics' | 'banking') => {
     if (!state || !state.stocks) return 1.0; // No discount by default
 
@@ -1125,7 +1156,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v.12.5.9 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v.13.0.1 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -1778,10 +1809,14 @@ export default function App() {
             const firm = LOAN_FIRMS[i % LOAN_FIRMS.length];
             const minAmt = Math.max(5000, maxLoan * 0.05);
             const baseInterest = Math.max(1, Math.min(15, firm.baseRate + Math.random() * 5));
+            let interestRate = baseInterest * bankingDiscount;
+            if (hasCorporateSynergy(state, 'hutt')) {
+                interestRate = interestRate * 0.75;
+            }
             offers.push({
                 firmName: firm.name,
                 amount: Math.ceil((Math.random() * (maxLoan - minAmt) + minAmt) / 1000) * 1000,
-                interestRate: baseInterest * bankingDiscount
+                interestRate: interestRate
             });
         }
         return offers;
@@ -1905,7 +1940,7 @@ export default function App() {
     const txKey = `${state.currentVenueIndex}_${c.name}`;
     const txCount = state.dailyTransactions[txKey] || 0;
     let tax = 0;
-    if (txCount > 0) {
+    if (txCount > 0 && !hasCorporateSynergy(state, 'starfleet')) {
         const val = qty * mItem.price;
         tax = Math.floor(val * 0.05);
         const pending: PendingTrade = { action, commodity: c, marketItem: mItem, ownedItem: owned, quantity: qty, tax };
@@ -1926,7 +1961,10 @@ export default function App() {
    */
   const buyEquipment = (item: EquipmentItem) => {
      if (!state) return;
-     const scaledCost = (item.type === 'defense') ? item.cost * state.gamePhase : item.cost;
+     let scaledCost = (item.type === 'defense') ? item.cost * state.gamePhase : item.cost;
+     if (hasCorporateSynergy(state, 'weyland')) {
+         scaledCost = Math.round(scaledCost * 0.85);
+     }
      if (state.cash < scaledCost) return setModal({type:'message', data:"Insufficient Funds."});
      let newLaserHealth = state.laserHealth;
      if (item.type === 'laser') newLaserHealth = 100;
@@ -1945,8 +1983,7 @@ export default function App() {
       const MAX_LASER_HEALTH = 100;
       if (type === 'full_hull') {
           if (state.shipHealth >= MAX_REPAIR_HEALTH) return setModal({type:'message', data:"Hull integrity at maximum."});
-          const needed = Math.ceil((MAX_REPAIR_HEALTH - state.shipHealth) / REPAIR_INCREMENT);
-          const cost = needed * REPAIR_COST;
+          const cost = calculateFullRepairCost();
           if (state.cash < cost) return setModal({type:'message', data:`Insufficient funds. Need ${formatCurrencyLog(cost)}.`});
           setState(prev => prev ? ({...prev, cash: prev.cash - cost, shipHealth: MAX_REPAIR_HEALTH}) : null);
           log(`REPAIR: Hull fully restored.`, 'repair');
@@ -2115,7 +2152,7 @@ export default function App() {
      if (s.fixedCommodity || s.boostedCommodity) encounterChance += 0.25;
 
      if (Math.random() < encounterChance) {
-        const types: Encounter['type'][] = ['visa_audit', 'scam_customs', 'god_license', 'cargo_tax', 'pirate', 'fuel_breach', 'accident', 'structural', 'rust_rats', 'derelict', 'mutiny', 'fold_error'];
+        const types: Encounter['type'][] = ['visa_audit', 'scam_customs', 'god_license', 'cargo_tax', 'pirate', 'fuel_breach', 'accident', 'structural', 'rust_rats', 'derelict', 'mutiny', 'fold_error', 'spice_bandits'];
         const typeEncounter = types[Math.floor(Math.random()*types.length)];
         let encounter: Encounter = { type: typeEncounter, title: '', description: '', riskDamage: 0 };
         let riskMult = ins ? 1.5 : 4.0; 
@@ -2123,6 +2160,12 @@ export default function App() {
         
         const activeWarrant = s.warrantLevel || 0;
         switch(typeEncounter) {
+            case 'spice_bandits':
+                encounter.title = 'The Spice Bandits Ambush';
+                encounter.description = `The notorious 'Double-Sniffer' Barnaby B Barabas and his Spice Bandits have intercepted your ship! "Hand over the cash, or we'll turn your ship into space dust."`;
+                encounter.demandAmount = Math.floor(s.cash * 0.25);
+                encounter.riskDamage = 35 * riskMult * (1 - (shieldLv * 0.15));
+                break;
             case 'visa_audit':
                 encounter.title = 'V.I.S.A. Safety Audit (Code 22-V)';
                 encounter.description = `Enforcers flag your 60% oxidation as a "Public Hazard." They demand a "Refurbishment Waiver" payment.`;
@@ -2302,6 +2345,27 @@ export default function App() {
                       outcomeMsg = `DEFEAT: Without cannons, the pirates mauled your hull. Sustained 60% damage.`;
                       outcomeType = 'danger';
                       r.events.push(`COMBAT: Hull mauled by pirates.`);
+                  }
+              }
+              break;
+          case 'spice_bandits':
+              if (decision === 'pay') {
+                  s.cash -= encounter.demandAmount;
+                  outcomeMsg = `SAFE PASSAGE: You paid off the Spice Bandits. Lost ${formatCurrencyLog(encounter.demandAmount)}.`;
+                  r.events.push(`ENCOUNTER: Paid Spice Bandits tribute of ${formatCurrencyLog(encounter.demandAmount)}.`);
+              } else if (decision === 'fight') {
+                  const hasCannon = s.equipment['plasma_cannon_mk3'] ? 3 : (s.equipment['plasma_cannon_mk2'] ? 2 : (s.equipment['plasma_cannon_mk1'] ? 1 : 0));
+                  if (hasCannon > 0) {
+                      const scrapReward = 4000 * hasCannon;
+                      s.cash += scrapReward;
+                      outcomeMsg = `VICTORY: Your Plasma Cannons blasted the Spice Bandits. Salvaged ${formatCurrencyLog(scrapReward)} of fuel scrap.`;
+                      outcomeType = 'profit';
+                      r.events.push(`COMBAT: Defeated Spice Bandits. Salvaged ${formatCurrencyLog(scrapReward)}.`);
+                  } else {
+                      s.shipHealth -= 45;
+                      outcomeMsg = `DEFEAT: The Spice Bandits boarded and looted your hull. Sustained 45% damage.`;
+                      outcomeType = 'danger';
+                      r.events.push(`COMBAT: Damaged by Spice Bandits.`);
                   }
               }
               break;
@@ -4686,7 +4750,11 @@ export default function App() {
     if (!state) return 0;
     if (state.shipHealth >= MAX_REPAIR_HEALTH) return 0;
     const needed = Math.ceil((MAX_REPAIR_HEALTH - state.shipHealth) / REPAIR_INCREMENT);
-    return needed * REPAIR_COST;
+    const baseCost = needed * REPAIR_COST;
+    if (hasCorporateSynergy(state, 'weyland')) {
+        return Math.round(baseCost * 0.85);
+    }
+    return baseCost;
   };
 
   /**
@@ -4704,7 +4772,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.12.5.9</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.13.0.1</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -4740,7 +4808,7 @@ export default function App() {
     const sections = [
       { title: "The Rusty Redeemer", icon: Anchor, content: "The RR Firefox 22 'RustyRedeemer' is a decommissioned cargo frigate of the 60/40 class. It consists of 60% oxidation and 40% hope. Originally designed for short-range hauling, its isotope hummers have been modified to handle the stress of phase-shifting market dynamics." },
       { title: "The Starbucks Conglomerate", icon: Building2, content: "Underneath the glossy emerald corporate facade lies the ultimate hyper-capitalist machine. Operating under S.H.A.N.E. guidelines, the Conglomerate turns entire solar systems into drive-thru retail outlets. Their main mission is clear: absolute dominance of the space lanes, converting every planetary body into a standardized franchise." },
-      { title: "The Espresso Bandits", icon: Skull, content: "A rogue syndicate of caffeine-deprived outlaws who terrorize the trade lanes. Led by the notorious 'Double-Shot' Barnaby, they target cargo vessels carrying high-value stimulants or synthetic materials. Installing sturdy kinetic cannons and defensive shields is the only proven method to deter their relentless boarding maneuvers." },
+      { title: "The Spice Bandits", icon: Skull, content: "The Spice Bandits A rogue gang of Spice-dependent outlaws who terrorize the trade lanes. Led by the notorious 'Double-Sniffer' Barnaby B Barabas, they target cargo vessels carrying high-value commodities which they sell to buy Spice fuel. Installing sturdy kinetic cannons and defensive shields is the only proven method to deter their relentless boarding manoeuvres." },
       { title: "The Great Tea Wars", icon: Swords, content: "A devastating sector-wide conflict that lasted over 44 D.A.Y.S. and N.I.G.H.T.S. Fought between the elite Tea Cartels and the synthetic Tea Alliance over the rights to fertile agricultural belts on Nexus Prime. The war concluded with the historic 'I.N.D.I.A.N. Accord,' establishing the current trade of Spacetime Tea is strictly forbidden in all Star Systems. This is a reminder never to be found trading in Spacetime Tea." },
       { title: "S.H.A.N.E. Protocols", icon: Shield, content: "Sector Health, Allocation, & Network Enforcement (S.H.A.N.E.) governs all trade lanes. They enforce the Galactic Overlord Decree (G.O.D.), which dictates that any trader failing to meet net-worth thresholds within specific time cycles will have their license revoked and their vessel reclaimed by the state." },
       { title: "D.A.Y. (Depreciating Astrological Yardstick)", icon: Hourglass, content: "The D.A.Y. system is a key tracking framework mandated by the Galactic Overlord Department (G.O.D.). By mapping orbital star alignments against the physical degradation of your ship, the G.O.D. enforces a relentless, depreciating tracking scale. It treats your very existence as a steadily shrinking corporate asset, creating an ominous countdown that squeeze-charges your trade license duration." },
@@ -4782,7 +4850,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
     ];
 
     const venueDetails = [
-      { name: "Deep Space 9 1/2", desc: "A cozy waystation on the edge of civilized space. Halfway to everywhere, but mostly serves mediocre synthetic espresso." },
+      { name: "Deep Space 9 1/2", desc: "Deep Space 9 1/2 A cozy waystation on the edge of civilized space. Halfway to everywhere, but mostly serves mediocre synthetic Spacetime tea." },
       { name: "Trantor Promenade", desc: "The sprawling economic heart of the core worlds. High density, fast-paced trading, and aggressive tax collectors." },
       { name: "Serenity Valley", desc: "A quiet, rust-belt agricultural colony. Great prices on H2O and Nutri-Paste, but local outlaws frequently target high-value cargo." },
       { name: "Corellia Shipyards", desc: "The ultimate industrial hub of the sector. Heavily guarded by planetary defense forces, specializing in heavy metal refinement." },
@@ -4819,7 +4887,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.12.5.9 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.13.0.1 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -4873,19 +4941,37 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
               {venueDetails.map((v, i) => {
                 const isCurrent = state.currentVenueIndex === i;
                 return (
-                  <div key={i} className={`p-5 rounded-2xl border transition-all ${
+                  <div key={i} className={`p-5 rounded-2xl border transition-all flex gap-4 ${
                     isCurrent
                       ? 'bg-emerald-950/20 border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.1)]'
                       : 'bg-black/35 border-gray-800/80 hover:border-cyan-500/10'
                   }`}>
-                    <div className="flex justify-between items-start mb-2 border-b border-gray-900 pb-1.5">
-                      <h3 className="text-md font-bold text-white uppercase tracking-wide flex items-center gap-2">
-                        <span className="text-[10px] text-gray-500 font-mono">[{i}]</span>
-                        {v.name}
-                      </h3>
-                      {isCurrent && <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[8px] font-black uppercase px-1.5 py-0.5 rounded tracking-widest animate-pulse">SHIP HERE</span>}
+                    {/* Small image clip */}
+                    <div
+                      onClick={() => {
+                          SFX.play('click');
+                          setModal({ type: 'view_venue_codex', data: i });
+                      }}
+                      className="w-20 h-20 shrink-0 overflow-hidden rounded-xl border border-gray-700/50 cursor-pointer hover:border-orange-500 hover:scale-105 active:scale-95 transition-all shadow-md bg-black/40"
+                      title="Click to view full-screen venue"
+                    >
+                      <img
+                          src={VENUE_IMAGES[v.name]}
+                          alt={v.name}
+                          className="w-full h-full object-cover"
+                      />
                     </div>
-                    <p className="text-gray-400 text-xs font-mono leading-relaxed">{v.desc}</p>
+
+                    {/* Venue Details */}
+                    <div className="flex-grow min-w-0">
+                      <div className="flex justify-between items-start mb-2 border-b border-gray-900 pb-1.5">
+                        <h3 className="text-md font-bold text-white uppercase tracking-wide flex items-center gap-2">
+                          {v.name}
+                        </h3>
+                        {isCurrent && <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[8px] font-black uppercase px-1.5 py-0.5 rounded tracking-widest animate-pulse">SHIP HERE</span>}
+                      </div>
+                      <p className="text-gray-400 text-xs font-mono leading-relaxed">{v.desc}</p>
+                    </div>
                   </div>
                 );
               })}
@@ -4970,7 +5056,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                   Risk indices specify volatility bounds: Low Risk (highly stable), Medium Risk (moderate fluctuations), High Risk (extreme delta swings).
                 </p>
                 <div className="bg-slate-900/50 p-4 rounded-xl border border-cyan-500/10 space-y-2 text-xs font-mono">
-                  <p className="text-cyan-400 font-bold uppercase tracking-widest text-[10px] mb-2 border-b border-cyan-900 pb-1">CORPORATE SYNERGY PERKS (OWNERSHIP THRESHOLD: &gt;5% TOTAL SHARES)</p>
+                  <p className="text-cyan-400 font-bold uppercase tracking-widest text-[10px] mb-2 border-b border-cyan-900 pb-1">CORPORATE SYNERGY PERKS (OWNERSHIP THRESHOLD: &gt;22% TOTAL SHARES)</p>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="border border-slate-800 p-3 rounded-lg bg-black/30">
                       <p className="text-white font-bold mb-1 uppercase">Weyland Corp (Mining Synergy)</p>
@@ -5147,7 +5233,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                           <p className="text-gray-500 font-mono text-[10px] uppercase">v.12.5.9</p>
+                           <p className="text-gray-500 font-mono text-[10px] uppercase">v.13.0.1</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -5197,7 +5283,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                           <p className="text-yellow-500 text-[10px] font-mono uppercase tracking-widest font-black">--- RIVAL SYNDICATES & THREATS ---</p>
                           <div className="space-y-3 text-base font-mono">
                               <p className="text-white font-bold">The Crimson Fleet</p>
-                              <p className="text-white font-bold">The Espresso Bandits</p>
+                              <p className="text-white font-bold">The Spice Bandits</p>
                               <p className="text-white font-bold">The Void-Sickness Whispers</p>
                               <p className="text-white font-bold">The Sentient Rust Rats</p>
                           </div>
@@ -5471,7 +5557,18 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
           return (
               <>
                 <div className="flex justify-between items-center p-3 border-b border-gray-700 bg-gray-900/90 sticky top-0 z-20">
-                    <h2 className="font-scifi text-blue-500 text-lg md:text-2xl w-1/3 text-left truncate">{VENUES[state.currentVenueIndex]}</h2>
+                    <div className="flex items-center gap-2 w-1/3 text-left">
+                        <h2 className="font-scifi text-blue-500 text-lg md:text-2xl truncate">{VENUES[state.currentVenueIndex]}</h2>
+                        <button
+                            onClick={() => {
+                                SFX.play('click');
+                                setModal({ type: 'view_venue', data: state.currentVenueIndex });
+                            }}
+                            className="bg-cyan-900 hover:bg-cyan-800 border border-cyan-500 text-cyan-300 px-2 py-1 rounded text-[10px] font-black uppercase shrink-0 active:scale-95 transition-all shadow-[0_0_8px_rgba(6,182,212,0.3)] cursor-pointer"
+                        >
+                            View Venue
+                        </button>
+                    </div>
                     <div className={`text-lg md:text-2xl font-scifi font-bold w-1/3 text-center flex justify-center items-center ${state.cash >= 0 ? 'text-green-500' : 'text-red-500'}`}><PriceDisplay value={state.cash} size="text-lg md:text-2xl" /></div>
                     <span className={`${isOverfilled ? 'text-red-500' : 'text-yellow-400'} text-sm md:text-xl font-bold font-mono w-1/3 text-right`}>{Math.round(state.cargoWeight)}/{state.cargoCapacity}T</span>
                 </div>
@@ -6060,7 +6157,10 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                                             const isScannerMk2Locked = nextUpgradeItem.id === 'scanner_mk2' && state.gamePhase < 2;
                                             const isScannerMk3Locked = nextUpgradeItem.id === 'scanner_mk3' && state.gamePhase < 3;
                                             const isLockedByPhase = isScannerMk2Locked || isScannerMk3Locked;
-                                            const cost = nextUpgradeItem.cost * (nextUpgradeItem.type === 'defense' ? state.gamePhase : 1);
+                                            let cost = nextUpgradeItem.cost * (nextUpgradeItem.type === 'defense' ? state.gamePhase : 1);
+                                            if (hasCorporateSynergy(state, 'weyland')) {
+                                                cost = Math.round(cost * 0.85);
+                                            }
                                             const isAffordable = state.cash >= cost;
                                             const isDisabled = isLockedByPhase || !isAffordable;
 
@@ -6188,7 +6288,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                             {/* Mutant Unrest HUD Block on the right */}
                             <div className="flex flex-col items-end gap-1.5 shrink-0">
                                 <div className="text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                                    SYSTEM LOG: FABRICATION MATRIX v.12.5.9 ACTIVE
+                                    SYSTEM LOG: FABRICATION MATRIX v.13.0.1 ACTIVE
                                 </div>
                                 <div className="bg-slate-950/90 border border-red-500/40 p-2.5 rounded-xl w-56 font-mono text-xs shadow-[0_0_15px_rgba(239,68,68,0.15)] flex flex-col gap-1 text-left">
                                     <div className="flex justify-between items-center text-red-400 font-bold tracking-wider">
@@ -7160,7 +7260,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v.12.5.9</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v.13.0.1</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -7210,7 +7310,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                                   <p className="text-yellow-500 text-xs font-mono uppercase tracking-widest font-black">--- RIVAL SYNDICATES & THREATS ---</p>
                                   <div className="space-y-3 text-lg font-mono">
                                       <p className="text-white font-bold">The Crimson Fleet</p>
-                                      <p className="text-white font-bold">The Espresso Bandits</p>
+                                      <p className="text-white font-bold">The Spice Bandits</p>
                                       <p className="text-white font-bold">The Void-Sickness Whispers</p>
                                       <p className="text-white font-bold">The Sentient Rust Rats</p>
                                   </div>
@@ -7283,7 +7383,19 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
 
   return (
     <div className="app-viewport flex flex-col p-2 md:p-4 space-y-4 no-scrollbar custom-scrollbar overflow-y-auto bg-transparent">
-       <Starfield />
+       {state ? (
+         <div
+           className="fixed inset-0 z-[-1] transition-all duration-1000"
+           style={{
+             backgroundImage: `url(${VENUE_IMAGES[VENUES[state.currentVenueIndex]]})`,
+             backgroundSize: 'cover',
+             backgroundPosition: 'center',
+             backgroundRepeat: 'no-repeat',
+           }}
+         />
+       ) : (
+         <Starfield />
+       )}
        {state?.isMutinyActive && modal.type !== 'message' && !dismissedStrikeOverlay && (() => {
            const pcChipsQuantity = state.markets[state.currentVenueIndex]?.["PC Chips"]?.quantity || 0;
            const pcChipsRequirement = state.mutinyPcChipsRequirement !== undefined ? state.mutinyPcChipsRequirement : Math.floor((pcChipsQuantity * 0.22) / 5) * 5;
@@ -7400,7 +7512,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                     <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.12.5.9</span>
+                     <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.13.0.1</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -7532,7 +7644,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                                <button onClick={() => resolveEncounterOutcome('check')} className="bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl text-xl shadow-[0_0_15px_rgba(16,185,129,0.4)] action-btn uppercase">Salvage Freighter</button>
                                <button onClick={() => resolveEncounterOutcome('leave')} className="bg-gray-700 hover:bg-gray-600 text-gray-300 font-bold py-3 rounded-xl text-lg uppercase">Maintain Course</button>
                            </>
-                       ) : modal.data.encounter.type === 'pirate' ? (
+                       ) : (modal.data.encounter.type === 'pirate' || modal.data.encounter.type === 'spice_bandits') ? (
                            <>
                                <button onClick={() => resolveEncounterOutcome('pay')} className="bg-yellow-600 hover:bg-yellow-500 text-white font-black py-4 rounded-xl text-xl shadow-[0_0_15px_rgba(234,179,8,0.4)] action-btn uppercase">Pay Tribute ({formatCurrencyLog(modal.data.encounter.demandAmount)})</button>
                                <button onClick={() => resolveEncounterOutcome('fight')} className="bg-red-600 hover:bg-red-500 text-white font-black py-4 rounded-xl text-xl shadow-[0_0_15px_rgba(220,38,38,0.4)] action-btn uppercase">Engage (Battle Reward)</button>
@@ -7767,6 +7879,55 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
            </div>
        )}
 
+       {modal.type === 'view_venue' && modal.data !== null && state && (
+           <div className="fixed inset-0 bg-black/95 flex flex-col items-center justify-center z-[9999] p-4 md:p-8 animate-in fade-in duration-300">
+               <div className="max-w-4xl w-full h-[85vh] flex flex-col bg-slate-900 border border-cyan-500 rounded-3xl p-6 sci-fi-box relative shadow-[0_0_50px_rgba(6,182,212,0.3)]">
+                   <h2 className="text-3xl font-scifi text-cyan-400 mb-4 text-center uppercase tracking-widest">{VENUES[modal.data]}</h2>
+                   <div className="flex-grow overflow-hidden rounded-2xl border border-cyan-500/20 bg-black/40 flex items-center justify-center p-2 mb-6">
+                       <img
+                           src={VENUE_IMAGES[VENUES[modal.data]]}
+                           alt={VENUES[modal.data]}
+                           className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
+                       />
+                   </div>
+                   <button
+                       onClick={() => {
+                           SFX.play('click');
+                           setModal({ type: 'none', data: null });
+                       }}
+                       className="w-full bg-cyan-600 hover:bg-cyan-505 text-white font-black py-4 rounded-xl text-xl shadow-lg uppercase transition-all active:scale-95 shrink-0 cursor-pointer"
+                   >
+                       Return to Trade Console
+                   </button>
+               </div>
+           </div>
+       )}
+
+       {modal.type === 'view_venue_codex' && modal.data !== null && state && (
+           <div className="fixed inset-0 bg-black/95 flex flex-col items-center justify-center z-[9999] p-4 md:p-8 animate-in fade-in duration-300">
+               <div className="max-w-4xl w-full h-[85vh] flex flex-col bg-slate-900 border border-orange-500 rounded-3xl p-6 sci-fi-box relative shadow-[0_0_50px_rgba(234,88,12,0.3)]">
+                   <h2 className="text-3xl font-scifi text-orange-400 mb-4 text-center uppercase tracking-widest">{VENUES[modal.data]}</h2>
+                   <div className="flex-grow overflow-hidden rounded-2xl border border-orange-500/20 bg-black/40 flex items-center justify-center p-2 mb-6">
+                       <img
+                           src={VENUE_IMAGES[VENUES[modal.data]]}
+                           alt={VENUES[modal.data]}
+                           className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
+                       />
+                   </div>
+                   <button
+                       onClick={() => {
+                           SFX.play('click');
+                           setWikiTab('venues');
+                           setModal({ type: 'wiki', data: null });
+                       }}
+                       className="w-full bg-orange-600 hover:bg-orange-500 text-white font-black py-4 rounded-xl text-xl shadow-lg uppercase transition-all active:scale-95 shrink-0 cursor-pointer"
+                   >
+                       Return to Codex
+                   </button>
+               </div>
+           </div>
+       )}
+
        {modal.type === 'welcome' && (
            <div className="absolute inset-0 flex flex-col items-center justify-center z-50 overflow-hidden bg-transparent">
                <div className="crawl-container h-[70%]">
@@ -7784,7 +7945,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.12.5.9</p>
+                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.13.0.1</p>
                </div>
            </div>
        )}
