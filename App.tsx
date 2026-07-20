@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v.13.0.2
+ * VERSION: v.13.0.3
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -1166,7 +1166,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v.13.0.2 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v.13.0.3 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -4782,7 +4782,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.13.0.2</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.13.0.3</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -4890,14 +4890,14 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
     const broadcastTypes = Object.keys(QUIRKY_MESSAGES_DB) as Array<keyof typeof QUIRKY_MESSAGES_DB>;
 
     return (
-      <div className="flex flex-col h-full bg-slate-900/60 p-4 md:p-6 animate-in fade-in duration-300">
+      <div className="flex flex-col h-full bg-transparent p-4 md:p-6 animate-in fade-in duration-300">
         {/* Codex Header */}
         <div className="flex justify-between items-center mb-6 border-b border-gray-700 pb-3 shrink-0">
           <div className="flex items-center gap-3">
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.13.0.2 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.13.0.3 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -5261,7 +5261,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                           <p className="text-gray-500 font-mono text-[10px] uppercase">v.13.0.2</p>
+                           <p className="text-gray-500 font-mono text-[10px] uppercase">v.13.0.3</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -6316,7 +6316,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                             {/* Mutant Unrest HUD Block on the right */}
                             <div className="flex flex-col items-end gap-1.5 shrink-0">
                                 <div className="text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                                    SYSTEM LOG: FABRICATION MATRIX v.13.0.2 ACTIVE
+                                    SYSTEM LOG: FABRICATION MATRIX v.13.0.3 ACTIVE
                                 </div>
                                 <div className="bg-slate-950/90 border border-red-500/40 p-2.5 rounded-xl w-56 font-mono text-xs shadow-[0_0_15px_rgba(239,68,68,0.15)] flex flex-col gap-1 text-left">
                                     <div className="flex justify-between items-center text-red-400 font-bold tracking-wider">
@@ -6401,6 +6401,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                         </div>
 
                         {/* Request Additional Fabrication Button */}
+                        {/* Verified: This is the third request for this change (originally created in Enh. 159, styled in Enh. 161, and changed/verified as bright red here in Enh. 163) */}
                         <div className="mt-6 flex justify-center w-full">
                             <button
                                 onClick={() => {
@@ -6423,7 +6424,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                                         }
                                     });
                                 }}
-                                className="w-full md:w-2/3 bg-red-600 hover:bg-red-500 border-2 border-red-500 text-white font-black py-4 px-6 rounded-xl text-lg md:text-xl shadow-[0_0_25px_rgba(220,38,38,1)] transition-all uppercase tracking-wider action-btn animate-pulse"
+                                className="w-full md:w-2/3 bg-red-600 hover:bg-red-500 border-2 border-red-600 text-white font-black py-4 px-6 rounded-xl text-lg md:text-xl shadow-[0_0_30px_rgba(220,38,38,1)] transition-all uppercase tracking-wider action-btn animate-pulse"
                             >
                                 Request Additional Fabrication per D.A.Y.
                             </button>
@@ -7288,7 +7289,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v.13.0.2</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v.13.0.3</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -7582,7 +7583,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                     <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.13.0.2</span>
+                     <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.13.0.3</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -7635,43 +7636,43 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
            <div className="flex flex-col items-stretch">
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-8 gap-1 px-1">
                  <button onClick={()=>handleFeatureClick('shop', ()=>setModal({type:'shop', data:null}))} 
-                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-purple-600/50 ${modal.type==='shop'?'bg-purple-900/60 text-white shadow-[0_-5px_15px_rgba(147,51,234,0.3)]':'bg-purple-900/20 text-purple-300 hover:bg-purple-900/40'} font-scifi text-[10px] md:text-xs transition-all`}>
+                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-purple-600/50 ${modal.type==='shop'?'bg-purple-900/60 text-white shadow-[0_-5px_15px_rgba(147,51,234,0.3)]':'bg-purple-900/20 text-purple-300 hover:bg-purple-900/40'} font-scifi font-bold text-[10px] md:text-xs transition-all`}>
                     <Zap className="mb-1" size={14}/> Upgrades
                  </button>
                  <button onClick={()=>handleFeatureClick('banking', ()=>setModal({type:'banking', data:null}))} 
-                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-yellow-600/50 ${modal.type==='banking'?'bg-yellow-900/60 text-white shadow-[0_-5px_15px_rgba(234,179,8,0.3)]':'bg-yellow-900/20 text-yellow-500 hover:bg-yellow-900/40'} font-scifi text-[10px] md:text-xs transition-all`}>
+                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-yellow-600/50 ${modal.type==='banking'?'bg-yellow-900/60 text-white shadow-[0_-5px_15px_rgba(234,179,8,0.3)]':'bg-yellow-900/20 text-yellow-500 hover:bg-yellow-900/40'} font-scifi font-bold text-[10px] md:text-xs transition-all`}>
                     <Building2 className="mb-1" size={14}/> I.B.A.N.K.
                     <span className={`text-[8px] flex items-center font-bold ${totalDebt > 0 ? 'text-red-500' : (totalInv > 0 ? 'text-green-500' : 'text-yellow-600')}`}>{totalDebt > 0 ? formatCompactNumber(totalDebt) : (totalInv > 0 ? formatCompactNumber(totalInv) : '')}</span>
                  </button>
                  <button onClick={()=>{setModal({type:'none', data:null}); SFX.play('click');}} 
-                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-blue-500/50 ${modal.type==='none'?'bg-blue-900/60 text-white shadow-[0_-5px_15px_rgba(37,99,235,0.3)]':'bg-blue-900/20 text-blue-400 hover:bg-blue-900/40'} font-scifi text-[10px] md:text-xs transition-all`}>
+                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-blue-500/50 ${modal.type==='none'?'bg-blue-900/60 text-white shadow-[0_-5px_15px_rgba(37,99,235,0.3)]':'bg-blue-900/20 text-blue-400 hover:bg-blue-900/40'} font-scifi font-bold text-[10px] md:text-xs transition-all`}>
                     <LineChart className="mb-1" size={14}/> Console
                  </button>
                  <button onClick={()=>handleFeatureClick('fomo', ()=>setModal({type:'fomo', data:null}))} 
-                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-orange-600/50 ${modal.type==='fomo'?'bg-orange-900/60 text-white shadow-[0_-5px_15px_rgba(234,88,12,0.3)]':'bg-orange-900/20 text-orange-300 hover:bg-orange-900/40'} font-scifi text-[10px] md:text-xs transition-all`}>
+                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-orange-600/50 ${modal.type==='fomo'?'bg-orange-900/60 text-white shadow-[0_-5px_15px_rgba(234,88,12,0.3)]':'bg-orange-900/20 text-orange-300 hover:bg-orange-900/40'} font-scifi font-bold text-[10px] md:text-xs transition-all`}>
                     <Factory className="mb-1" size={14}/> F.O.M.O.
                  </button>
                  <button onClick={()=>handleFeatureClick('travel', ()=>setModal({type:'travel', data:null}))} 
-                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-emerald-600/50 ${modal.type==='travel' || modal.type==='venue_intel' ?'bg-emerald-900/60 text-white shadow-[0_-5px_15px_rgba(16,185,129,0.3)]':'bg-emerald-900/20 text-emerald-300 hover:bg-emerald-900/40'} font-scifi text-[10px] md:text-xs transition-all`}>
+                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-emerald-600/50 ${modal.type==='travel' || modal.type==='venue_intel' ?'bg-emerald-900/60 text-white shadow-[0_-5px_15px_rgba(16,185,129,0.3)]':'bg-emerald-900/20 text-emerald-300 hover:bg-emerald-900/40'} font-scifi font-bold text-[10px] md:text-xs transition-all`}>
                     <Rocket className="mb-1" size={14}/> Travel
                  </button>
                  <button onClick={()=>handleFeatureClick('shipping', ()=>setModal({type:'shipping', data:null}))} 
-                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-blue-600/50 ${modal.type==='shipping' ?'bg-blue-800/60 text-white shadow-[0_-5px_15px_rgba(37,99,235,0.3)]':'bg-blue-900/20 text-blue-300 hover:bg-blue-900/40'} font-scifi text-[10px] md:text-xs transition-all`}>
+                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-blue-600/50 ${modal.type==='shipping' ?'bg-blue-800/60 text-white shadow-[0_-5px_15px_rgba(37,99,235,0.3)]':'bg-blue-900/20 text-blue-300 hover:bg-blue-900/40'} font-scifi font-bold text-[10px] md:text-xs transition-all`}>
                     <Truck className="mb-1" size={14}/> Logistics
                  </button>
                  <button onClick={()=>handleFeatureClick('comms', ()=>setModal({type:'comms', data:null}))} 
-                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-cyan-500/50 ${modal.type==='comms'?'bg-cyan-900/60 text-white shadow-[0_-5px_15px_rgba(6,182,212,0.3)]':'bg-cyan-900/20 text-cyan-300 hover:bg-cyan-900/40'} font-scifi text-[10px] md:text-xs transition-all`}>
+                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-cyan-500/50 ${modal.type==='comms'?'bg-cyan-900/60 text-white shadow-[0_-5px_15px_rgba(6,182,212,0.3)]':'bg-cyan-900/20 text-cyan-300 hover:bg-cyan-900/40'} font-scifi font-bold text-[10px] md:text-xs transition-all`}>
                     <Radio className="mb-1" size={14}/> G.I.G.O.
                  </button>
                  <button onClick={()=>handleFeatureClick('wiki', ()=>setModal({type:'wiki', data:null}))} 
-                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-orange-600/50 ${modal.type==='wiki'?'bg-orange-800/60 text-white shadow-[0_-5px_15px_rgba(234,88,12,0.3)]':'bg-orange-900/20 text-orange-400 hover:bg-orange-800/60'} font-scifi text-[10px] md:text-xs transition-all`}>
+                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-orange-600/50 ${modal.type==='wiki'?'bg-orange-800/60 text-white shadow-[0_-5px_15px_rgba(234,88,12,0.3)]':'bg-orange-900/20 text-orange-400 hover:bg-orange-800/60'} font-scifi font-bold text-[10px] md:text-xs transition-all`}>
                     <BookOpen className="mb-1" size={14}/> Codex
                  </button>
               </div>
            </div>
 
            <div id="main-console" className={`card sci-fi-box rounded-b-xl rounded-t-none p-0 flex-grow flex flex-col bg-transparent overflow-hidden min-h-0 border-t-2 border-t-blue-500/30 ${
-               modal.type === 'none' || modal.type === 'comms' || modal.type === 'shipping' || modal.type === 'fomo' || modal.type === 'shop' || modal.type === 'banking' ? 'retro-terminal-background' : ''
+               modal.type === 'none' || modal.type === 'comms' || modal.type === 'shipping' || modal.type === 'fomo' || modal.type === 'shop' || modal.type === 'banking' || modal.type === 'wiki' ? 'retro-terminal-background' : ''
              }`}>
               {renderTerminalContent()}
 
@@ -8040,7 +8041,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.13.0.2</p>
+                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.13.0.3</p>
                </div>
            </div>
        )}
