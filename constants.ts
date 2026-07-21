@@ -10,7 +10,7 @@ export const CARGO_UPGRADE_COST = 2000;
 export const TONS_UNIT = 'T';
 export const CURRENCY_UNIT = '$B'; // Internal logic ref
 export const COIN_MARKER = '$B'; // Marker for replacing with Icon
-export const FUEL_NAME = 'Spice Fuel';
+export const FUEL_NAME = 'VSS-Spice Emulsion';
 export const NUTRI_PASTE_NAME = 'Nutri-Paste';
 export const H2O_NAME = 'H2O';
 export const POWER_CELL_NAME = 'Hot Isotope Hummers';
@@ -201,18 +201,18 @@ export const CONTRACT_FIRMS = [
 ];
 
 export const SHOP_ITEMS: EquipmentItem[] = [
-  { id: 'laser_mk1', name: 'Mining Laser Mk I', type: 'laser', level: 1, cost: 5000, description: 'Mines Allthemantium Ore.', owned: false },
-  { id: 'laser_mk2', name: 'Mining Laser Mk II', type: 'laser', level: 2, cost: 50000, description: 'Mines Ore + Antimatter. High yield extraction.', owned: false },
-  { id: 'laser_mk3', name: 'Mining Laser Mk III', type: 'laser', level: 3, cost: 500000, description: 'Mines Ore, Anti, Dark Matter. Galactic standard.', owned: false },
-  { id: 'scanner', name: 'Market Scanner Mk I', type: 'scanner', level: 1, cost: 10000, description: 'Auto-detect volatility on market boards.', owned: false },
-  { id: 'scanner_mk2', name: 'Market Scanner Mk II', type: 'scanner', level: 2, cost: 1000000, description: 'Allows fixing one commodity\'s price for the next day.', owned: false },
-  { id: 'scanner_mk3', name: 'Market Scanner Mk III', type: 'scanner', level: 3, cost: 10000000, description: 'Allows forcing a 10% increase in one commodity\'s max price range.', owned: false },
-  { id: 'plasma_cannon_mk1', name: 'Plasma Cannons Mk I', type: 'defense', level: 1, cost: 15000, description: 'Basic pirate deterrent.', owned: false },
-  { id: 'plasma_cannon_mk2', name: 'Plasma Cannons Mk II', type: 'defense', level: 2, cost: 75000, description: 'Advanced magnetic acceleration for higher deterrence.', owned: false },
-  { id: 'plasma_cannon_mk3', name: 'Plasma Cannons Mk III', type: 'defense', level: 3, cost: 250000, description: 'Heavy bombardment capability. Pirates beware.', owned: false },
-  { id: 'shield_gen_mk1', name: 'Deflector Shields Mk I', type: 'defense', level: 1, cost: 25000, description: 'Reduces navigational hazard impact.', owned: false },
-  { id: 'shield_gen_mk2', name: 'Deflector Shields Mk II', type: 'defense', level: 2, cost: 125000, description: 'High-density ion envelope for better mitigation.', owned: false },
-  { id: 'shield_gen_mk3', name: 'Deflector Shields Mk III', type: 'defense', level: 3, cost: 500000, description: 'Total kinetic absorption matrix. Absolute protection.', owned: false },
+  { id: 'laser_mk1', name: 'Mining Laser MK 1', type: 'laser', level: 1, cost: 5000, description: 'Mines Allthemantium Ore.', owned: false },
+  { id: 'laser_mk2', name: 'Mining Laser MK 11', type: 'laser', level: 2, cost: 50000, description: 'Mines Ore + Antimatter. High yield extraction.', owned: false },
+  { id: 'laser_mk3', name: 'Mining Laser MK 22 (OBB)', type: 'laser', level: 3, cost: 500000, description: 'Mines Ore, Anti, Dark Matter. Galactic standard.', owned: false },
+  { id: 'scanner', name: 'Market Scanner MK 1', type: 'scanner', level: 1, cost: 10000, description: 'Auto-detect volatility on market boards.', owned: false },
+  { id: 'scanner_mk2', name: 'Market Scanner MK 11', type: 'scanner', level: 2, cost: 1000000, description: 'Allows fixing one commodity\'s price for the next day.', owned: false },
+  { id: 'scanner_mk3', name: 'Market Scanner MK 22 (OBB)', type: 'scanner', level: 3, cost: 10000000, description: 'Allows forcing a 10% increase in one commodity\'s max price range.', owned: false },
+  { id: 'plasma_cannon_mk1', name: 'Plasma Cannons MK 1', type: 'defense', level: 1, cost: 15000, description: 'Basic pirate deterrent.', owned: false },
+  { id: 'plasma_cannon_mk2', name: 'Plasma Cannons MK 11', type: 'defense', level: 2, cost: 75000, description: 'Advanced magnetic acceleration for higher deterrence.', owned: false },
+  { id: 'plasma_cannon_mk3', name: 'Plasma Cannons MK 22 (OBB)', type: 'defense', level: 3, cost: 250000, description: 'Heavy bombardment capability. Pirates beware.', owned: false },
+  { id: 'shield_gen_mk1', name: 'Deflector Shields MK 1', type: 'defense', level: 1, cost: 25000, description: 'Reduces navigational hazard impact.', owned: false },
+  { id: 'shield_gen_mk2', name: 'Deflector Shields MK 11', type: 'defense', level: 2, cost: 125000, description: 'High-density ion envelope for better mitigation.', owned: false },
+  { id: 'shield_gen_mk3', name: 'Deflector Shields MK 22 (OBB)', type: 'defense', level: 3, cost: 500000, description: 'Total kinetic absorption matrix. Absolute protection.', owned: false },
 ];
 
 // CUSTOM ORDERED BY ENHANCEMENT 154
@@ -220,7 +220,13 @@ export const COMMODITIES: Commodity[] = [
   { name: "Allthemantium Ore", icon: "metal-lump", unitWeight: 5.0, minPrice: 50, maxPrice: 2500, rarity: 0.8, description: "The backbone of interstellar construction as it contains all the heavy metals needed for construction. Also makes a great paperweight." },
   { name: "Synthetic Cloth", icon: "🧵", unitWeight: 0.25, minPrice: 100, maxPrice: 1000, rarity: 0.6, description: "Woven from the finest recycled plastics extracted from space dolphins who love eating plastic straws. Now available in 'slightly less scratchy'." },
   { name: H2O_NAME, icon: "💧", unitWeight: 1.0, minPrice: 5, maxPrice: 50, rarity: 0.1, description: "The elixir of life. Or, as the old-timers call it, 'water'." },
-  { name: "Medical Kits", icon: "🩹", unitWeight: 0.01, minPrice: 400, maxPrice: 4000, rarity: 0.7, description: "For when you get a boo-boo. Now with extra space-bandages." },
+  { name: "Medi-Bio-Boo-Boo Packs", icon: "🩹", unitWeight: 0.01, minPrice: 400, maxPrice: 4000, rarity: 0.7, description: `Full Name: Medi-Bio-Boo-Boo Trauma & Hull-Burn Stabilization Kit
+
+Description: For when the hull holds together but you don't. Perfect for patching a leaky suit or a gaping flesh wound, whichever comes first. Contains enough synthetic skin-glue and over-the-counter painkillers to keep you functional until you reach the next port. Features our proprietary extra space-space-bandages guaranteed to stick to anything except the wound.
+
+Application: Essential for field maintenance of biological crew members following combat damage, hull burns, structural depressurization, or accidental exposure to shipboard hazards.
+
+Interesting Fact: If combined with 2 Nutri-Paste and 1 H2O, it creates a high-potency Stim-Pack.` },
   { name: NUTRI_PASTE_NAME, icon: "🍲", unitWeight: 0.5, minPrice: 10, maxPrice: 100, rarity: 0.1, description: "Tastes like chicken-flavored oatmeal. Or maybe oatmeal-flavored chicken. It's hard to tell." },
   { name: MESH_NAME, icon: "🕸️", unitWeight: 2.5, minPrice: 5000, maxPrice: 25000, rarity: 0.9, description: "A marvel of engineering, this mesh can expand your cargo hold beyond its limits. Just don't ask how." },
   { name: "Stim-Packs", icon: "💉", unitWeight: 0.25, minPrice: 5000, maxPrice: 15000, rarity: 0.85, description: "For when you absolutely, positively have to stay awake for three days straight." },
@@ -230,7 +236,15 @@ export const COMMODITIES: Commodity[] = [
   { name: "Antimatter Rod", icon: "✨", unitWeight: 0.5, minPrice: 2500, maxPrice: 15000, rarity: 0.95, description: "A rod of pure energy, humming with the power of a thousand suns. Handle with care." },
   { name: "PC Chips", icon: "💾", unitWeight: 0.01, minPrice: 20, maxPrice: 2000, rarity: 0.65, description: "The building blocks of the digital age. Now with 1% less planned obsolescence." },
   { name: POWER_CELL_NAME, icon: "🔋", unitWeight: 0.1, minPrice: 50, maxPrice: 250, rarity: 0.5, description: "Guaranteed to power your devices for at least a few H.O.U.R.S. Or your money back (not really)." },
-  { name: FUEL_NAME, icon: "⛽", unitWeight: 0.20, minPrice: 10, maxPrice: 150, rarity: 0.2, description: "The lifeblood of the spacelanes. Smells faintly of cinnamon and regret." },
+  { name: FUEL_NAME, icon: "⛽", unitWeight: 0.20, minPrice: 10, maxPrice: 150, rarity: 0.2, description: `Full Name: Volatile Singularity Slipstream Spice Emulsion
+
+Classification: High-Energy Propellant / Jump-Stabilizer
+
+Description: A hyper-refined volatile compound essential for high-output jump drives. It doesn't just push the ship; it collapses spacetime into an envelope, threads you through the void, and calibrates your arrival vectors all while allowing you to mine and encounter events along the way in real-time.
+
+Warning: Smells faintly of cinnamon and regret and is very addictive, and inhaling the fumes will turn your eyes Bright Blue.
+
+Security Note: Presence of VSS-Spice Emulsion in cargo holds is the primary driver for high-threat intercepts by The Spice Bandits. Ensure kinetic cannons and defensive shielding are at peak operational capacity when transporting this substance.` },
 ];
 
 export const VENUES = [
