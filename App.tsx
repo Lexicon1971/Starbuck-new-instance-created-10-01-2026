@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v.13.1.3
+ * VERSION: v.13.1.4
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -1166,7 +1166,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v.13.1.3 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v.13.1.4 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -1563,7 +1563,7 @@ export default function App() {
       setFomoQty(maxMesh.toString());
 
       const pasteAmt = state.cargo[NUTRI_PASTE_NAME]?.quantity || 0;
-      const kitsAmt = state.cargo['Medical Kits']?.quantity || 0;
+      const kitsAmt = state.cargo['Medi-Bio-Boo-Boo Packs']?.quantity || 0;
       const cashMaxAmtStims = Math.floor(state.cash / 200);
       const maxStims = Math.max(0, Math.min(h2oAmt, Math.floor(pasteAmt / 2), kitsAmt, cashMaxAmtStims));
       setFomoStimQty(maxStims.toString());
@@ -2172,7 +2172,7 @@ export default function App() {
         switch(typeEncounter) {
             case 'spice_bandits':
                 encounter.title = 'The Spice Bandits Ambush';
-                encounter.description = `The notorious 'Double-Sniffer' Barnaby B Barabas and his Spice Bandits have intercepted your ship! "Hand over the cash, or we'll turn your ship into space dust."`;
+                encounter.description = `The notorious 'Double-Sniffer' Barnaby (Blue Eyes) Barabas and his Spice Bandits have intercepted your ship! "Hand over the cash, or we'll turn your ship into space dust."`;
                 encounter.demandAmount = Math.floor(s.cash * 0.25);
                 encounter.riskDamage = 35 * riskMult * (1 - (shieldLv * 0.15));
                 break;
@@ -2219,7 +2219,7 @@ export default function App() {
                 encounter.riskDamage = 45 * riskMult * (1 - (shieldLv * 0.15));
                 break;
             case 'fuel_breach':
-                encounter.title = 'Spice-Fuel Tank Breach';
+                encounter.title = 'VSS-Spice Emulsion Tank Breach';
                 encounter.description = `60% oxidation causes a fuel seam to split! High risk of fire near the Hot Isotope Hummers.`;
                 encounter.riskDamage = 10;
                 break;
@@ -2387,7 +2387,7 @@ export default function App() {
                   s.cargoWeight -= fuelLoss * fData.unitWeight;
                   if (s.cargo[FUEL_NAME].quantity <= 0) delete s.cargo[FUEL_NAME];
               }
-              outcomeMsg = `BREACH: ${fuelLoss} units of Spice-Fuel leaked into the void before the seal held.`;
+              outcomeMsg = `BREACH: ${fuelLoss} units of VSS-Spice Emulsion leaked into the void before the seal held.`;
               outcomeType = 'danger';
               r.events.push(`ENCOUNTER: Fuel tank breach. Lost ${fuelLoss} Fuel.`);
               break;
@@ -2724,7 +2724,7 @@ export default function App() {
       const laserLevel = currentState.equipment['laser_mk3'] ? 3 : (currentState.equipment['laser_mk2'] ? 2 : 1);
       const cellsNeeded = travelConfig.mining ? (currentState.gamePhase * Math.pow(3, (laserLevel - 1))) : 0;
 
-      // Spice Fuel and Hot Isotope Hummers needed to travel are excluded:
+      // VSS-Spice Emulsion and Hot Isotope Hummers needed to travel are excluded:
       const fuelNeededToTravel = fuel;
       const cellsNeededToTravel = cellsNeeded;
 
@@ -2764,7 +2764,7 @@ export default function App() {
               // Direct player to move cargo themselves
               setModal({
                   type: 'message',
-                  data: `CARGO OVERFILL BLOCK: Captain, your cargo hold is overloaded (${Math.round(currentState.cargoWeight)}/${currentState.cargoCapacity}T). Even after auto-shipping all excess cargo, your remaining required Spice Fuel (${fuelNeededToTravel} units) and Hot Isotope Hummers (${cellsNeededToTravel} units) needed to travel still weigh ${Math.round(remainingWeightAfterShipping)}T, exceeding your cargo capacity. Please manually move, sell, or discard cargo to fit within capacity before you can depart!`,
+                  data: `CARGO OVERFILL BLOCK: Captain, your cargo hold is overloaded (${Math.round(currentState.cargoWeight)}/${currentState.cargoCapacity}T). Even after auto-shipping all excess cargo, your remaining required VSS-Spice Emulsion (${fuelNeededToTravel} units) and Hot Isotope Hummers (${cellsNeededToTravel} units) needed to travel still weigh ${Math.round(remainingWeightAfterShipping)}T, exceeding your cargo capacity. Please manually move, sell, or discard cargo to fit within capacity before you can depart!`,
                   color: 'text-red-500'
               });
               SFX.play('error');
@@ -4423,7 +4423,7 @@ export default function App() {
     
     const h2o = state.cargo[H2O_NAME]?.quantity || 0;
     const paste = state.cargo[NUTRI_PASTE_NAME]?.quantity || 0;
-    const medKits = state.cargo['Medical Kits']?.quantity || 0;
+    const medKits = state.cargo['Medi-Bio-Boo-Boo Packs']?.quantity || 0;
 
     if (state.cash < totalCost) return setModal({type:'message', data: "Insufficient funds."});
     if (h2o < h2oNeeded || paste < pasteNeeded || medKits < medKitsNeeded) return setModal({type:'message', data: "Insufficient resources."});
@@ -4433,8 +4433,8 @@ export default function App() {
     if (newCargo[H2O_NAME].quantity <= 0) delete newCargo[H2O_NAME];
     newCargo[NUTRI_PASTE_NAME].quantity -= pasteNeeded;
     if (newCargo[NUTRI_PASTE_NAME].quantity <= 0) delete newCargo[NUTRI_PASTE_NAME];
-    newCargo['Medical Kits'].quantity -= medKitsNeeded;
-    if (newCargo['Medical Kits'].quantity <= 0) delete newCargo['Medical Kits'];
+    newCargo['Medi-Bio-Boo-Boo Packs'].quantity -= medKitsNeeded;
+    if (newCargo['Medi-Bio-Boo-Boo Packs'].quantity <= 0) delete newCargo['Medi-Bio-Boo-Boo Packs'];
 
     const cData = COMMODITIES.find(c => c.name === 'Stim-Packs')!;
     const cur = newCargo['Stim-Packs'] || { quantity: 0, averageCost: 0 };
@@ -4469,7 +4469,7 @@ export default function App() {
       };
     });
 
-    log(`FABRICATION: Used ${h2oNeeded} ${H2O_NAME}, ${pasteNeeded} ${NUTRI_PASTE_NAME}, and ${medKitsNeeded} Medical Kits to produce ${q} Stim-Packs. (Crew Unrest: ${nextUnrest}%)`, 'mining');
+    log(`FABRICATION: Used ${h2oNeeded} ${H2O_NAME}, ${pasteNeeded} ${NUTRI_PASTE_NAME}, and ${medKitsNeeded} Medi-Bio-Boo-Boo Packs to produce ${q} Stim-Packs. (Crew Unrest: ${nextUnrest}%)`, 'mining');
     setFomoStimQty('');
     SFX.play('success');
 
@@ -4782,7 +4782,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.13.1.3</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.13.1.4</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -4818,7 +4818,7 @@ export default function App() {
     const sections = [
       { title: "The Rusty Redeemer", icon: Anchor, content: "The RR Firefox 22 'RustyRedeemer' is a decommissioned cargo frigate of the 60/40 class. It consists of 60% oxidation and 40% hope. Originally designed for short-range hauling, its isotope hummers have been modified to handle the stress of phase-shifting market dynamics." },
       { title: "The Starbucks Conglomerate", icon: Building2, content: "Underneath the glossy emerald corporate facade lies the ultimate hyper-capitalist machine. Operating under S.H.A.N.E. guidelines, the Conglomerate turns entire solar systems into drive-thru retail outlets. Their main mission is clear: absolute dominance of the space lanes, converting every planetary body into a standardized franchise." },
-      { title: "The Spice Bandits", icon: Skull, content: "The Spice Bandits A rogue gang of Spice-dependent outlaws who terrorize the trade lanes. Led by the notorious 'Double-Sniffer' Barnaby B Barabas, they target cargo vessels carrying high-value commodities which they sell to buy Spice fuel. Installing sturdy kinetic cannons and defensive shields is the only proven method to deter their relentless boarding manoeuvres." },
+      { title: "The Spice Bandits", icon: Skull, content: "The Spice Bandits A rogue gang of Spice-dependent outlaws who terrorize the trade lanes. Led by the notorious 'Double-Sniffer' Barnaby (Blue Eyes) Barabas, they target cargo vessels carrying high-value commodities which they sell to buy VSS-Spice Emulsion. Installing sturdy kinetic cannons and defensive shields is the only proven method to deter their relentless boarding manoeuvres." },
       { title: "The Great Tea Wars", icon: Swords, content: "A devastating sector-wide conflict that lasted over 44 D.A.Y.S. and N.I.G.H.T.S. Fought between the elite Tea Cartels and the synthetic Tea Alliance over the rights to fertile agricultural belts on Nexus Prime. The war concluded with the historic 'I.N.D.I.A.N. Accord,' establishing the current trade of Spacetime Tea is strictly forbidden in all Star Systems. This is a reminder never to be found trading in Spacetime Tea." },
       { title: "S.H.A.N.E. Protocols", icon: Shield, content: "Sector Health, Allocation, & Network Enforcement (S.H.A.N.E.) governs all trade lanes. They enforce the Galactic Overlord Decree (G.O.D.), which dictates that any trader failing to meet net-worth thresholds within specific time cycles will have their license revoked and their vessel reclaimed by the state." },
       { title: "D.A.Y. (Depreciating Astrological Yardstick)", icon: Hourglass, content: "The D.A.Y. system is a key tracking framework mandated by the Galactic Overlord Department (G.O.D.). By mapping orbital star alignments against the physical degradation of your ship, the G.O.D. enforces a relentless, depreciating tracking scale. It treats your very existence as a steadily shrinking corporate asset, creating an ominous countdown that squeeze-charges your trade license duration." },
@@ -4836,6 +4836,11 @@ export default function App() {
 Highly crunchy, with a delightful electric metallic tang, these chips are valued by mutants far more than organic food—as they are, in their own words, "Better than Peanuts!"
 
 Providing PC Chips directly to the mutants via the F.O.M.O. interface immediately quells their psychological and biological unrest, reducing the mutant unrest meter and preventing costly mutinies and strikes without needing complex banking ransom settlements.`
+      },
+      {
+        title: "MK Upgrades",
+        icon: HelpCircle,
+        content: "MK 1: first install, MK 11 Tapped up. MK 22 Double Tapped but settings tweaked too OBB (Oh Behave, Baby)"
       },
       { title: "Spacetime Folding Anomalies", icon: Rocket, content: "Folding 4D spacetime during travel is a highly volatile process. If one of the universe's dimensional corners fails to fold correctly, a fold alignment failure occurs, diverting the ship to a completely random venue. While any pre-shipped cargo continues on its logistics vector to its original planned destination, onboard items not shipped remain in the ship cargo and safely arrive with you at the random coordinate anomaly." },
       {
@@ -4897,7 +4902,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.13.1.3 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.13.1.4 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -5261,7 +5266,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                           <p className="text-gray-500 font-mono text-[10px] uppercase">v.13.1.3</p>
+                           <p className="text-gray-500 font-mono text-[10px] uppercase">v.13.1.4</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -5563,7 +5568,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                           <div className="space-y-4 text-lg md:text-xl font-bold text-gray-200 leading-snug">
                               <div className="flex items-start"><span className="text-cyan-500 mr-4 font-black">1.)</span> Take out another loan from I.B.A.N.K. Hub to continue trading.</div>
                               <div className="flex items-start"><span className="text-cyan-500 mr-4 font-black">2.)</span> Do some fabricating in the F.O.M.O deck.</div>
-                              <div className="flex items-start"><span className="text-cyan-500 mr-4 font-black">3.)</span> Buy some commodities Low and stock up on fuel (Space Spice) and cells (Hot Isotope Hummers) to mine asteroids.</div>
+                              <div className="flex items-start"><span className="text-cyan-500 mr-4 font-black">3.)</span> Buy some commodities Low and stock up on fuel (VSS-Spice Emulsion) to jump and cells (Hot Isotope Hummers) to mine asteroids along the way.</div>
                               <div className="flex items-start"><span className="text-cyan-500 mr-4 font-black">4.)</span> Buy a mining laser and protection for the ship from the upgrade deck.</div>
                           </div>
                           
@@ -6025,7 +6030,30 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                 {/* Upgrades Deck Retro LED Ticker */}
                 <div className="shrink-0 mb-6 led-ticker-container border-purple-500/50 shadow-[0_0_10px_rgba(168,85,247,0.3)]">
                     <div className="led-ticker-text text-purple-400">
-                        {upgradesTickerText}
+                        <span className="text-purple-400" style={{ textShadow: '0 0 4px rgba(168,85,247,0.6)' }}>DECK STATUS MATRIX // </span>
+                        <span className="text-gray-400">MINING LASER: </span>
+                        <span className="text-green-400" style={{ textShadow: '0 0 4px rgba(74,222,128,0.6)' }}>{laserLvl}</span>
+                        <span className="text-purple-500"> • </span>
+                        <span className="text-gray-400">SCANNER: </span>
+                        <span className="text-green-400" style={{ textShadow: '0 0 4px rgba(74,222,128,0.6)' }}>{scannerLvl}</span>
+                        <span className="text-purple-500"> • </span>
+                        <span className="text-gray-400">SHIELDS: </span>
+                        <span className="text-green-400" style={{ textShadow: '0 0 4px rgba(74,222,128,0.6)' }}>{shieldLvl}</span>
+                        <span className="text-purple-500"> • </span>
+                        <span className="text-gray-400">CANNONS: </span>
+                        <span className="text-green-400" style={{ textShadow: '0 0 4px rgba(74,222,128,0.6)' }}>{cannonLvl}</span>
+                        <span className="text-cyan-400" style={{ textShadow: '0 0 4px rgba(34,211,238,0.6)' }}> // INTEL TELEMETRY // </span>
+                        <span className="text-gray-400">CURRENT PRICE FREEZE: </span>
+                        <span className="text-amber-400" style={{ textShadow: '0 0 4px rgba(251,191,36,0.6)' }}>{frozenComm}</span>
+                        <span className="text-purple-500"> • </span>
+                        <span className="text-gray-400">PENDING PRICE FREEZE: </span>
+                        <span className="text-amber-400" style={{ textShadow: '0 0 4px rgba(251,191,36,0.6)' }}>{pendingFrozen}</span>
+                        <span className="text-purple-500"> • </span>
+                        <span className="text-gray-400">CURRENT RANGE BOOST: </span>
+                        <span className="text-amber-400" style={{ textShadow: '0 0 4px rgba(251,191,36,0.6)' }}>{boostedComm}</span>
+                        <span className="text-purple-500"> • </span>
+                        <span className="text-gray-400">PENDING RANGE BOOST: </span>
+                        <span className="text-amber-400" style={{ textShadow: '0 0 4px rgba(251,191,36,0.6)' }}>{pendingBoosted}</span>
                     </div>
                 </div>
 
@@ -6037,7 +6065,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                            <button onClick={()=>performRepair('full_hull')} className={`px-4 py-2 rounded-lg text-white text-xs font-bold transition-all ${state.shipHealth >= MAX_REPAIR_HEALTH ? 'bg-green-700/50 cursor-default' : 'bg-red-700 hover:bg-red-600 shadow-md border-b-4 border-red-900'}`}>{state.shipHealth >= MAX_REPAIR_HEALTH ? 'NOMINAL' : `Repair MAX (${formatCompactNumber(calculateFullRepairCost())})`}</button>
                         </div>
                         <div className="flex justify-between items-center bg-black/30 p-3 rounded-lg border border-white/5">
-                           <span className="text-gray-300">Laser Realignment ({state.laserHealth}%)</span>
+                           <span className="text-gray-300">Laser Repair, Tested and Realigned ({state.laserHealth}%)</span>
                            <button onClick={()=>performRepair('full_laser')} disabled={!hasLaser(state)} className={`px-4 py-2 rounded-lg text-white text-xs font-bold transition-all ${state.laserHealth >= 100 ? 'bg-green-700/50 cursor-default' : 'bg-red-700 hover:bg-red-600 shadow-md disabled:opacity-20 border-b-4 border-red-900'}`}>
                               {state.laserHealth >= 100 ? 'NOMINAL' : `Repair MAX (${formatCompactNumber(calculateFullLaserRepairCost())})`}
                           </button>
@@ -6109,7 +6137,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                         <button
                           onClick={() => {
                             if (!state.tutorialFlags['scanner_mk2']) {
-                              setModal({ type: 'tutorial_popup', data: { title: "Scanner MK II", text: "Fix a commodity's price for the next day. Use this power for 3 days straight and you'll get a warrant for your arrest.", feature: 'scanner_mk2', callback: () => setModal({ type: 'scanner_actions', data: { level: 2 } }) } });
+                              setModal({ type: 'tutorial_popup', data: { title: "Scanner MK 11", text: "Fix a commodity's price for the next day. Use this power for 3 days straight and you'll get a warrant for your arrest.", feature: 'scanner_mk2', callback: () => setModal({ type: 'scanner_actions', data: { level: 2 } }) } });
                             } else {
                               setModal({ type: 'scanner_actions', data: { level: 2 } });
                             }
@@ -6126,7 +6154,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                         <button
                           onClick={() => {
                             if (!state.tutorialFlags['scanner_mk3']) {
-                              setModal({ type: 'tutorial_popup', data: { title: "Scanner MK III", text: "Force a 10% increase in one product's price range per day. Use this power for 3 days straight and you'll get a warrant for your arrest.", feature: 'scanner_mk3', callback: () => setModal({ type: 'scanner_actions', data: { level: 3 } }) } });
+                              setModal({ type: 'tutorial_popup', data: { title: "Scanner MK 22 (OBB)", text: "Force a 10% increase in one product's price range per day. Use this power for 3 days straight and you'll get a warrant for your arrest.", feature: 'scanner_mk3', callback: () => setModal({ type: 'scanner_actions', data: { level: 3 } }) } });
                             } else {
                               setModal({ type: 'scanner_actions', data: { level: 3 } });
                             }
@@ -6235,7 +6263,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
       }
 
       if (modal.type === 'fomo') {
-          const availResources = [H2O_NAME, NUTRI_PASTE_NAME, "Medical Kits", "Allthemantium Ore", "Synthetic Cloth"];
+          const availResources = [H2O_NAME, NUTRI_PASTE_NAME, "Medi-Bio-Boo-Boo Packs", "Allthemantium Ore", "Synthetic Cloth"];
           return (
               <div className="p-3 md:p-4 flex h-full gap-4 md:gap-6 max-w-full overflow-hidden">
                    {/* Mutant PC Chips Donation Box (Subdue Unrest) */}
@@ -6316,7 +6344,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                             {/* Mutant Unrest HUD Block on the right */}
                             <div className="flex flex-col items-end gap-1.5 shrink-0">
                                 <div className="text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                                    SYSTEM LOG: FABRICATION MATRIX v.13.1.3 ACTIVE
+                                    SYSTEM LOG: FABRICATION MATRIX v.13.1.4 ACTIVE
                                 </div>
                                 <div className="bg-slate-950/90 border border-red-500/40 p-2.5 rounded-xl w-56 font-mono text-xs shadow-[0_0_15px_rgba(239,68,68,0.15)] flex flex-col gap-1 text-left">
                                     <div className="flex justify-between items-center text-red-400 font-bold tracking-wider">
@@ -6380,7 +6408,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                                     <div className="bg-black/40 p-3 rounded-xl border border-orange-500/10 space-y-1">
                                         <div className="flex justify-between text-xs"><span className="text-gray-500 uppercase font-bold">Input A:</span><span className="text-white font-bold">1x {H2O_NAME}</span></div>
                                         <div className="flex justify-between text-xs"><span className="text-gray-500 uppercase font-bold">Input B:</span><span className="text-white font-bold">2x {NUTRI_PASTE_NAME}</span></div>
-                                        <div className="flex justify-between text-xs"><span className="text-gray-500 uppercase font-bold">Input C:</span><span className="text-white font-bold">1x Medical Kits</span></div>
+                                        <div className="flex justify-between text-xs"><span className="text-gray-500 uppercase font-bold">Input C:</span><span className="text-white font-bold">1x Medi-Bio-Boo-Boo Packs</span></div>
                                         <div className="flex justify-between text-sm pt-2 border-t border-gray-900 mt-2"><span className="text-gray-500 uppercase font-bold">Process Fee:</span><PriceDisplay value={200} size="text-sm"/></div>
                                     </div>
                                 </div>
@@ -6390,7 +6418,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                                     <button onClick={()=>{
                                         const h2oAmt = state.cargo[H2O_NAME]?.quantity || 0;
                                         const pasteAmt = state.cargo[NUTRI_PASTE_NAME]?.quantity || 0;
-                                        const kitsAmt = state.cargo['Medical Kits']?.quantity || 0;
+                                        const kitsAmt = state.cargo['Medi-Bio-Boo-Boo Packs']?.quantity || 0;
                                         const cashMaxAmt = Math.floor(state.cash / 200);
                                         const maxFab = Math.max(0, Math.min(h2oAmt, Math.floor(pasteAmt/2), kitsAmt, cashMaxAmt));
                                         setFomoStimQty(maxFab.toString());
@@ -7289,7 +7317,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v.13.1.3</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v.13.1.4</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -7583,7 +7611,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                     <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.13.1.3</span>
+                     <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.13.1.4</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -8041,7 +8069,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.13.1.3</p>
+                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.13.1.4</p>
                </div>
            </div>
        )}
@@ -8382,7 +8410,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                            const baseState = newStateForTravel || state;
                            const ns = JSON.parse(JSON.stringify(baseState));
 
-                           // 1. Resolve spice fuel and hot isotopes required for the trip first!
+                           // 1. Resolve VSS-Spice Emulsion and hot isotopes required for the trip first!
                            if (missingFuel > 0 || missingCells > 0) {
                                const fuelPrice = COMMODITIES.find(c => c.name === FUEL_NAME)!.maxPrice;
                                const cellPrice = COMMODITIES.find(c => c.name === POWER_CELL_NAME)!.maxPrice;
@@ -8471,7 +8499,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                            const baseState = newStateForTravel || state;
                            const ns = JSON.parse(JSON.stringify(baseState));
 
-                           // 1. Resolve spice fuel and hot isotopes required for the trip first!
+                           // 1. Resolve VSS-Spice Emulsion and hot isotopes required for the trip first!
                            if (missingFuel > 0 || missingCells > 0) {
                                const fuelPrice = COMMODITIES.find(c => c.name === FUEL_NAME)!.maxPrice;
                                const cellPrice = COMMODITIES.find(c => c.name === POWER_CELL_NAME)!.maxPrice;
