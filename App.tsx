@@ -1648,7 +1648,7 @@ export default function App() {
           else if (feature === 'travel') { title = "C.A.T. Station"; text = "Chart and Travel. Check 'Risk' levels. High risk = Pirates/Hazards. Ensure you have Fuel, Cash if you want to insure your commodities in transit, and please take advantage of our \"Before you Jump\" offer of depositing 95% of your $tarBucks in the bank at 5% per day (only available if debt fee, those are the terms and they always apply).\n\nPro-Tip: Captain, fuel costs increase significantly with Phase advancement and heavy cargo loads (1 Fuel per 1000T)."; }
           else if (feature === 'shipping') { title = "Void-Ex Logistics"; text = "Take advantage of Corporate Contracts and fulfil them by shipping the goods within the term limit. Only shipped goods allowed, delivered within or before the term expires, will be accepted so long as they are the exact quantities requested. Use the Fulfil option to ensure you comply; no in-person or further correspondence is needed. \nFailure to meet these terms will result in a 3 day ban to the market associated with that request. \nWe offer high-paying rewards for those who comply. \n\nPro-Tip: Captain, if your bay is too small to hold a large load, you can always use the 'Private Shipping' to move goods to a warehouse at any venue; no one else needs to know. However, any goods left unmoved for 3 days will be sold to defray storage costs."; }
           else if (feature === 'comms') { title = "G.I.G.O. Panel"; text = "Review daily logs, market intel, and previous event reports. Garbage In, Garbage Out... usually."; }
-          else if (feature === 'fomo') { title = "F.O.M.O. Engineering Deck"; text = "Fabricate Output Management Operations. Craft valuable Z@onflex Weave Mesh and Stim-Packs from resources. Fabrication is limited to one batch per day per item type. Maximize your output!\n\nPro-Tip: Remember what happened to your Partner when he asked the Mutant Leader about the possibility of doing more Batches."; }
+          else if (feature === 'fomo') { title = "F.O.M.O. Engineering Deck"; text = "Fabricate Output Management Operations. Craft valuable Z@onflex Weave Mesh and Stim-Packs from resources. Fabrication is limited to one batch per day per item type. Maximize your output!\n\nDo not ask for extra Fabrication Batch if you want to carry on living"; }
           else if (feature === 'highscores') { title = "Galactic Legends Registry"; text = "Behold the titans of industry. These captains turned oxidation into empire."; }
           else if (feature === 'wiki') { title = "Sector Codex Explorer"; text = "Gain deeper insight into the lore, mechanics, and survival tactics of the StarBucks Sector. Knowledge is the most valuable cargo of all."; }
           setModal({ type: 'tutorial_popup', data: { title, text, feature, callback } });
@@ -4816,21 +4816,79 @@ export default function App() {
     ];
 
     const sections = [
-      { title: "The Rusty Redeemer", icon: Anchor, content: "The RR Firefox 22 'RustyRedeemer' is a decommissioned cargo frigate of the 60/40 class. It consists of 60% oxidation and 40% hope. Originally designed for short-range hauling, its isotope hummers have been modified to handle the stress of phase-shifting market dynamics." },
+      {
+        title: "Vessel Profile: The Rusty Redeemer",
+        icon: Anchor,
+        content: `Registry & Model: RR Firefox 22 "Rusty Redeemer"
+
+Hull Classification: Decommissioned Heavy-Duty Cargo Frigate (Informally designated as a "Scrap-Grade Spaceworthy Hull")
+
+Structural Composition: Officially certified as 60% structural oxidation (ferrous rust, salt-corrosion from forgotten wet-cargo runs, and thermal fatigue) and 40% stubborn, blind hope.
+
+Power & Propulsion System: Powered by heavily modified isotope hummers, which serve as the primary energy grid for the ship's lighting, defensive shields, mining laser, and plasma cannons. For long-distance travel, the ship utilizes a jump drive fueled exclusively by VSS-Spice Emulsion.
+
+Lore & Operational History
+Originally rolled off the assembly lines as a standard-issue short-range system hauler meant for safe, intra-sector supply runs, the Rusty Redeemer was supposed to have been scrapped decades ago. Instead, it fell into the hands of independent operators who treated structural integrity as a polite suggestion.
+
+The Oxidation Myth: While logs joke about the 60/40 ratio, the reality is that the ship's outer hull has been patched with scavenged plating from at least four different manufacturer classes. Walking the corridors often means listening to a symphony of groaning bulkheads, thermal expansion pings, and the constant hum of a life support system that relies as much on duct tape and prayer as it does on engineering.
+
+The Isotope Hummers: These core engines generate the vital power grid needed to keep the ship operational—running everything from internal lighting and structural shields to the heavy mining laser and plasma cannons used for self-defense. They are heavily over-clocked, burning hot and loud enough to alert half the sector.
+
+Jump Drive & Fuel Mechanics: While the hummers handle onboard grid power, jumping across sectors requires burning VSS-Spice Emulsion through the dedicated jump drive. Because of its volatile and addictive nature, carrying this fuel acts as a permanent beacon for The Spice Bandits and their leader, 'Double-Sniffer' Barnaby Barabas.
+
+Living Aboard: Every bulkhead has a story, usually involving a near-miss with a trade lane blockade or an emergency patch job done with whatever was left in the medical kit. It smells permanently of ozone, stale nutrient-paste, and—whenever the cargo hold is loaded with jump fuel—a faint, persistent hint of cinnamon and regret.`
+      },
+      {
+        title: "Cargo Hold Profile: The Z@onflex Weave-Mesh Bay",
+        icon: Box,
+        content: `Construction & Material: Fabricated from a specialized compounding of H2O, synthetic cloth, and raw Allthemantium Ore.
+
+Core Property: Features a responsive organic-mechanical elasticity, granting it the surprising ability to dynamically expand and contract to hug any cargo profile, locking it down as if wrapped in a protective second skin.
+
+Lore & Operational History
+Unlike the rigid, clanking bulkheads of standard-issue freighters, the cargo bay of the Rusty Redeemer is defined by its pulsing, adaptive lining. Originally salvaged from an experimental heavy-haul transport that met a mysterious end near the outer rim, the bay's inner hull is entirely sheathed in Z@onflex Weave Mesh.
+
+The Second-Skin Effect: The proprietary blend of molecular-bound H2O, resilient synthetic cloth, and dense Allthemantium Ore gives the mesh a pseudo-biological responsiveness. When a payload—whether it is a crate of heavy machinery or hazardous barrels of VSS-Spice Emulsion—is loaded into the bay, the mesh instantly contracts. It grips the cargo with tensile precision, eliminating shifting mass during high-g maneuvers and phase-shifting jumps.
+
+Allthemantium Resilience: While the mesh feels like heavy, flexible fabric to the touch, the woven Allthemantium ore provides structural reinforcement that resists punctures and tearing, even when dealing with jagged scrap or volatile container leaks.
+
+Maintenance & Quirks: Crew members working in the cargo hold quickly learn to respect the mesh's reactive nature. It constantly hums with a damp, pressurized chill due to its H2O-infused matrix, and it has an unsettling habit of "breathing" when the ship's jump drive charges. Despite its bizarre texture, it remains the only thing keeping the Rusty Redeemer's shifting payload from tearing the ancient hull apart from the inside.`
+      },
       { title: "The Starbucks Conglomerate", icon: Building2, content: "Underneath the glossy emerald corporate facade lies the ultimate hyper-capitalist machine. Operating under S.H.A.N.E. guidelines, the Conglomerate turns entire solar systems into drive-thru retail outlets. Their main mission is clear: absolute dominance of the space lanes, converting every planetary body into a standardized franchise." },
       { title: "The Spice Bandits", icon: Skull, content: "The Spice Bandits A rogue gang of Spice-dependent outlaws who terrorize the trade lanes. Led by the notorious 'Double-Sniffer' Barnaby (Blue Eyes) Barabas, they target cargo vessels carrying high-value commodities which they sell to buy VSS-Spice Emulsion. Installing sturdy kinetic cannons and defensive shields is the only proven method to deter their relentless boarding manoeuvres." },
       { title: "The Great Tea Wars", icon: Swords, content: "A devastating sector-wide conflict that lasted over 44 D.A.Y.S. and N.I.G.H.T.S. Fought between the elite Tea Cartels and the synthetic Tea Alliance over the rights to fertile agricultural belts on Nexus Prime. The war concluded with the historic 'I.N.D.I.A.N. Accord,' establishing the current trade of Spacetime Tea is strictly forbidden in all Star Systems. This is a reminder never to be found trading in Spacetime Tea." },
       { title: "S.H.A.N.E. Protocols", icon: Shield, content: "Sector Health, Allocation, & Network Enforcement (S.H.A.N.E.) governs all trade lanes. They enforce the Galactic Overlord Decree (G.O.D.), which dictates that any trader failing to meet net-worth thresholds within specific time cycles will have their license revoked and their vessel reclaimed by the state." },
       { title: "D.A.Y. (Depreciating Astrological Yardstick)", icon: Hourglass, content: "The D.A.Y. system is a key tracking framework mandated by the Galactic Overlord Department (G.O.D.). By mapping orbital star alignments against the physical degradation of your ship, the G.O.D. enforces a relentless, depreciating tracking scale. It treats your very existence as a steadily shrinking corporate asset, creating an ominous countdown that squeeze-charges your trade license duration." },
       { title: "Extraction Logic", icon: Zap, content: "Mining lasers (Upgrades Deck) allow for the harvesting of resources from asteroid belts during transit. Higher-tier lasers and 'Overload' toggles increase yield but drastically spike the risk of structural realignment failures or laser burnout. Yield is directly proportional to laser focal integrity." },
-      { title: "F.O.M.O. Engineering", icon: Factory, content: "Fabricate Output Management Operations allows captains to synthesize raw materials into high-value commodities. Z@onflex Weave Mesh is critical for cargo bay expansions, while Stim-Packs are in high demand by biological colonies throughout the sector. Don't miss out on using it each D.A.Y." },
+      {
+        title: "F.O.M.O. Engineering & Personnel Dynamics",
+        icon: Factory,
+        content: `Core Function (Fabricate Output Management Operations): Allows captains to synthesize raw materials into high-value commodities. Z@onflex Weave Mesh is critical for cargo bay expansions, while Stim-Packs are in high demand by biological colonies throughout the sector. Don't miss out on using it each D.A.Y.
+
+Operational Hazard & The Mutiny Meter: Every single fabrication batch processed through F.O.M.O. Engineering places heavy strain on the crew and the ship's ancient systems, directly increasing the Mutiny Meter. Pushing for extra batches out of pure Fear Of Missing Out will quickly drive your crew to the brink. (A stark reminder for the captain: pushing past safe limits like this is exactly how your former partner met his end).
+
+Managing Crew Dissatisfaction: If you need to bring the Mutiny Meter back down before things boil over, you can reduce it by donating PC chips to appease the overworked crew and fund their off-duty tech habits.
+
+Strikes & The I.B.A.N.K. Hub Ransom: When the Mutiny Meter hits 100% or more, the crew officially calls a strike, halting all operations. To resolve the strike, a ransom fee is automatically set up within the I.B.A.N.K. hub, requiring a specific payment of Starbucks and PC chips. This ransom fee scales upward in value as your phase status increases.
+
+Lockout Consequence: Until you pay this ransom fee in full through the I.B.A.N.K. hub, no further F.O.M.O. activities can be conducted, leaving your production entirely dead in the water while the crew arms the bulkheads.`
+      },
       { title: "Void-Ex Logistics", icon: Truck, content: "Shipping goods across the void via Private or Corporate contracts is the most reliable way to secure multi-million credit payouts. Beware of auto-seizure policies: goods left in third-party warehouses for more than 3 cycles are sold to defray storage costs." },
+      {
+        title: "Cartel Commodity Contracts",
+        icon: ClipboardList,
+        content: `Operational Mechanics: These high-value agreements are created by powerful interstellar cartels, demanding a specific quantity of a commodity to be shipped and delivered directly to a specified location's storage port.
+
+Contract Terms & Shipping: Unlike standard cargo transfers, fulfilling a Cartel Commodity Contract requires you to utilize the logistics terminal to ship the precise cargo volume to the target system's warehouse. Once the full quantity is registered at the target location's storage port, the contract can be fulfilled directly for a premium payout.
+
+The No-Trade & Travel Penalty: Failing to deliver the agreed-upon quantity within the designated timeframe constitutes a severe breach of trust with the cartels. To enforce discipline, a strict 3-day no-trade and no-travel ban is instantly slapped on the target star system where the failed contract was bound. During this 3-day lockout period, the system's market and storage terminals remain completely blacked out for your vessel.`
+      },
       { title: "Void-Sickness", icon: Info, content: "Hauling massive cargo loads across unmapped dark systems often induces Void-Sickness. Affected crew members report hearing the faint, chilling voices of ancient marketing executives whispering long-forgotten quarterly sales targets in their minds. It is recommended to administer high-potency Stim-Packs to any crew showing signs of auditory advertising hallucinations." },
       { title: "Temporal Phase Shifts", icon: Rocket, content: "Advancing through Phase 1, Phase 2, and Phase 3 is not just a commercial progression—it is a literal spatial-temporal shift. The S.H.A.N.E. network employs quantum algorithms that rewrite the physics of trade: spiking fuel costs, increasing pirate encounter frequencies, and creating highly volatile stock market dynamics." },
       { title: "Crew Mutiny & Unrest", icon: Skull, content: "Mutant crew members working on the F.O.M.O. Engineering Deck are prone to severe unrest under intensive fabrication shifts. Their mutiny status increases with every fabrication done by the team and rises as temporal phases advance. If unrest reaches 100%, they will initiate a hostile mutiny, locking control of the F.O.M.O. and Upgrades decks! Resolving a mutiny event with an appeasing payment decreases their unrest, while paying their ransom at an I.B.A.N.K. Hub fully pacifies them." },
       {
         title: "PC Chip Donations & Mutant Diet",
-        icon: HelpCircle,
+        icon: Cpu,
         content: `While humans and standard humanoids view PC Chips as crucial semiconductor boards for navigation and digital trading, the mutant crew members working in the hot, radioactive depths of the F.O.M.O. deck consider them a gourmet delicacy.
 
 Highly crunchy, with a delightful electric metallic tang, these chips are valued by mutants far more than organic food—as they are, in their own words, "Better than Peanuts!"
@@ -4838,9 +4896,56 @@ Highly crunchy, with a delightful electric metallic tang, these chips are valued
 Providing PC Chips directly to the mutants via the F.O.M.O. interface immediately quells their psychological and biological unrest, reducing the mutant unrest meter and preventing costly mutinies and strikes without needing complex banking ransom settlements.`
       },
       {
-        title: "MK Upgrades",
-        icon: HelpCircle,
-        content: "MK 1: first install, MK 11 Tapped up. MK 22 Double Tapped but settings tweaked too OBB (Oh Behave, Baby)"
+        title: "Hull Protection Arrays",
+        icon: Shield,
+        content: `Base Item: Deflector Shields MK 1
+
+Upgrade Path & Lore:
+
+MK 1 (First Install): Standard-issue surplus deflector emitter. Emits a pale blue hum and can absorb a modest amount of kinetic impact before blowing a fuse.
+
+MK 11 (Tapped Up): Overclocked capacitor banks. The shield frequency is erratic, occasionally shocking the outer hull plates, but it handles glancing blows from plasma cannons much better.
+
+MK 22 (Double Tapped - OBB): Oh Behave, Baby. The emitters are dangerously over-volted directly from the isotope hummers, causing the shields to shimmer with a violent, unstable purple hue. It warps local space just enough to deflect heavy ordnance, though the crew frequently smells ozone and burning wiring whenever it takes a hit.`
+      },
+      {
+        title: "Offensive Deterrent Systems",
+        icon: Swords,
+        content: `Base Item: Plasma Cannons MK 1
+
+Upgrade Path & Lore:
+
+MK 1 (First Install): Basic forward-firing plasma throwers. Reliable enough to melt through light debris, but painfully slow on the recharge cycle.
+
+MK 11 (Tapped Up): Widened magnetic cooling vents and custom injector nozzles. Rate of fire is noticeably punchier, though it tends to overheat if you hold the trigger too long against aggressive interceptors.
+
+MK 22 (Double Tapped - OBB): Oh Behave, Baby. Completely unrestricted fuel flow direct from auxiliary lines. It spits blinding, hyper-heated plasma bolts that tear through shields like wet paper. The kickback rattles the entire 60/40 frame, and the gunner usually needs a fresh pair of trousers after a full salvo.`
+      },
+      {
+        title: "Mining Laser Systems",
+        icon: Wrench,
+        content: `Base Item: Mining Laser MK 1
+
+Upgrade Path & Lore:
+
+MK 1 (First Install): Industrial-grade cutting beam designed for chipping standard asteroids without blowing up your extraction yield.
+
+MK 11 (Tapped Up): Tuned focusing crystals salvaged from an old survey drone. Cuts through dense mineral deposits at twice the speed, though the beam stutters if the isotope hummers surge.
+
+MK 22 (Double Tapped - OBB): Oh Behave, Baby. A merciless, high-intensity thermal beam that liquefies rock (and unfortunate pirate hull plating) on contact. It draws so much power from the ship's grid that the internal lighting dims whenever you pull the trigger, screaming through space with a glorious, teeth-rattling resonance.`
+      },
+      {
+        title: "Market Intelligence Scanners",
+        icon: Radar,
+        content: `Base Item: Market Scanner MK 1
+
+Upgrade Path & Lore:
+
+MK 1 (First Install): Standard public-band trade terminal receiver. Gives you basic price updates for local star systems when docked at a station.
+
+MK 11 (Tapped Up): Spliced receiver arrays that passively scoop up encrypted short-range carrier chatter while traveling through the void, letting you Freeze a commodity for the following D.A.Y.
+
+MK 22 (Double Tapped - OBB): Oh Behave, Baby. An illegally modified military-grade listening suite. It rips live phase-shifting market data right out of the ether in real-time, allowing you to expand any commodities' permanent price range. This is how all price inflation has worked since ancient 1-Shekel stores had a greedy thought that became manifest.`
       },
       { title: "Spacetime Folding Anomalies", icon: Rocket, content: "Folding 4D spacetime during travel is a highly volatile process. If one of the universe's dimensional corners fails to fold correctly, a fold alignment failure occurs, diverting the ship to a completely random venue. While any pre-shipped cargo continues on its logistics vector to its original planned destination, onboard items not shipped remain in the ship cargo and safely arrive with you at the random coordinate anomaly." },
       {
@@ -5343,7 +5448,18 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
               <div className="p-8 flex flex-col items-center justify-center h-full text-center max-w-3xl mx-auto space-y-6 animate-in fade-in zoom-in-95 duration-300">
                    <div className="bg-yellow-500 text-black px-4 py-1 font-bold text-sm rounded-full mb-2 uppercase">Neural Link Established</div>
                    <h2 className="text-3xl font-bold text-white tracking-tight">{modal.data.title}</h2>
-                   <p className="text-gray-300 text-lg leading-relaxed whitespace-pre-wrap">{modal.data.text}</p>
+                   {modal.data.feature === 'fomo' ? (
+                       <div className="space-y-4">
+                           <p className="text-gray-300 text-lg leading-relaxed whitespace-pre-wrap">
+                               Fabricate Output Management Operations. Craft valuable Z@onflex Weave Mesh and Stim-Packs from resources. Fabrication is limited to one batch per day per item type. Maximize your output!
+                           </p>
+                           <p className="text-red-500 font-bold animate-pulse text-lg uppercase tracking-wider block">
+                               Do not ask for extra Fabrication Batch if you want to carry on living
+                           </p>
+                       </div>
+                   ) : (
+                       <p className="text-gray-300 text-lg leading-relaxed whitespace-pre-wrap">{modal.data.text}</p>
+                   )}
                    {TUTORIAL_QUOTES[modal.data.feature] && (<div className={`p-4 bg-slate-800/50 rounded-xl italic text-sm ${TUTORIAL_QUOTES[modal.data.feature].color} border-l-4 ${TUTORIAL_QUOTES[modal.data.feature].color.replace('text-', 'border-')}`}>"{TUTORIAL_QUOTES[modal.data.feature].text}" <br/> - {TUTORIAL_QUOTES[modal.data.feature].author}</div>)}
                    <button onClick={()=>{ 
                        setState(prev => { 
