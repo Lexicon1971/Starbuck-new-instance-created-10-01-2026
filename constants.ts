@@ -217,9 +217,54 @@ export const SHOP_ITEMS: EquipmentItem[] = [
 
 // CUSTOM ORDERED BY ENHANCEMENT 154
 export const COMMODITIES: Commodity[] = [
-  { name: "Allthemantium Ore", icon: "metal-lump", unitWeight: 5.0, minPrice: 50, maxPrice: 2500, rarity: 0.8, description: "The backbone of interstellar construction as it contains all the heavy metals needed for construction. Also makes a great paperweight." },
-  { name: "Synthetic Cloth", icon: "🧵", unitWeight: 0.25, minPrice: 100, maxPrice: 1000, rarity: 0.6, description: "Woven from the finest recycled plastics extracted from space dolphins who love eating plastic straws. Now available in 'slightly less scratchy'." },
-  { name: H2O_NAME, icon: "💧", unitWeight: 1.0, minPrice: 5, maxPrice: 50, rarity: 0.1, description: "The elixir of life. Or, as the old-timers call it, 'water'." },
+  {
+    name: "Allthemantium Ore",
+    icon: "metal-lump",
+    unitWeight: 5.0,
+    minPrice: 50,
+    maxPrice: 2500,
+    rarity: 0.8,
+    description: `Commodity Data Entry: Allthemantium Ore
+Rarity: 80%
+
+Weight: 5T
+
+Value Range: $50 - $2,500
+
+Description: The ultimate industrial backbone of interstellar construction. Containing a hyper-dense, chaotic matrix of every heavy metal known to the galaxy, it is the fundamental building block for heavy freighters, station bulkheads, and the Z@onflex Weave Mesh linings used in the Rusty Redeemer's cargo bay. Warning: Due to its extreme density, a single standard chunk weighs a crushing 5 tons—meaning your cargo struts will groan in agony the moment it touches the deck. Also makes an exceptionally expensive, floor-cracking paperweight for the captain's desk.`
+  },
+  {
+    name: "Syntho-Zip-Cloth",
+    icon: "🧵",
+    unitWeight: 0.25,
+    minPrice: 100,
+    maxPrice: 1000,
+    rarity: 0.6,
+    description: `Commodity Data Entry: Syntho-Zip-Cloth
+Rarity: 60%
+
+Weight: 0.25T
+
+Value Range: $100 - $1,000
+
+Description: A high-tensile textile engineered from the finest recycled polymers extracted from the bellies of deep-space marine mammals who really, really loved eating space-station plastic straws. Essential for rigging cargo nets, pressure seals, and the flexible foundation of your Z@onflex Weave Mesh cargo bay. Now proudly manufactured in our new "slightly less scratchy" grade, meaning your crew will complain marginally less during bunk time.`
+  },
+  {
+    name: H2O_NAME,
+    icon: "💧",
+    unitWeight: 1.0,
+    minPrice: 5,
+    maxPrice: 50,
+    rarity: 0.1,
+    description: `Commodity Data Entry: H2O
+Rarity: 10%
+
+Weight: 1T
+
+Value Range: $5 - $55
+
+Description: The ultimate, irreplaceable elixir of life. Or, as the cynical old-timers in the outer rim docks call it, "water." Essential for keeping biological crew members from turning into space-dried jerky, quenching the thirst of overworked isotope hummers, and acting as the crucial chemical binding agent in everything from your Z@onflex Weave Mesh cargo bay to crafting high-demand Stim-Packs. It may be common, but try flying a sector without it and see how far your stubborn hope gets you.`
+  },
   { name: "Medi-Bio-Boo-Boo Packs", icon: "🩹", unitWeight: 0.01, minPrice: 400, maxPrice: 4000, rarity: 0.7, description: `Full Name: Medi-Bio-Boo-Boo Trauma & Hull-Burn Stabilization Kit
 
 Description: For when the hull holds together but you don't. Perfect for patching a leaky suit or a gaping flesh wound, whichever comes first. Contains enough synthetic skin-glue and over-the-counter painkillers to keep you functional until you reach the next port. Features our proprietary extra space-space-bandages guaranteed to stick to anything except the wound.
@@ -227,15 +272,150 @@ Description: For when the hull holds together but you don't. Perfect for patchin
 Application: Essential for field maintenance of biological crew members following combat damage, hull burns, structural depressurization, or accidental exposure to shipboard hazards.
 
 Interesting Fact: If combined with 2 Nutri-Paste and 1 H2O, it creates a high-potency Stim-Pack.` },
-  { name: NUTRI_PASTE_NAME, icon: "🍲", unitWeight: 0.5, minPrice: 10, maxPrice: 100, rarity: 0.1, description: "Tastes like chicken-flavored oatmeal. Or maybe oatmeal-flavored chicken. It's hard to tell." },
-  { name: MESH_NAME, icon: "🕸️", unitWeight: 2.5, minPrice: 5000, maxPrice: 25000, rarity: 0.9, description: "A marvel of engineering, this mesh can expand your cargo hold beyond its limits. Just don't ask how." },
-  { name: "Stim-Packs", icon: "💉", unitWeight: 0.25, minPrice: 5000, maxPrice: 15000, rarity: 0.85, description: "For when you absolutely, positively have to stay awake for three days straight." },
-  { name: "Spacetime Tea", icon: "☕", unitWeight: 0.1, minPrice: 7, maxPrice: 70000, rarity: 0.5, description: "A tea that allows you to experience all moments at once. Best not to drink it all at once." },
-  { name: "G.I.R.L (Lite) Matter", icon: "💥", unitWeight: 0.5, minPrice: 10000, maxPrice: 100000, rarity: 0.99, description: "Guaranteed Instability, Remarkably Lucrative. The 'Lite' version is only slightly less likely to explode." },
-  { name: "Dark Matter", icon: "🌌", unitWeight: 0.75, minPrice: 5000, maxPrice: 50000, rarity: 0.98, description: "It's dark, it matters, and it's very, very expensive. Don't ask what it does." },
-  { name: "Antimatter Rod", icon: "✨", unitWeight: 0.5, minPrice: 2500, maxPrice: 15000, rarity: 0.95, description: "A rod of pure energy, humming with the power of a thousand suns. Handle with care." },
-  { name: "PC Chips", icon: "💾", unitWeight: 0.01, minPrice: 20, maxPrice: 2000, rarity: 0.65, description: "The building blocks of the digital age. Now with 1% less planned obsolescence." },
-  { name: POWER_CELL_NAME, icon: "🔋", unitWeight: 0.1, minPrice: 50, maxPrice: 250, rarity: 0.5, description: "Guaranteed to power your devices for at least a few H.O.U.R.S. Or your money back (not really)." },
+  {
+    name: NUTRI_PASTE_NAME,
+    icon: "🍲",
+    unitWeight: 0.5,
+    minPrice: 10,
+    maxPrice: 100,
+    rarity: 0.1,
+    description: `Commodity Data Entry: Nutri-Paste
+Rarity: 10%
+
+Weight: 0.5T
+
+Value Range: $11 - $110
+
+Description: The culinary cornerstone of long-haul space travel. Tastes precisely like chicken-flavored oatmeal—or perhaps oatmeal-flavored chicken, depending entirely on which way the life-support filters are currently failing. It's hard to tell, but it keeps the crew's caloric intake just above the legal definition of starvation. Crucially, it doubles as both baseline rations and a key ingredient when combined with H2O to synthesize fresh Stim-Packs via F.O.M.O. Engineering.`
+  },
+  {
+    name: MESH_NAME,
+    icon: "🕸️",
+    unitWeight: 2.5,
+    minPrice: 5000,
+    maxPrice: 25000,
+    rarity: 0.9,
+    description: `Commodity Data Entry: Z@onflex Weave Mesh
+Rarity: 90%
+
+Weight: 2.5T
+
+Value Range: $5,000 - $25,000
+
+Description: A true marvel of modern space-faring engineering. Compounded from a responsive matrix of H2O, Syntho-Zip-Cloth, and dense Allthemantium Ore, this flexible fabric features a pseudo-biological second-skin elasticity. It can physically expand and contract to hug any cargo profile, locking down volatile payloads during phase-shifting jumps and safely stretching the boundaries of your cargo hold beyond its structural limits. Just don't ask how it breathes when the jump drive charges—some mysteries are better left sealed in the dark.`
+  },
+  {
+    name: "Stim-Packs",
+    icon: "💉",
+    unitWeight: 0.25,
+    minPrice: 5000,
+    maxPrice: 15000,
+    rarity: 0.85,
+    description: `Commodity Data Entry: Stim-Packs
+Rarity: 85%
+
+Weight: 0.25T
+
+Value Range: $5,000 - $15,000
+
+Description: The ultimate pharmaceutical insurance policy for the desperate trader. For when you absolutely, positively have to stay awake for three days straight while dodging Spice Bandits and managing an overheating isotope reactor. Packed with enough high-velocity adrenaline, synthetic skin-glue, and legal-gray-area stimulants to keep your heart hammering in your chest, they are in massive demand by biological colonies throughout the sector. Crafted right in your ship using a Medi-Bio-Boo-Boo Pack,2 Nutri-Paste, H2O, and a whole lot of reckless ambition via F.O.M.O. Engineering.`
+  },
+  {
+    name: "Spacetime Tea",
+    icon: "☕",
+    unitWeight: 0.1,
+    minPrice: 7,
+    maxPrice: 70000,
+    rarity: 0.5,
+    description: `Commodity Data Entry: Spacetime Tea
+Rarity: 50%
+
+Weight: 0.1T
+
+Value Range: $7 - $70,000
+
+Description: A wildly volatile, multi-dimensional brew that allows the drinker to experience all moments of their life simultaneously. You'll remember what you ate for breakfast on your eighth birthday while tasting tomorrow's disaster right now. Best not to drink the whole cup at once unless you want your consciousness scattered across three distinct quadrants of the galaxy. Highly prized by temporal scholars, stressed-out traders, and anyone looking to casually bypass a warp-drive delay.`
+  },
+  {
+    name: "G.I.R.L (Lite) Matter",
+    icon: "💥",
+    unitWeight: 0.5,
+    minPrice: 10000,
+    maxPrice: 100000,
+    rarity: 0.99,
+    description: `Commodity Data Entry: G.I.R.L. (Lite) Matter
+Rarity: 99%
+
+Weight: 0.5T
+
+Value Range: $10,000 - $100,000
+
+Description: Guaranteed Instability, Remarkably Lucrative. A profoundly illegal, sub-atomic cocktail that defies standard physics. The "Lite" version means it is only slightly less likely to spontaneously detonate and turn your cargo bay into a glowing tear in the fabric of space-time. Highly sought after by black-market research syndicates and reckless speculators willing to risk total molecular disintegration for a jaw-dropping payout at the terminal. Handle with extreme, prayerful caution.`
+  },
+  {
+    name: "Dark Matter",
+    icon: "🌌",
+    unitWeight: 0.75,
+    minPrice: 5000,
+    maxPrice: 50000,
+    rarity: 0.98,
+    description: `Commodity Data Entry: Dark Matter
+Rarity: 98%
+
+Weight: 0.75T
+
+Value Range: $5,000 - $50,000
+
+Description: It's dark, it matters, and it is astronomical levels of expensive. A swirling, light-devouring anomaly contained within heavily shielded magnetic isolation flasks. What does it actually do? Don't ask, don't look directly at it without polarized visors, and definitely don't tap on the glass. Rumored to power jump drives, bend spacetime, or at the very least, make your cargo manifest look intensely intimidating to customs inspectors.`
+  },
+  {
+    name: "Antimatter Rod",
+    icon: "✨",
+    unitWeight: 0.5,
+    minPrice: 2500,
+    maxPrice: 15000,
+    rarity: 0.95,
+    description: `Commodity Data Entry: Antimatter Rod
+Rarity: 95%
+
+Weight: 0.5T
+
+Value Range: $2,500 - $15,000
+
+Description: A tightly contained cylinder of pure, volatile destruction, humming with the terrifying potential of a thousand suns. Encased in cutting-edge magnetic containment fields that you just have to trust won't flicker when you hit a patch of space turbulence. Handle with absolute, sweat-dripping care—drop it on the deck plates, and your entire ship won't even have time to realize it's gone. Essential fuel source for high-end propulsion and heavy industrial systems across the outer rim.`
+  },
+  {
+    name: "PC Chips",
+    icon: "💾",
+    unitWeight: 0.01,
+    minPrice: 20,
+    maxPrice: 2000,
+    rarity: 0.65,
+    description: `Commodity Data Entry: PC Chips
+Rarity: 65%
+
+Weight: 0.01T
+
+Value Range: $20 - $2,000
+
+Description: The microscopic silicon heart of the digital universe, powering everything from your ship's navigation computer to the coffee machine's error logs. Precision-etched and meticulously packaged, this batch comes with our patented guarantee: now engineered with precisely 1% less planned obsolescence, meaning they might actually survive two stellar jumps before demanding a firmware update. Essential for high-tech manufacturing, repairing fried avionics, or keeping your onboard terminal from blue-screening mid-docking sequence.`
+  },
+  {
+    name: POWER_CELL_NAME,
+    icon: "🔋",
+    unitWeight: 0.1,
+    minPrice: 50,
+    maxPrice: 250,
+    rarity: 0.5,
+    description: `Commodity Data Entry: Hot Isotope Hummers
+Rarity: 50%
+
+Weight: 0.1T
+
+Value Range: $50 - $250
+
+Description: A vibrating, heavy-duty nuclear power cell that sings a low, radioactive lullaby while it works. Guaranteed to keep your critical ship devices running for at least a few H.O.U.R.S. (High-Output Utility Radioisotope Systems). Or your money back—which is impossible, since our corporate headquarters was vaporized in a sector-wide regulatory dispute. Essential for fueling everything from your overworked life support to the tea kettle when you need to brew up some Spacetime Tea.`
+  },
   { name: FUEL_NAME, icon: "⛽", unitWeight: 0.20, minPrice: 10, maxPrice: 150, rarity: 0.2, description: `Full Name: Volatile Singularity Slipstream Spice Emulsion
 
 Classification: High-Energy Propellant / Jump-Stabilizer

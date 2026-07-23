@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v.13.1.4
+ * VERSION: v.13.1.5
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -750,6 +750,38 @@ const StatusDial = ({ value, max, icon: Icon, color, label, isPercent }: { value
   );
 };
 
+// --- BLOCK 3.5: EXPANDABLE TEXT COMPONENT ----------------------------------
+const ExpandableText = ({ text, className = "text-gray-400 text-xs font-mono leading-relaxed" }: { text: string; className?: string }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const lines = text.split('\n');
+  const needsExpansion = lines.length > 5;
+
+  if (!needsExpansion) {
+    return <p className={className}>{text}</p>;
+  }
+
+  const displayedText = isExpanded ? text : lines.slice(0, 5).join('\n');
+
+  return (
+    <div className="space-y-2">
+      <p className={className} style={{ whiteSpace: 'pre-wrap' }}>
+        {displayedText}
+        {!isExpanded && <span className="text-orange-500 font-bold ml-1">...</span>}
+      </p>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          SFX.play('click');
+          setIsExpanded(!isExpanded);
+        }}
+        className="text-[10px] bg-orange-950/40 hover:bg-orange-900/50 border border-orange-800/40 text-orange-300 px-2 py-0.5 rounded font-black tracking-wider uppercase transition-colors"
+      >
+        {isExpanded ? '▲ Contract' : '▼ Expand'}
+      </button>
+    </div>
+  );
+};
+
 // --- BLOCK 4: MAIN APP COMPONENT & ENGINE ------------------------------------
 // This is the main component that contains the entire game logic and UI.
 
@@ -1166,7 +1198,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v.13.1.4 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v.13.1.5 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -1557,7 +1589,7 @@ export default function App() {
     if (modal.type === 'fomo' && state) {
       const h2oAmt = state.cargo[H2O_NAME]?.quantity || 0;
       const oreAmt = state.cargo['Allthemantium Ore']?.quantity || 0;
-      const clothAmt = state.cargo['Synthetic Cloth']?.quantity || 0;
+      const clothAmt = state.cargo['Syntho-Zip-Cloth']?.quantity || 0;
       const cashMaxAmtMesh = Math.floor(state.cash / 2000);
       const maxMesh = Math.max(0, Math.min(h2oAmt, oreAmt, clothAmt, cashMaxAmtMesh));
       setFomoQty(maxMesh.toString());
@@ -2895,7 +2927,7 @@ export default function App() {
         // Fabrication score (lower cost of raw materials)
         const h2oPrice = market[H2O_NAME]?.price || Infinity;
         const orePrice = market['Allthemantium Ore']?.price || Infinity;
-        const clothPrice = market['Synthetic Cloth']?.price || Infinity;
+        const clothPrice = market['Syntho-Zip-Cloth']?.price || Infinity;
         score -= (h2oPrice + orePrice + clothPrice);
 
         // Buy score (lower prices on high-value goods)
@@ -4332,7 +4364,7 @@ export default function App() {
     const clothNeeded = q;
     const h2o = state.cargo[H2O_NAME]?.quantity || 0;
     const ore = state.cargo['Allthemantium Ore']?.quantity || 0;
-    const cloth = state.cargo['Synthetic Cloth']?.quantity || 0;
+    const cloth = state.cargo['Syntho-Zip-Cloth']?.quantity || 0;
 
     if (state.cash < totalCost) return setModal({type:'message', data: "Insufficient funds."});
     if (h2o < h2oNeeded || ore < oreNeeded || cloth < clothNeeded) return setModal({type:'message', data: "Insufficient resources."});
@@ -4342,8 +4374,8 @@ export default function App() {
     if (newCargo[H2O_NAME].quantity <= 0) delete newCargo[H2O_NAME];
     newCargo['Allthemantium Ore'].quantity -= oreNeeded;
     if (newCargo['Allthemantium Ore'].quantity <= 0) delete newCargo['Allthemantium Ore'];
-    newCargo['Synthetic Cloth'].quantity -= clothNeeded;
-    if (newCargo['Synthetic Cloth'].quantity <= 0) delete newCargo['Synthetic Cloth'];
+    newCargo['Syntho-Zip-Cloth'].quantity -= clothNeeded;
+    if (newCargo['Syntho-Zip-Cloth'].quantity <= 0) delete newCargo['Syntho-Zip-Cloth'];
 
     const cData = COMMODITIES.find(c => c.name === MESH_NAME)!;
     const cur = newCargo[MESH_NAME] || { quantity: 0, averageCost: 0 };
@@ -4378,7 +4410,7 @@ export default function App() {
       };
     });
 
-    log(`FABRICATION: Used ${h2oNeeded} ${H2O_NAME}, ${oreNeeded} Allthemantium Ore, and ${clothNeeded} Synthetic Cloth to produce ${q} units of ${MESH_NAME}. (Crew Unrest: ${nextUnrest}%)`, 'mining');
+    log(`FABRICATION: Used ${h2oNeeded} ${H2O_NAME}, ${oreNeeded} Allthemantium Ore, and ${clothNeeded} Syntho-Zip-Cloth to produce ${q} units of ${MESH_NAME}. (Crew Unrest: ${nextUnrest}%)`, 'mining');
     setFomoQty('');
     SFX.play('success');
 
@@ -4782,7 +4814,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.13.1.4</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.13.1.5</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -4841,14 +4873,14 @@ Living Aboard: Every bulkhead has a story, usually involving a near-miss with a 
       {
         title: "Cargo Hold Profile: The Z@onflex Weave-Mesh Bay",
         icon: Box,
-        content: `Construction & Material: Fabricated from a specialized compounding of H2O, synthetic cloth, and raw Allthemantium Ore.
+        content: `Construction & Material: Fabricated from a specialized compounding of H2O, Syntho-Zip-Cloth, and raw Allthemantium Ore.
 
 Core Property: Features a responsive organic-mechanical elasticity, granting it the surprising ability to dynamically expand and contract to hug any cargo profile, locking it down as if wrapped in a protective second skin.
 
 Lore & Operational History
 Unlike the rigid, clanking bulkheads of standard-issue freighters, the cargo bay of the Rusty Redeemer is defined by its pulsing, adaptive lining. Originally salvaged from an experimental heavy-haul transport that met a mysterious end near the outer rim, the bay's inner hull is entirely sheathed in Z@onflex Weave Mesh.
 
-The Second-Skin Effect: The proprietary blend of molecular-bound H2O, resilient synthetic cloth, and dense Allthemantium Ore gives the mesh a pseudo-biological responsiveness. When a payload—whether it is a crate of heavy machinery or hazardous barrels of VSS-Spice Emulsion—is loaded into the bay, the mesh instantly contracts. It grips the cargo with tensile precision, eliminating shifting mass during high-g maneuvers and phase-shifting jumps.
+The Second-Skin Effect: The proprietary blend of molecular-bound H2O, resilient Syntho-Zip-Cloth, and dense Allthemantium Ore gives the mesh a pseudo-biological responsiveness. When a payload—whether it is a crate of heavy machinery or hazardous barrels of VSS-Spice Emulsion—is loaded into the bay, the mesh instantly contracts. It grips the cargo with tensile precision, eliminating shifting mass during high-g maneuvers and phase-shifting jumps.
 
 Allthemantium Resilience: While the mesh feels like heavy, flexible fabric to the touch, the woven Allthemantium ore provides structural reinforcement that resists punctures and tearing, even when dealing with jagged scrap or volatile container leaks.
 
@@ -5007,7 +5039,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.13.1.4 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.13.1.5 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -5137,7 +5169,11 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                             </div>
                           );
                       })()}
-                      <p className="text-gray-400 text-xs font-mono leading-relaxed italic">"{c.description || 'No direct telemetry available.'}"</p>
+                      {c.description ? (
+                        <ExpandableText text={c.description} className="text-gray-400 text-xs font-mono leading-relaxed italic" />
+                      ) : (
+                        <p className="text-gray-400 text-xs font-mono leading-relaxed italic">"No direct telemetry available."</p>
+                      )}
                     </div>
                   </div>
                 );
@@ -5371,7 +5407,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                           <p className="text-gray-500 font-mono text-[10px] uppercase">v.13.1.4</p>
+                           <p className="text-gray-500 font-mono text-[10px] uppercase">v.13.1.5</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -6379,7 +6415,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
       }
 
       if (modal.type === 'fomo') {
-          const availResources = [H2O_NAME, NUTRI_PASTE_NAME, "Medi-Bio-Boo-Boo Packs", "Allthemantium Ore", "Synthetic Cloth"];
+          const availResources = [H2O_NAME, NUTRI_PASTE_NAME, "Medi-Bio-Boo-Boo Packs", "Allthemantium Ore", "Syntho-Zip-Cloth"];
           return (
               <div className="p-3 md:p-4 flex h-full gap-4 md:gap-6 max-w-full overflow-hidden">
                    {/* Mutant PC Chips Donation Box (Subdue Unrest) */}
@@ -6460,7 +6496,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                             {/* Mutant Unrest HUD Block on the right */}
                             <div className="flex flex-col items-end gap-1.5 shrink-0">
                                 <div className="text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                                    SYSTEM LOG: FABRICATION MATRIX v.13.1.4 ACTIVE
+                                    SYSTEM LOG: FABRICATION MATRIX v.13.1.5 ACTIVE
                                 </div>
                                 <div className="bg-slate-950/90 border border-red-500/40 p-2.5 rounded-xl w-56 font-mono text-xs shadow-[0_0_15px_rgba(239,68,68,0.15)] flex flex-col gap-1 text-left">
                                     <div className="flex justify-between items-center text-red-400 font-bold tracking-wider">
@@ -6498,7 +6534,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                                     <div className="bg-black/40 p-3 rounded-xl border border-orange-500/10 space-y-1">
                                         <div className="flex justify-between text-xs"><span className="text-gray-500 uppercase font-bold">Input A:</span><span className="text-white font-bold">1x {H2O_NAME}</span></div>
                                         <div className="flex justify-between text-xs"><span className="text-gray-500 uppercase font-bold">Input B:</span><span className="text-white font-bold">1x Allthemantium Ore</span></div>
-                                        <div className="flex justify-between text-xs"><span className="text-gray-500 uppercase font-bold">Input C:</span><span className="text-white font-bold">1x Synthetic Cloth</span></div>
+                                        <div className="flex justify-between text-xs"><span className="text-gray-500 uppercase font-bold">Input C:</span><span className="text-white font-bold">1x Syntho-Zip-Cloth</span></div>
                                         <div className="flex justify-between text-sm pt-2 border-t border-gray-900 mt-2"><span className="text-gray-500 uppercase font-bold">Power Charge:</span><PriceDisplay value={2000} size="text-sm"/></div>
                                     </div>
                                 </div>
@@ -6508,7 +6544,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                                     <button onClick={()=>{
                                         const h2oAmt = state.cargo[H2O_NAME]?.quantity || 0;
                                         const oreAmt = state.cargo['Allthemantium Ore']?.quantity || 0;
-                                        const clothAmt = state.cargo['Synthetic Cloth']?.quantity || 0;
+                                        const clothAmt = state.cargo['Syntho-Zip-Cloth']?.quantity || 0;
                                         const cashMaxAmt = Math.floor(state.cash / 2000);
                                         const maxFab = Math.max(0, Math.min(h2oAmt, oreAmt, clothAmt, cashMaxAmt));
                                         setFomoQty(maxFab.toString());
@@ -7433,7 +7469,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v.13.1.4</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v.13.1.5</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -7727,7 +7763,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                     <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.13.1.4</span>
+                     <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.13.1.5</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -8185,7 +8221,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.13.1.4</p>
+                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.13.1.5</p>
                </div>
            </div>
        )}
