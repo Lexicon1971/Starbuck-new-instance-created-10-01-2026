@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v.13.1.6
+ * VERSION: v.13.1.7
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -1198,7 +1198,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v.13.1.6 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v.13.1.7 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -4814,7 +4814,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.13.1.6</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.13.1.7</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -5002,16 +5002,116 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
     ];
 
     const venueDetails = [
-      { name: "Deep Space 9 1/2", desc: "Deep Space 9 1/2 A cozy waystation on the edge of civilized space. Halfway to everywhere, but mostly serves mediocre synthetic Spacetime tea." },
-      { name: "Trantor Promenade", desc: "The sprawling economic heart of the core worlds. High density, fast-paced trading, and aggressive tax collectors." },
-      { name: "Serenity Valley", desc: "A quiet, rust-belt agricultural colony. Great prices on H2O and Nutri-Paste, but local outlaws frequently target high-value cargo." },
-      { name: "Corellia Shipyards", desc: "The ultimate industrial hub of the sector. Heavily guarded by planetary defense forces, specializing in heavy metal refinement." },
-      { name: "High Charity", desc: "A massive, levitating space cathedral. Home to spiritual relic traders and highly volatile crystal speculations." },
-      { name: "Giedi Plaza", desc: "A dark, smog-choked corporate syndicate. High risk, high reward, with zero oversight on high-volume mining transactions." },
-      { name: "New Babylon", desc: "A luxurious botanical garden station. Frequently hosts diplomatic summits, leading to extreme fluctuations in luxury goods." },
-      { name: "Acheron LV-426", desc: "A dangerous, wind-swept mining outpost on a hostile world. High risk of natural disasters and pirate ambushes, but rich in Dark Matter." },
-      { name: "Cantina Mos Eisley", desc: "A wretched hive of scum and villainy. Perfect for off-the-books transactions, illegal stim smuggling, and high-interest Hutt loans." },
-      { name: "Centauri Prime", desc: "An ancient, aristocratic cultural capital. High demand for luxury Spacetime Teas and advanced PC electronics." }
+      { name: "Deep Space 9 1/2", desc: `Venue Data Entry: Deep Space 9 1/2
+•	Designation: Deep Space 9 1/2 ("The Halfway House")
+•	Location Coordinates: Outer Rim Sector 4-B (Just past the last reliable beacon, right before the legal system stops caring)
+•	Official Motto: "Halfway to everywhere, but mostly serves mediocre synthetic Spacetime tea."
+Station Lore & Atmosphere
+Constructed out of nine huge bolted-together ore haulers and a surplus military communications hub, Deep Space 9 1/2 is the ultimate dive bar of the cosmos. It was originally established by an overly optimistic bureaucrat who thought a pit stop between the inner core systems and the lawless outer rim would be a lucrative venture. Instead, it became a legendary haven for smugglers, rogue traders, and weary haulers looking to burn off some steam.
+The station's artificial gravity hums in a lazy 0.8G, which gives everyone a slight, permanent bounce in their step and keeps the poker tables perpetually tilted. The air is a thick, recycled haze of ozone, cheap lubricant, and the distinct burnt-toast aroma of failing life-support scrubbers.
+Key Establishments & Local Flavor
+•	The Half-Cup Lounge: Run by an exhausted android named Brenda whose humor settings were locked to "sarcastic" centuries ago. This is where you go to buy a cup of synthetic Spacetime Tea that might let you remember what you did last Tuesday, while simultaneously giving you a mild temporal migraine.
+•	Black-Market Bay 4: Officially designated as "Maintenance Access," this is where independent captains slide a few credits across a greasy desk to fence illegal shipments of G.I.R.L. (Lite) Matter or score a fresh roll of Z@onflex Weave Mesh.
+•	The Bulletin Board: A flickering digital wall covered in desperate contracts, bounty notices, and frantic requests for missing Hot Isotope Hummers. If you need crew or cargo, this is where you start—just don't ask too many questions about why the previous tenant left in a hurry.` },
+      { name: "Trantor Promenade", desc: `Venue Data Entry: Trantor Promenade
+•	Designation: Trantor Promenade ("The Golden Mile")
+•	Location Coordinates: Core Worlds Sector 01 (The gleaming administrative epicenter of the galaxy)
+•	Official Motto: "High density, fast-paced trading, and aggressive tax collectors."
+•	Station Lore & Atmosphere
+•	If Deep Space 9 1/2 is where deals are made in the shadows over lukewarm tea, the Trantor Promenade is where multi-trillion-credit conglomerates legally rewrite the rules of reality before breakfast. Built into the interior ring of an impossibly massive urbanized world-city, the Promenade is a glittering, endless canyon of chrome, towering stock tickers, and holographic advertisements that can induce seizures from three blocks away.
+•	The air here is filtered to absolute clinical perfection, smelling faintly of expensive cologne and ozone-chilled server farms. Gravity is locked at a comfortable, crisp 1.0G, and the pace of life is manic. Every square inch of foot-traffic is monitored by thousands of automated judicial drones ensuring that no unauthorized cargo changes hands without a four-part digital permit.
+•	Key Establishments & Local Flavor
+•	The Bureau of Revenue Enforcement: The undisputed architectural and spiritual apex of the Promenade. This imposing obsidian monolith houses the galaxy's most relentless tax collectors, whose biometric audit-scanners can detect an unlisted shipment of G.I.R.L. (Lite) Matter from three star systems away.
+•	High-Yield Exchange Floor: A deafening, high-speed trading pit where independent haulers and megacorporation reps battle over futures on PC Chips, Antimatter Rods, and Z@onflex Weave Mesh. Fortunes are made and wiped out in the time it takes an isotope reactor to cycle.
+•	The Gilded Teacup: A hyper-exclusive lounge catering exclusively to elite traders who prefer their Spacetime Tea served in crystal decanters by polite, bioluminescent attendants—far away from the grease and noise of the outer rim.` },
+      { name: "Serenity Valley", desc: `Venue Data Entry: Serenity Valley
+•	Designation: Serenity Valley ("The Golden Basin")
+•	Location Coordinates: Outer Rim Agri-Cluster Delta
+•	Official Motto: "Great prices on H2O and Nutri-Paste... if you can keep it."
+•	Station Lore & Atmosphere
+•	Serenity Valley is a stark, beautiful contrast to the industrial grime of typical colonies.It is a vast, peaceful agricultural basin nestled between a jagged mountain range and a sheer cliff face. The colony itself consists of two main clusters: a raised, industrial-style processing platform built directly into the cliff face (left) and a collection of low-slung, functional warehouses and hab-units (right).
+•	The entire valley is bathed in the warm, golden light of a dramatic sunset, casting long, soft shadows and creating an ethereal, dusty haze. Miles of golden, ripe crops stretch across the valley floor, irrigated by a central winding stream—the source of the colony's famous H2O. While the scene appears tranquil, it is a frontier world. The industrial structures are heavily fortified, and the air is thick with the smell of dry earth, mineral dust, and the humid promise of the distant crops.
+•	Key Establishments & Local Flavor
+•	The Great Filter: The massive central water-recycling and purification plant, integrated into the cliff-side industrial platform. This is the most heavily fortified location, as control of the water supply—seen originating from the winding stream—means control of the entire valley.
+•	The Paste Pits: Miles of cavernous processing bays where the algae and fungus crops are turned into raw, flavorless Nutri-Paste. While not directly visible, their output is stored in the warehouse cluster on the right. Independent haulers can fill their holds here for pennies on the dollar.
+•	The Scrapyard Saloon: A ramshackle, neon-lit structure built from salvaged ship parts, cleverly tucked into the base of the industrial platform (far left, barely visible). This is where most of the trouble happens. Local outlaws and freelance bounty hunters pretend to drink synthetic beer while openly scouting new arrivals. If you're hauling anything more valuable than basic agricultural supplies—like PC Chips or an Antimatter Rod—this is where you become a target. Don't linger at the bar after last call.` },
+      { name: "Corellia Shipyards", desc: `Venue Data Entry: Corellia Shipyards
+•	Designation: Corellia Shipyards ("The Iron Forge of the Core")
+•	Location Coordinates: Core Worlds Sector 05 (Orbiting the industrial heartland)
+•	Official Motto: "The ultimate industrial hub of the sector. Heavily guarded, strictly regulated, and built to last."
+•	Station Lore & Atmosphere
+•	A monument to heavy engineering and imperial-scale production, the Corellia Shipyards stretch across vast platforms suspended above an endless, spired planetary cityscape. As captured in the visual logs, massive overhead gantry cranes, towering structural scaffolding, and interlocking transit bridges dominate the landscape.
+•	The atmosphere is perpetually drenched in the warm, amber glare of a low-hanging sun and the incandescent sparks of automated arc-welders. The air vibrates with the bone-deep hum of heavy metal refinement, hydraulic presses, and mass-driver assembly lines. Security is absolute: automated defense batteries and elite planetary defense patrols monitor every inch of the catwalks, ensuring that unauthorized vessels or black-market contraband never cross the threshold.
+•	Key Establishments & Local Flavor
+•	Gantry Bay 9 (The Heavy Refinement Rig): A gargantuan open-air slipway where colossal freight hulls and capital-class starships are assembled from raw, molten ore. This is the beating economic heart of the facility, specializing in the mass-production and purification of heavy metals used across the galaxy.
+•	Defense Command Outpost: A heavily armored control tower perched over the primary access spans. Manned by rigid planetary security forces, this is where commercial flight permits, cargo manifests, and customs clearances are scrutinized with zero tolerance for error.
+•	The Splicer’s Walkway: An elevated, high-traffic pedestrian span connecting the primary industrial piers. While heavily patrolled, it remains a bustling transit artery where corporate executives, shift engineers, and independent haulers cross paths against a breathtaking backdrop of towering city-spires and descending starships.` },
+      { name: "High Charity", desc: `Venue Data Entry: High Charity
+•	Designation: High Charity ("The Sanctum of Spire and Stars")
+•	Location Coordinates: Deep Core Null-Sector (Suspended in permanent, majestic orbit amid glowing cosmic nebulas)
+•	Official Motto: "A massive, levitating space cathedral. Home to spiritual relic traders and highly volatile crystal speculations."
+•	Station Lore & Atmosphere
+•	High Charity is an awe-inspiring architectural masterpiece, functioning as both a sacred sanctuary and a grand interstellar trading hub. As revealed in the visual logs, the station is a staggering leviathan of soaring Gothic spires, vaulted archways, and luminous gold-trimmed masonry that floats freely in the void.
+•	Gazing out through its titanic open-air arches reveals a breathtaking backdrop of swirling turquoise nebulas, distant glowing planets, and star-studded expanses. The interior halls are filled with a hushed, reverent stillness, broken only by the echo of footsteps across polished obsidian floors and the soft, humming resonance of rare energy crystals traded in the shadows of the great pillars.
+•	Key Establishments & Local Flavor
+•	The Cathedral Nave: The monumental central hall where spiritual relic traders gather to hawk ancient artifacts, sacred texts, and mysterious cosmic relics of forgotten civilizations under the watchful gaze of towering golden buttresses.
+•	The Crystal Exchange: Situated within the lower alcoves of the main cathedral body, this volatile market is where reckless brokers trade in unstable, energy-radiating crystals that can either make a trader a fortune or violently shatter containment fields.
+•	The Outer Balcony: A grand, pillared promenade overlooking the abyss of space. It is a favored meeting place for robed speculators and independent haulers looking to discuss high-risk contracts while taking in the magnificent view of the surrounding planetary rings and glowing gas clouds.` },
+      { name: "Giedi Plaza", desc: `Venue Data Entry: Giedi Plaza
+•	Designation: Giedi Plaza ("The Industrial Bastion")
+•	Location Coordinates: Outer Rim Industrial Rim 09 (Surrounded by massive resource extraction fields)
+•	Official Motto: "A dark, smog-choked corporate syndicate. High risk, high reward, with zero oversight on high-volume mining transactions."
+•	Station Lore & Atmosphere
+•	Giedi Plaza is an oppressive, monumental monolith of unchecked corporate power and relentless industrial output. As illustrated in the visual logs, the skyline is dominated by colossal, brutalist skyscrapers piercing a heavy, sulfurous shroud of black smoke billowing from tireless factory stacks.
+•	The atmosphere is perpetually cast in an eerie, sickly orange twilight by a dim sun struggling through thick layers of industrial smog. Intersecting elevated highways and sprawling suspension bridges cut across the dark canyons below, carrying endless streams of heavy cargo transport while corporate enforcers maintain absolute, unyielding control over the lower tiers.
+•	Key Establishments & Local Flavor
+•	The Syndicate Core Towers: Massive, fortress-like corporate monoliths where high-volume mining transactions and raw mineral contracts are traded at breakneck speed, completely bypassing any regulatory or tax oversight.
+•	The Smog-Choked Overpass: A sprawling network of elevated multi-lane transit arteries and suspension bridges where heavy freight haulers move tons of raw ore and illicit materials away from the refineries under the cover of perpetual industrial haze.
+•	The Extraction Docks: Deep-set, subterranean loading bays situated beneath the towering monoliths where independent captains can offload hazardous cargo or acquire high-yield mining equipment—provided they are willing to accept the extreme risks involved.` },
+      { name: "New Babylon", desc: `Venue Data Entry: New Babylon
+•	Designation: New Babylon ("The Verdant Apex")
+•	Location Coordinates: Core Diplomatic Corridor Sector 03 (Suspended above a sprawling, sunlit metropolis)
+•	Official Motto: "A luxurious botanical garden station. Frequently hosts diplomatic summits, leading to extreme fluctuations in luxury goods."
+•	Station Lore & Atmosphere
+•	New Babylon is an architectural marvel where high-end corporate luxury meets organic tranquility. As illustrated in the visual logs, the station is built from sleek, heavy-duty structural framework enclosed by massive glass vaulted ceilings that flood the interior with brilliant, warm daylight.
+•	Lush, vibrant botanical displays, exotic ferns, and flowering plants line the pristine multi-tiered walkways and observation decks. Suspended dynamically within the central atrium is a gleaming geodesic sphere housing secure diplomatic conference facilities, while sweeping views of a distant, soaring urban skyline frame the horizon. The atmosphere is crisp, fragrant with blooming flora, and charged with the hushed exclusivity of high-stakes interstellar politics.
+•	Key Establishments & Local Flavor
+•	The Diplomatic Apex Sphere: The striking glass-and-steel orb suspended at the center of the station. This is where high-level interstellar summits take place, instantly driving astronomical market spikes and erratic value fluctuations for luxury commodities, fine artwork, and rare spices.
+•	The Canopy Promenade: An expansive, sun-drenched walkway flanked by curated greenery and high-end trading lounges. Independent merchants and elite brokers meet here under the guise of casual strolls to negotiate clandestine contracts away from prying eyes.
+•	The Ecological Atrium: The lower tiered gardens that feed clean oxygen throughout the station while doubling as an upscale social hub for visiting dignitaries and wealthy traders looking to unwind with rare imports.` },
+      { name: "Acheron LV-426", desc: `Venue Data Entry: Acheron LV-426
+•	Designation: Acheron LV-426 ("The Gale-Swept Crater")
+•	Location Coordinates: Outer Rim Frontier Sector 88 (Orbiting under a dual-moon sky in a desolate planetary wasteland)
+•	Official Motto: "A dangerous, wind-swept mining outpost on a hostile world. High risk of natural disasters and pirate ambushes, but rich in Dark Matter."
+•	Station Lore & Atmosphere
+•	Acheron LV-426 is a brutal, unforgiving frontier outpost situated on the rugged surface of a tempestuous, barren world. As captured in the visual logs, the landscape is defined by vast expanses of rust-colored dust, jagged rock formations, and towering mesa ranges under a dramatic, cloud-filled sky dominated by massive planetary bodies.
+•	The atmosphere is constantly battered by fierce, howling winds that kick up blinding dust storms, threatening any surface operations. Massive, heavily armored crawler-transports dominate the terrain on thick hydraulic legs, working in tandem with rugged all-terrain rovers. Security is a constant concern; independent miners must remain perpetually vigilant against sudden pirate ambushes and volatile weather cataclysms while harvesting the immensely lucrative Dark Matter deposits hidden beneath the crust.
+•	Key Establishments & Local Flavor
+•	The Heavy Crawler Bay: Massive, multi-legged walker platforms that serve as mobile refineries and cargo holds, designed to withstand extreme wind shears and surface tremors while processing high-yield extractions.
+•	Surface Extraction Alpha: A heavily reinforced subterranean mining shaft opening into the barren dust plains, where independent haulers take extreme gambles to acquire raw Dark Matter.
+•	The Outpost Airlock Terminal: The sheltered subterranean docking bay framing the desolate red landscape, acting as the sole safe transit point for traders looking to secure volatile cargo before the next atmospheric squall hits.` },
+      { name: "Cantina Mos Eisley", desc: `Venue Data Entry: Cantina Mos Eisley
+•	Designation: Cantina Mos Eisley ("The Desert Outpost Hub")
+•	Location Coordinates: Outer Rim Dune Sea Sector (Set amidst a vast, arid desert under a multi-moon sky)
+•	Official Motto: "A wretched hive of scum and villainy. Perfect for off-the-books transactions, illegal stim smuggling, and high-interest Hutt loans."
+•	Station Lore & Atmosphere
+•	Cantina Mos Eisley is a rugged, dome-styled desert outpost standing resilient against the harsh, windswept dunes of a desolate planetary frontier. As seen in the visual logs, the compound features a prominent, multi-tiered primary structure with sweeping panoramic observation windows, complemented by low-slung dome habitations and outdoor seating areas buried in fine desert sand.
+•	The skies above are dominated by multiple planetary bodies and moons hanging low over a warm horizon, casting a stark twilight across the barren landscape. The atmosphere is thick with dust, low-frequency hums of idling repulsorcraft, and the tense, quiet paranoia of smugglers, outlaws, and bounty hunters negotiating deals far outside the reach of galactic law enforcement.
+•	Key Establishments & Local Flavor
+•	The Central Dome Lounge: The primary domed structure featuring wide-view windows overlooking the dunes. This is where independent operators gather to trade information, dodge local authorities, and negotiate off-the-books contracts.
+•	The Outer Patio Tables: Shaded outdoor seating arrangements nestled in the sand where shady brokers conduct high-interest Hutt loans and illegal stim smuggling arrangements under the watchful eyes of local sentries.
+•	The Dune-Side Annex: A smaller, connected dome outpost handling local supply storage and vehicle access, serving as the main staging point for anyone looking to slip in or out of the sector unnoticed.` },
+      { name: "Centauri Prime", desc: `Venue Data Entry: Centauri Prime
+•	Designation: Centauri Prime ("The Imperial Spire")
+•	Location Coordinates: Inner Core Aristocratic Sector 02 (Framed by a breathtaking midnight sky and multiple moons)
+•	Official Motto: "An ancient, aristocratic cultural capital. High demand for luxury Spacetime Teas and advanced PC electronics."
+•	Station Lore & Atmosphere
+•	Centauri Prime stands as a magnificent, timeless monument to ancient aristocratic prestige and high-class culture. As illustrated in the visual logs, the capital features towering, ornate architectural spires and massive classical framing structures that look out over a deep, starlit cosmic expanse dotted with glowing moons.
+•	The environment is bathed in a cool, deep-blue nocturnal ambiance, broken only by the warm, inviting amber lights glowing from stately windows and high-rise habitation blocks. The atmosphere is heavy with refined tradition, where elite socialites, nobles, and wealthy brokers gather to partake in exclusive luxuries while conducting high-level commerce far removed from the rough edges of the outer rim.
+•	Key Establishments & Local Flavor
+•	The Imperial Palace Spire: The striking, inverted-pyramid central monolith piercing the night sky. This monumental structure serves as the heart of aristocratic governance and the primary exchange floor for high-end commodities.
+•	The Grand Observation Balcony: An expansive, heavy-metal transit and viewing platform connecting the ancient administrative blocks, offering visiting traders and elites a pristine view of the glittering planetary horizon.
+•	The Artisan Tea Houses: Exclusive, vaulted alcoves tucked within the lower levels of the monumental spires, catering exclusively to nobility and high-paying merchants seeking rare Spacetime Teas and cutting-edge PC electronics.` }
     ];
 
     const acronymsList = [
@@ -5039,7 +5139,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.13.1.6 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.13.1.7 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -5122,7 +5222,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                         </h3>
                         {isCurrent && <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[8px] font-black uppercase px-1.5 py-0.5 rounded tracking-widest animate-pulse">SHIP HERE</span>}
                       </div>
-                      <p className="text-gray-400 text-xs font-mono leading-relaxed">{v.desc}</p>
+                      <ExpandableText text={v.desc} className="text-gray-400 text-xs font-mono leading-relaxed" />
                     </div>
                   </div>
                 );
@@ -5192,7 +5292,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                   <div className="space-y-3">
                     <p className="font-bold text-white uppercase">1. Micro-Lending Regulations:</p>
                     <p>Secured from any of the five major lending syndicates (e.g. Starfleet, Weyland-Yutani, Hutt Cartel). Base interest rates vary dynamically from <span className="text-emerald-400 font-bold">1% to 10% daily</span>.</p>
-                    <p>Debt must be paid back within <span className="text-yellow-500 font-bold">5 cycles</span>, or compound interest penalties will rapidly exhaust your liquid capital reserves.</p>
+                    <p>Debt must be paid back within <span className="text-yellow-500 font-bold">5 D.A.Y.s</span>, or compound interest penalties will rapidly exhaust your liquid capital reserves.</p>
                   </div>
                   <div className="space-y-3">
                     <p className="font-bold text-white uppercase">2. Interest Lockup Deposits:</p>
@@ -5407,7 +5507,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                           <p className="text-gray-500 font-mono text-[10px] uppercase">v.13.1.6</p>
+                           <p className="text-gray-500 font-mono text-[10px] uppercase">v.13.1.7</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -6496,7 +6596,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                             {/* Mutant Unrest HUD Block on the right */}
                             <div className="flex flex-col items-end gap-1.5 shrink-0">
                                 <div className="text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                                    SYSTEM LOG: FABRICATION MATRIX v.13.1.6 ACTIVE
+                                    SYSTEM LOG: FABRICATION MATRIX v.13.1.7 ACTIVE
                                 </div>
                                 <div className="bg-slate-950/90 border border-red-500/40 p-2.5 rounded-xl w-56 font-mono text-xs shadow-[0_0_15px_rgba(239,68,68,0.15)] flex flex-col gap-1 text-left">
                                     <div className="flex justify-between items-center text-red-400 font-bold tracking-wider">
@@ -7469,7 +7569,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v.13.1.6</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v.13.1.7</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -7763,7 +7863,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                     <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.13.1.6</span>
+                     <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.13.1.7</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -8221,7 +8321,7 @@ Disposal Protocol: Depleted H.O.U.R.S. units must not be jettisoned into planeta
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.13.1.6</p>
+                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.13.1.7</p>
                </div>
            </div>
        )}
