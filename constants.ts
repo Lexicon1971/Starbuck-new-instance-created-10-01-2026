@@ -345,7 +345,7 @@ Security Note: Presence of VSS-Spice Emulsion in cargo holds is the primary driv
 
 export const VENUES = [
   "Deep Space 9 1/2", "Trantor Promenade", "Serenity Valley", "Corellia Shipyards", 
-  "High Charity", "Giedi Plaza", "New Babylon", "Acheron LV-426", "Cantina Mos Eisley", "Centauri Prime"
+  "High Charity", "Giedi Plaza", "New Babylon", "Acheron LV-426", "Cantina Mos Elsewhere", "Centauri Prime"
 ];
 
 export const BASE_DISTANCE_MATRIX = [

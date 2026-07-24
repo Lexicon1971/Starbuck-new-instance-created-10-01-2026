@@ -1,8 +1,8 @@
 {
-  "name": "starbucks-trade-galaxcy-v13.1.7-Enterprise",
+  "name": "starbucks-trade-galaxcy-v13.1.8-Enterprise",
   "homepage": "https://Lexicon1971.github.io/Starbuck-new-instance-created-10-01-2026",
   "private": true,
-  "version": "13.1.7",
+  "version": "13.1.8",
   "type": "module",
   "scripts": {
     "dev": "vite",
