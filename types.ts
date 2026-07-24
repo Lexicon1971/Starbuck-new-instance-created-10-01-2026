@@ -231,7 +231,7 @@ export interface Stock {
 
 // Fix: Updated Encounter type union to include 'fuel_breach' and 'cargo_tax' instead of 'fuel_leak' and 'tax'
 export interface Encounter {
-  type: 'pirate' | 'accident' | 'derelict' | 'fuel_breach' | 'police' | 'mutiny' | 'cargo_tax' | 'structural' | 'visa_audit' | 'scam_customs' | 'god_license' | 'rust_rats' | 'spice_bandits';
+  type: 'pirate' | 'accident' | 'derelict' | 'fuel_breach' | 'police' | 'mutiny' | 'cargo_tax' | 'structural' | 'visa_audit' | 'scam_customs' | 'god_license' | 'rust_rats' | 'spice_bandits' | 'fold_error';
   title: string;
   description: string;
   riskDamage: number;

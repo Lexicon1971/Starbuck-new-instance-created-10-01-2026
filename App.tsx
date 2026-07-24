@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v.13.1.7
+ * VERSION: v.13.1.8
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -55,7 +55,7 @@ const gorskyIcon = new URL('./gorsky.png', import.meta.url).href;
 // Map venues to their respective PNG files
 const VENUE_IMAGES: Record<string, string> = {
   "Acheron LV-426": new URL('./Acheron_LV-426.png', import.meta.url).href,
-  "Cantina Mos Eisley": new URL('./Cantina_Mos_Eisley.png', import.meta.url).href,
+  "Cantina Mos Elsewhere": new URL('./Cantina_Mos_Elsewhere.png', import.meta.url).href,
   "Centauri Prime": new URL('./Centauri_Prime.png', import.meta.url).href,
   "Corellia Shipyards": new URL('./Corellia_Shipyards.png', import.meta.url).href,
   "Deep Space 9 1/2": new URL('./Deep_Space_9.png', import.meta.url).href,
@@ -161,7 +161,7 @@ class SoundEngine {
         noise.start(t);
     }
 
-        play(type: 'click' | 'coin' | 'warp' | 'error' | 'success' | 'alarm' | 'contract_success' | 'phase_change' | 'high_value_trade' | 'kaching' | 'swipe' | 'raspberry') {
+        play(type: 'click' | 'coin' | 'warp' | 'error' | 'success' | 'alarm' | 'contract_success' | 'phase_change' | 'high_value_trade' | 'kaching' | 'swipe' | 'raspberry' | 'explosion' | 'laser') {
         this.init();
         if (this.isMuted || !this.ctx || !this.masterGain) return;
             const t = this.ctx.currentTime;
@@ -346,6 +346,24 @@ class SoundEngine {
                 gain.gain.linearRampToValueAtTime(0, t + 0.3);
                 osc.start(t);
                 osc.stop(t + 0.3);
+                break;
+            case 'explosion':
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100, t);
+                osc.frequency.linearRampToValueAtTime(30, t + 0.5);
+                gain.gain.setValueAtTime(0.2, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+                osc.start(t);
+                osc.stop(t + 0.5);
+                break;
+            case 'laser':
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(800, t);
+                osc.frequency.exponentialRampToValueAtTime(200, t + 0.2);
+                gain.gain.setValueAtTime(0.1, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+                osc.start(t);
+                osc.stop(t + 0.2);
                 break;
         }
     }
@@ -1198,7 +1216,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v.13.1.7 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v.13.1.8 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -2301,11 +2319,12 @@ export default function App() {
       if (!modal.data) return;
       const { state: stateData, report: reportData, encounter, destIdx, mine, overload } = modal.data;
       let outcomeMsg = "";
-      let outcomeType: 'info' | 'profit' | 'danger' = 'info';
+      let outcomeType: 'info' | 'profit' | 'danger' | 'critical' = 'info';
       let resolvedDestIdx = destIdx;
       
       const s = { ...stateData } as GameState;
       const r = { ...reportData } as DailyReport;
+      const activeWarrant = s.warrantLevel || 0;
 
       switch(encounter.type) {
           case 'fold_error': {
@@ -2764,7 +2783,8 @@ export default function App() {
       // For Strategy 1 and Strategy 2, we subtract required travel fuel & hot isotopes first.
       const stratShippedItems: Array<{ name: string; quantity: number; averageCost: number; unitWeight: number }> = [];
 
-      Object.entries(currentState.cargo).forEach(([name, item]) => {
+      Object.entries(currentState.cargo).forEach(([name, rawItem]) => {
+          const item = rawItem as CargoItem;
           if (name === FUEL_NAME) {
               const excess = Math.max(0, item.quantity - fuelNeededToTravel);
               if (excess > 0) {
@@ -4814,7 +4834,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.13.1.7</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.13.1.8</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -5090,12 +5110,12 @@ Key Establishments & Local Flavor
 •	The Heavy Crawler Bay: Massive, multi-legged walker platforms that serve as mobile refineries and cargo holds, designed to withstand extreme wind shears and surface tremors while processing high-yield extractions.
 •	Surface Extraction Alpha: A heavily reinforced subterranean mining shaft opening into the barren dust plains, where independent haulers take extreme gambles to acquire raw Dark Matter.
 •	The Outpost Airlock Terminal: The sheltered subterranean docking bay framing the desolate red landscape, acting as the sole safe transit point for traders looking to secure volatile cargo before the next atmospheric squall hits.` },
-      { name: "Cantina Mos Eisley", desc: `Venue Data Entry: Cantina Mos Eisley
-•	Designation: Cantina Mos Eisley ("The Desert Outpost Hub")
+      { name: "Cantina Mos Elsewhere", desc: `Venue Data Entry: Cantina Mos Elsewhere
+•	Designation: Cantina Mos Elsewhere ("The Desert Outpost Hub")
 •	Location Coordinates: Outer Rim Dune Sea Sector (Set amidst a vast, arid desert under a multi-moon sky)
 •	Official Motto: "A wretched hive of scum and villainy. Perfect for off-the-books transactions, illegal stim smuggling, and high-interest Hutt loans."
 •	Station Lore & Atmosphere
-•	Cantina Mos Eisley is a rugged, dome-styled desert outpost standing resilient against the harsh, windswept dunes of a desolate planetary frontier. As seen in the visual logs, the compound features a prominent, multi-tiered primary structure with sweeping panoramic observation windows, complemented by low-slung dome habitations and outdoor seating areas buried in fine desert sand.
+•	Cantina Mos Elsewhere is a rugged, dome-styled desert outpost standing resilient against the harsh, windswept dunes of a desolate planetary frontier. As seen in the visual logs, the compound features a prominent, multi-tiered primary structure with sweeping panoramic observation windows, complemented by low-slung dome habitations and outdoor seating areas buried in fine desert sand.
 •	The skies above are dominated by multiple planetary bodies and moons hanging low over a warm horizon, casting a stark twilight across the barren landscape. The atmosphere is thick with dust, low-frequency hums of idling repulsorcraft, and the tense, quiet paranoia of smugglers, outlaws, and bounty hunters negotiating deals far outside the reach of galactic law enforcement.
 •	Key Establishments & Local Flavor
 •	The Central Dome Lounge: The primary domed structure featuring wide-view windows overlooking the dunes. This is where independent operators gather to trade information, dodge local authorities, and negotiate off-the-books contracts.
@@ -5139,7 +5159,7 @@ Key Establishments & Local Flavor
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.13.1.7 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.13.1.8 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -5507,7 +5527,7 @@ Key Establishments & Local Flavor
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                           <p className="text-gray-500 font-mono text-[10px] uppercase">v.13.1.7</p>
+                           <p className="text-gray-500 font-mono text-[10px] uppercase">v.13.1.8</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -6596,7 +6616,7 @@ Key Establishments & Local Flavor
                             {/* Mutant Unrest HUD Block on the right */}
                             <div className="flex flex-col items-end gap-1.5 shrink-0">
                                 <div className="text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                                    SYSTEM LOG: FABRICATION MATRIX v.13.1.7 ACTIVE
+                                    SYSTEM LOG: FABRICATION MATRIX v.13.1.8 ACTIVE
                                 </div>
                                 <div className="bg-slate-950/90 border border-red-500/40 p-2.5 rounded-xl w-56 font-mono text-xs shadow-[0_0_15px_rgba(239,68,68,0.15)] flex flex-col gap-1 text-left">
                                     <div className="flex justify-between items-center text-red-400 font-bold tracking-wider">
@@ -7569,7 +7589,7 @@ Key Establishments & Local Flavor
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v.13.1.7</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v.13.1.8</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -7863,7 +7883,7 @@ Key Establishments & Local Flavor
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                     <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.13.1.7</span>
+                     <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.13.1.8</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -8321,7 +8341,7 @@ Key Establishments & Local Flavor
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.13.1.7</p>
+                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.13.1.8</p>
                </div>
            </div>
        )}
