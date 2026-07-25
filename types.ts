@@ -171,6 +171,7 @@ export interface GameState {
   // Scanner enhancements
   scannerLastUsedDay?: number;
   scannerConsecutiveDays?: number;
+  scannerCooldownActive?: boolean; // Restricts use for the following day after 3 consecutive days of use
   fixedCommodity?: {
     name: string;
     venuePrices: number[];
@@ -227,6 +228,7 @@ export interface Stock {
   totalShares?: number;
   dailyBuyLimitRemaining?: number; // Enhancement 131: Limit of shares allowed to be bought per day
   takeoverSuccessful?: boolean; // Enhancement 136
+  takeoverAttemptedToday?: boolean; // Limit of one attempt per day per stock
 }
 
 // Fix: Updated Encounter type union to include 'fuel_breach' and 'cargo_tax' instead of 'fuel_leak' and 'tax'
