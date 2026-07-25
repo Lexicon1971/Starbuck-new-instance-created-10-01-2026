@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v.13.1.9
+ * VERSION: v.13.2.0
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -1216,7 +1216,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v.13.1.9 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v.13.2.0 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -1342,7 +1342,7 @@ export default function App() {
     
     const baseState = getInitialState(startingCash, startIdx, markets, initialLoan, initialCargo, cargoWeight);
     baseState.loanOffers = generateLoanOffers(baseState.gamePhase, baseState.day);
-    baseState.availableContracts = generateContracts(baseState.currentVenueIndex, baseState.day, baseState.gamePhase, {}, [], []);
+    baseState.availableContracts = generateContracts(baseState.currentVenueIndex, baseState.day, baseState.gamePhase, {}, [], [], markets);
 
     baseState.tutorialActive = true;
     baseState.tutorialFlags = { asked_intro: true };
@@ -1822,7 +1822,7 @@ export default function App() {
    * @param active The list of currently active contracts.
    * @returns An array of new and existing available contracts.
    */
-  const generateContracts = (currentVenue: number, day: number, phase: number, bans: Record<number, number>, existingAvailable: Contract[], active: Contract[]): Contract[] => {
+  const generateContracts = (currentVenue: number, day: number, phase: number, bans: Record<number, number>, existingAvailable: Contract[], active: Contract[], markets?: Market[]): Contract[] => {
     const kept = existingAvailable.filter(c => c.daysRemaining > 0);
     kept.forEach(c => { if(c.daysRemaining > 0) c.daysRemaining--; }); 
     const keptActive = kept.filter(c => c.daysRemaining > 0);
@@ -1830,7 +1830,9 @@ export default function App() {
     const contracts: Contract[] = [...keptActive];
     const limitCount = phase === 1 ? CONTRACT_LIMIT_P1 : (phase === 2 ? CONTRACT_LIMIT_P2 : CONTRACT_LIMIT_P3);
     const phaseMult = 1 + ((phase - 1) * 0.5); 
-    const qtyMult = phase === 1 ? 1 : (phase === 2 ? 100 : (phase === 3 ? 100000 : 1000000));
+    const qtyMult = phase === 1 ? 1 : (phase === 2 ? 100 : (phase === 3 ? 100000 : 100000000));
+
+    const currentMarkets = markets || state?.markets;
 
     if (contracts.length < limitCount) { 
         for (let i = 0; i < 3; i++) {
@@ -1840,8 +1842,19 @@ export default function App() {
             const commod = COMMODITIES[Math.floor(Math.random() * COMMODITIES.length)];
             const alreadyExists = [...active, ...contracts].some(c => c.commodity === commod.name && c.status === 'active');
             if (alreadyExists) continue;
+
+            let maxAllowedQty = Infinity;
+            if (currentMarkets && currentMarkets[dest] && currentMarkets[dest][commod.name]) {
+                const destStock = currentMarkets[dest][commod.name].quantity;
+                maxAllowedQty = Math.floor(destStock / 2);
+            }
+            if (maxAllowedQty < 1) continue;
+
             const baseQty = Math.floor(Math.random() * 50) + 10;
-            const qty = Math.floor(baseQty * qtyMult); 
+            const targetQty = Math.floor(baseQty * qtyMult);
+            const qty = Math.min(targetQty, maxAllowedQty);
+            if (qty < 1) continue;
+
             const reward = Math.round(commod.maxPrice * qty * (1.5 + Math.random() * 0.5) * phaseMult);
             const penalty = Math.round(reward * 0.5);
             const time = Math.floor(Math.random() * 3) + 1; 
@@ -3495,7 +3508,7 @@ export default function App() {
     });
 
     s.loanOffers = generateLoanOffers(s.gamePhase, s.day);
-    s.availableContracts = generateContracts(s.currentVenueIndex, s.day, s.gamePhase, s.venueTradeBans, s.availableContracts, s.activeContracts);
+    s.availableContracts = generateContracts(s.currentVenueIndex, s.day, s.gamePhase, s.venueTradeBans, s.availableContracts, s.activeContracts, s.markets);
     s.loanTakenToday = false;
   };
 
@@ -4861,7 +4874,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.13.1.9</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.13.2.0</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -5186,7 +5199,7 @@ Key Establishments & Local Flavor
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.13.1.9 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.13.2.0 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -5554,7 +5567,7 @@ Key Establishments & Local Flavor
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                           <p className="text-gray-500 font-mono text-[10px] uppercase">v.13.1.9</p>
+                           <p className="text-gray-500 font-mono text-[10px] uppercase">v.13.2.0</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -6091,7 +6104,7 @@ Key Establishments & Local Flavor
                                                     >
                                                         SHIP
                                                     </button>
-                                                    {activeContract && !isCovered && (
+                                                    {activeContract && (
                                                         <button onClick={() => handleFulfill(activeContract)} disabled={owned.quantity < activeContract.quantity || pulsingContractId !== null} className={`w-auto px-4 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 disabled:opacity-50 text-white text-sm rounded font-bold py-1 action-btn ${pulsingContractId === activeContract.id ? 'animate-pulse' : ''}`}>FULFILL</button>
                                                     )}
                                                 </div>
@@ -6647,7 +6660,7 @@ Key Establishments & Local Flavor
                             {/* Mutant Unrest HUD Block on the right */}
                             <div className="flex flex-col items-end gap-1.5 shrink-0">
                                 <div className="text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                                    SYSTEM LOG: FABRICATION MATRIX v.13.1.9 ACTIVE
+                                    SYSTEM LOG: FABRICATION MATRIX v.13.2.0 ACTIVE
                                 </div>
                                 <div className="bg-slate-950/90 border border-red-500/40 p-2.5 rounded-xl w-56 font-mono text-xs shadow-[0_0_15px_rgba(239,68,68,0.15)] flex flex-col gap-1 text-left">
                                     <div className="flex justify-between items-center text-red-400 font-bold tracking-wider">
@@ -7097,12 +7110,16 @@ Key Establishments & Local Flavor
                                                            ) : (
                                                                <span className="text-red-400">STATUS: Pending arrival...</span>
                                                            )}
-                                                           {state.cargo[c.commodity] && state.cargo[c.commodity].quantity >= c.quantity && (
-                                                               <div className="flex justify-between items-center bg-purple-950/20 p-2 rounded border border-purple-500/30 mt-2">
-                                                                   <span className="text-purple-300 font-bold">CARGO ON HAND</span>
-                                                                   <button onClick={() => handleFulfill(c)} className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded font-black text-[10px] uppercase">FULFILL</button>
-                                                               </div>
-                                                           )}
+                                                           <div className="flex justify-between items-center bg-purple-950/20 p-2 rounded border border-purple-500/30 mt-2">
+                                                               <span className="text-purple-300 font-bold">CARGO ON HAND ({(state.cargo[c.commodity]?.quantity || 0)}/{c.quantity})</span>
+                                                               <button
+                                                                   disabled={!state.cargo[c.commodity] || state.cargo[c.commodity].quantity < c.quantity}
+                                                                   onClick={() => handleFulfill(c)}
+                                                                   className="bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 disabled:opacity-50 text-white px-4 py-2 rounded font-black text-[10px] uppercase"
+                                                               >
+                                                                   FULFILL
+                                                               </button>
+                                                           </div>
                                                        </div>
                                                    )}
                                                </div>
@@ -7626,7 +7643,7 @@ Key Establishments & Local Flavor
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v.13.1.9</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v.13.2.0</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -7920,7 +7937,7 @@ Key Establishments & Local Flavor
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                     <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.13.1.9</span>
+                     <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.13.2.0</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -8378,7 +8395,7 @@ Key Establishments & Local Flavor
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.13.1.9</p>
+                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.13.2.0</p>
                </div>
            </div>
        )}
