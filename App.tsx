@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v.13.1.8
+ * VERSION: v.13.1.9
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -1122,7 +1122,7 @@ export default function App() {
         averageCost: 0,
         history: [price], // Initialize price history for sparkline charts.
         totalShares,
-        availableQuantity: Math.floor(totalShares * 0.60), // Ensure available shares are populated to 60% for takeover opportunities
+        availableQuantity: Math.floor(totalShares * 0.10), // Ensure available shares are populated to 10% for takeover opportunities
         dailyBuyLimitRemaining: 0
       };
 
@@ -1216,7 +1216,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v.13.1.8 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v.13.1.9 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -1234,6 +1234,7 @@ export default function App() {
         mutantUnrest: 10,
         scannerLastUsedDay: 0,
         scannerConsecutiveDays: 0,
+        scannerCooldownActive: false,
         fixedCommodity: undefined,
         boostedCommodity: undefined,
         pendingFixedCommodity: undefined,
@@ -1299,7 +1300,7 @@ export default function App() {
         averageCost: 0,
         history: [price], // Initialize price history for sparkline charts.
         totalShares,
-        availableQuantity: Math.floor(totalShares * 0.60) // Ensure available shares are populated to 60% for takeover opportunities
+        availableQuantity: Math.floor(totalShares * 0.10) // Ensure available shares are populated to 10% for takeover opportunities
       };
     });
 
@@ -1829,7 +1830,7 @@ export default function App() {
     const contracts: Contract[] = [...keptActive];
     const limitCount = phase === 1 ? CONTRACT_LIMIT_P1 : (phase === 2 ? CONTRACT_LIMIT_P2 : CONTRACT_LIMIT_P3);
     const phaseMult = 1 + ((phase - 1) * 0.5); 
-    const qtyMult = phase === 1 ? 1 : (phase === 2 ? 10 : (phase === 3 ? 50 : 100));
+    const qtyMult = phase === 1 ? 1 : (phase === 2 ? 100 : (phase === 3 ? 100000 : 1000000));
 
     if (contracts.length < limitCount) { 
         for (let i = 0; i < 3; i++) {
@@ -3120,6 +3121,9 @@ export default function App() {
       s.warrantLevel = (s.warrantLevel || 0) + 1;
       report.events.push(`WARRANT ISSUED: Your market manipulation has been detected. A warrant has been issued for your arrest.`);
       s.scannerConsecutiveDays = 0; // Reset after issuing warrant
+      s.scannerCooldownActive = true;
+    } else {
+      s.scannerCooldownActive = false;
     }
 
     if (s.stocks) {
@@ -3172,24 +3176,35 @@ export default function App() {
         }
 
         const newPrice = Math.max(1, stock.price + priceChange);
-        const availableQuantity = stock.availableQuantity || (1000 + Math.floor(Math.random() * 99001));
+        const availableQuantity = stock.availableQuantity !== undefined ? stock.availableQuantity : 0;
         return { ...stock, price: newPrice, availableQuantity };
       });
 
       // E. Daily Supply Replenishment ("The Float")
       s.stocks = updatedStocks.map(stock => {
-        const randomWeight = Math.random() * 2 - 1; // -1 to 1
-        const change = Math.round((stock.totalShares ?? 1000000) * 0.05 * randomWeight);
-        const newAvailable = Math.max(0, (stock.availableQuantity ?? 0) + change);
+        // Calculate the daily increase in totalShares (up to 11% max)
+        const increasePercent = Math.random() * 0.11;
+        const increaseAmount = Math.floor((stock.totalShares ?? 100000) * increasePercent);
+
+        // Update totalShares
+        const newTotalShares = (stock.totalShares ?? 100000) + increaseAmount;
+
+        // The full increased amount is added to availableQuantity
+        let newAvailable = (stock.availableQuantity ?? 0) + increaseAmount;
+
+        // Ensure owned + available does not exceed the new totalShares
+        const maxAvailable = newTotalShares - stock.quantity;
+        let newAvailableQuantity = Math.max(0, Math.min(newAvailable, maxAvailable));
 
         // B. Stock Splits
         let newPrice = stock.price;
         let newQuantity = stock.quantity;
-        let newAvailableQuantity = newAvailable;
+        let finalTotalShares = newTotalShares;
         if (newPrice > 1000000) {
           newPrice /= 2;
           newQuantity *= 2;
           newAvailableQuantity *= 2;
+          finalTotalShares *= 2;
           log(`STOCK SPLIT: ${stock.name} has split 2-for-1 due to high valuation.`, 'phase');
         }
 
@@ -3203,8 +3218,10 @@ export default function App() {
           price: newPrice,
           quantity: newQuantity,
           availableQuantity: newAvailableQuantity,
+          totalShares: finalTotalShares,
           history: newHistory,
-          dailyBuyLimitRemaining: limitRemaining
+          dailyBuyLimitRemaining: limitRemaining,
+          takeoverAttemptedToday: false
         };
       }).sort((a, b) => a.name.localeCompare(b.name));
 
@@ -3631,6 +3648,16 @@ export default function App() {
     } else {
       outcomeType = 'regulatory';
     }
+
+    setState(prev => {
+        if (!prev || !prev.stocks) return null;
+        return {
+            ...prev,
+            stocks: prev.stocks.map(st =>
+                st.name === stockName ? { ...st, takeoverAttemptedToday: true } : st
+            )
+        };
+    });
 
     setModal({
       type: 'hostile_takeover_resolution',
@@ -4834,7 +4861,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.13.1.8</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.13.1.9</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -5159,7 +5186,7 @@ Key Establishments & Local Flavor
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.13.1.8 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.13.1.9 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -5527,7 +5554,7 @@ Key Establishments & Local Flavor
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                           <p className="text-gray-500 font-mono text-[10px] uppercase">v.13.1.8</p>
+                           <p className="text-gray-500 font-mono text-[10px] uppercase">v.13.1.9</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -6398,9 +6425,13 @@ Key Establishments & Local Flavor
                       <h3 className="text-cyan-400 font-bold mb-4 flex items-center text-lg"><Radar size={20} className="mr-2"/> Scanner Intel</h3>
                       <div className="flex justify-between items-center bg-black/30 p-3 rounded-lg border border-white/5 mb-4">
                         <span className="text-gray-300">Consecutive Days Used:</span>
-                        <span className="text-white font-bold text-lg">{state.scannerConsecutiveDays || 0}</span>
+                        {state.scannerCooldownActive ? (
+                          <span className="text-red-400 font-bold text-sm uppercase animate-pulse">Down to take the heat off</span>
+                        ) : (
+                          <span className="text-white font-bold text-lg">{state.scannerConsecutiveDays || 0}</span>
+                        )}
                       </div>
-                      {state.scannerConsecutiveDays === 2 && (
+                      {state.scannerConsecutiveDays === 2 && !state.scannerCooldownActive && (
                         <div className="text-red-400 text-xs font-bold uppercase animate-pulse mb-4 p-2 bg-red-900/20 rounded">
                           Warning: Using scanner powers again tomorrow will issue a warrant for your arrest!
                         </div>
@@ -6414,8 +6445,8 @@ Key Establishments & Local Flavor
                               setModal({ type: 'scanner_actions', data: { level: 2 } });
                             }
                           }}
-                          disabled={!hasScanner2(state) || state.gamePhase < 2}
-                          className="bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg text-xs transition-all shadow-md border-b-4 border-cyan-900 action-btn animate-in fade-in"
+                          disabled={!hasScanner2(state) || state.gamePhase < 2 || state.scannerCooldownActive}
+                          className={`bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-700 disabled:opacity-30 text-white font-bold py-3 rounded-lg text-xs transition-all shadow-md border-b-4 border-cyan-900 action-btn animate-in fade-in ${state.scannerCooldownActive ? 'opacity-30 pointer-events-none' : ''}`}
                         >
                           {state.pendingFixedCommodity
                             ? `Fix for Tomorrow: ${state.pendingFixedCommodity.name}`
@@ -6431,8 +6462,8 @@ Key Establishments & Local Flavor
                               setModal({ type: 'scanner_actions', data: { level: 3 } });
                             }
                           }}
-                          disabled={!hasScanner3(state) || state.gamePhase < 3}
-                          className="bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg text-xs transition-all shadow-md border-b-4 border-cyan-900 action-btn animate-in fade-in"
+                          disabled={!hasScanner3(state) || state.gamePhase < 3 || state.scannerCooldownActive}
+                          className={`bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-700 disabled:opacity-30 text-white font-bold py-3 rounded-lg text-xs transition-all shadow-md border-b-4 border-cyan-900 action-btn animate-in fade-in ${state.scannerCooldownActive ? 'opacity-30 pointer-events-none' : ''}`}
                         >
                           {state.pendingBoostedCommodity
                             ? `Boost for Tomorrow: ${state.pendingBoostedCommodity.name}`
@@ -6616,7 +6647,7 @@ Key Establishments & Local Flavor
                             {/* Mutant Unrest HUD Block on the right */}
                             <div className="flex flex-col items-end gap-1.5 shrink-0">
                                 <div className="text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                                    SYSTEM LOG: FABRICATION MATRIX v.13.1.8 ACTIVE
+                                    SYSTEM LOG: FABRICATION MATRIX v.13.1.9 ACTIVE
                                 </div>
                                 <div className="bg-slate-950/90 border border-red-500/40 p-2.5 rounded-xl w-56 font-mono text-xs shadow-[0_0_15px_rgba(239,68,68,0.15)] flex flex-col gap-1 text-left">
                                     <div className="flex justify-between items-center text-red-400 font-bold tracking-wider">
@@ -6959,13 +6990,19 @@ Key Establishments & Local Flavor
                                   ) : stock.quantity >= (stock.totalShares || 100000) * 0.5 ? (
                                     <div className="pt-2 border-t border-slate-700/60 mt-2">
                                       <button
+                                        disabled={stock.takeoverAttemptedToday}
                                         onClick={() => {
+                                          if (stock.takeoverAttemptedToday) return;
                                           SFX.play('click');
                                           setModal({ type: 'hostile_takeover_confirm', data: stock });
                                         }}
-                                        className="w-full bg-gradient-to-r from-red-600 via-yellow-600 to-cyan-600 hover:from-red-500 hover:to-cyan-500 text-white font-black py-2.5 px-4 rounded-xl text-xs uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(239,68,68,0.5)] animate-pulse"
+                                        className={`w-full text-white font-black py-2.5 px-4 rounded-xl text-xs uppercase tracking-widest transition-all ${
+                                          stock.takeoverAttemptedToday
+                                            ? 'bg-slate-700/60 border border-slate-600/30 text-slate-400 opacity-50 cursor-not-allowed'
+                                            : 'bg-gradient-to-r from-red-600 via-yellow-600 to-cyan-600 hover:from-red-500 hover:to-cyan-500 shadow-[0_0_15px_rgba(239,68,68,0.5)] animate-pulse'
+                                        }`}
                                       >
-                                        ⚡ Attempt Takeover ⚡
+                                        {stock.takeoverAttemptedToday ? 'Already Attempted Today' : '⚡ Attempt Takeover ⚡'}
                                       </button>
                                     </div>
                                   ) : null}
@@ -7589,7 +7626,7 @@ Key Establishments & Local Flavor
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v.13.1.8</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v.13.1.9</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -7883,7 +7920,7 @@ Key Establishments & Local Flavor
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                     <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.13.1.8</span>
+                     <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.13.1.9</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -8341,7 +8378,7 @@ Key Establishments & Local Flavor
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.13.1.8</p>
+                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.13.1.9</p>
                </div>
            </div>
        )}
