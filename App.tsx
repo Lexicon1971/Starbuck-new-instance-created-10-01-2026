@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v.13.2.0
+ * VERSION: v.13.3.0
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -881,7 +881,24 @@ export default function App() {
     const logisticsDiscount = useCorporateSynergy('logistics');
     return Math.round(cost * logisticsDiscount);
   };
-  const [modal, setModal] = useState<{ type: string, data: any, color?: string }>({ type: 'none', data: null });
+  const [modal, rawSetModal] = useState<{ type: string, data: any, color?: string }>({ type: 'none', data: null });
+  const setModal = (nextModal: { type: string, data: any, color?: string } | ((prev: { type: string, data: any, color?: string }) => { type: string, data: any, color?: string })) => {
+      const resolvedModal = typeof nextModal === 'function' ? nextModal(modal) : nextModal;
+
+      if (resolvedModal.type === 'none' && state && state.warrant4WarningPending) {
+          setState(prev => {
+              if (!prev) return null;
+              return { ...prev, warrant4WarningPending: false };
+          });
+          rawSetModal({
+              type: 'message',
+              data: "WARRANT ESCALATION WARNING!\n\nYou have obtained your 4th arrest warrant. Obtaining a 5th warrant will result in your trading license being terminated immediately by G.O.D. command. Avoid illegal activity at all costs!",
+              color: 'text-red-500 font-bold animate-pulse'
+          });
+          return;
+      }
+      rawSetModal(resolvedModal);
+  };
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const commsContainerRef = useRef<HTMLDivElement>(null);
@@ -1216,7 +1233,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v.13.2.0 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v.13.3.0 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -1846,13 +1863,16 @@ export default function App() {
             let maxAllowedQty = Infinity;
             if (currentMarkets && currentMarkets[dest] && currentMarkets[dest][commod.name]) {
                 const destStock = currentMarkets[dest][commod.name].quantity;
-                maxAllowedQty = Math.floor(destStock / 2);
+                if (phase >= 2) {
+                    if (destStock < 1) continue;
+                    maxAllowedQty = Math.floor(destStock / 2);
+                }
             }
-            if (maxAllowedQty < 1) continue;
+            if (phase >= 2 && maxAllowedQty < 1) continue;
 
             const baseQty = Math.floor(Math.random() * 50) + 10;
             const targetQty = Math.floor(baseQty * qtyMult);
-            const qty = Math.min(targetQty, maxAllowedQty);
+            const qty = phase >= 2 ? Math.min(targetQty, maxAllowedQty) : targetQty;
             if (qty < 1) continue;
 
             const reward = Math.round(commod.maxPrice * qty * (1.5 + Math.random() * 0.5) * phaseMult);
@@ -1864,6 +1884,13 @@ export default function App() {
         }
     }
     return contracts;
+  };
+
+  const checkWarrants = (s: GameState) => {
+    if (s.warrantLevel === 4 && !s.warrant4WarningShown) {
+      s.warrant4WarningShown = true;
+      s.warrant4WarningPending = true;
+    }
   };
 
   /**
@@ -2152,9 +2179,26 @@ export default function App() {
          s.day++;
          s.daysStayedCount = (s.daysStayedCount || 0) + 1; // Track stay days (Enhancement 136)
          processDay(s, report);
+         checkWarrants(s);
+         const nw = getNetWorth(s);
+         if (s.warrantLevel >= 5) {
+             s.gameOver = true;
+             const isHS = s.highScores.length < 100 || nw > s.highScores[s.highScores.length - 1].score;
+             setModal({
+                 type: 'endgame',
+                 data: {
+                     reason: "License Terminated: Too many arrest warrants issued (5/5). Your operating certificate has been permanently revoked by G.O.D.",
+                     netWorth: nw,
+                     stats: s.stats,
+                     isHighScore: isHS,
+                     days: s.day
+                 }
+             });
+             SFX.play('error');
+             return;
+         }
          const curGoal = s.gamePhase === 1 ? GOAL_PHASE_1_AMOUNT : (s.gamePhase === 2 ? GOAL_PHASE_2_AMOUNT : GOAL_PHASE_3_AMOUNT);
          const deadlineLimit = s.gamePhase === 1 ? GOAL_PHASE_1_DAYS : (state.gamePhase === 2 ? GOAL_PHASE_2_DAYS : (state.gamePhase === 3 ? GOAL_PHASE_3_DAYS : GOAL_OVERTIME_DAYS));
-         const nw = getNetWorth(s);
 
          if (s.day > GOAL_OVERTIME_DAYS) {
              s.gameOver = true;
@@ -2565,6 +2609,7 @@ export default function App() {
         speakPanicked(outcomeMsg);
       }
 
+      checkWarrants(s);
       setModal({ type: 'encounter_resolution', data: { state: s, report: r, outcomeMsg, outcomeType, destIdx: resolvedDestIdx, mine, overload } });
   };
 
@@ -2673,6 +2718,10 @@ export default function App() {
      }
 
      processDay(s, report);
+     checkWarrants(s);
+     if (s.warrantLevel >= 5) {
+         s.gameOver = true;
+     }
      const nw = getNetWorth(s);
 
      if (s.day > GOAL_OVERTIME_DAYS) {
@@ -2724,7 +2773,13 @@ export default function App() {
         setState(s);
      } else {
         const isHS = s.highScores.length < 100 || nw > s.highScores[s.highScores.length - 1].score;
-        setModal({ type: 'endgame', data: { reason: "Deadline Missed. License Revoked.", netWorth: nw, stats: s.stats, isHighScore: isHS, days: s.day - 1 } });
+        let reason = "Deadline Missed. License Revoked.";
+        if (s.warrantLevel >= 5) {
+            reason = "License Terminated: Too many arrest warrants issued (5/5). Your operating certificate has been permanently revoked by G.O.D.";
+        } else if (s.day > GOAL_OVERTIME_DAYS) {
+            reason = "Retirement Day: Trade License Expired Successfully";
+        }
+        setModal({ type: 'endgame', data: { reason, netWorth: nw, stats: s.stats, isHighScore: isHS, days: s.day } });
         SFX.play('error');
      }
   };
@@ -4874,7 +4929,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.13.2.0</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.13.3.0</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -5199,7 +5254,7 @@ Key Establishments & Local Flavor
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.13.2.0 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.13.3.0 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -5567,7 +5622,7 @@ Key Establishments & Local Flavor
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                           <p className="text-gray-500 font-mono text-[10px] uppercase">v.13.2.0</p>
+                          <p className="text-gray-500 font-mono text-[10px] uppercase">v.13.3.0</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -6660,7 +6715,7 @@ Key Establishments & Local Flavor
                             {/* Mutant Unrest HUD Block on the right */}
                             <div className="flex flex-col items-end gap-1.5 shrink-0">
                                 <div className="text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                                    SYSTEM LOG: FABRICATION MATRIX v.13.2.0 ACTIVE
+                                    SYSTEM LOG: FABRICATION MATRIX v.13.3.0 ACTIVE
                                 </div>
                                 <div className="bg-slate-950/90 border border-red-500/40 p-2.5 rounded-xl w-56 font-mono text-xs shadow-[0_0_15px_rgba(239,68,68,0.15)] flex flex-col gap-1 text-left">
                                     <div className="flex justify-between items-center text-red-400 font-bold tracking-wider">
@@ -7643,7 +7698,7 @@ Key Establishments & Local Flavor
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v.13.2.0</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v.13.3.0</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -7937,7 +7992,7 @@ Key Establishments & Local Flavor
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                     <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.13.2.0</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.13.3.0</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -8125,7 +8180,21 @@ Key Establishments & Local Flavor
                         if (!modal || !modal.data) return;
                         const { state: sData, report: rData, destIdx, mine, overload } = modal.data;
                         if (sData) {
-                            if (sData.shipHealth <= 0) {
+                            if (sData.warrantLevel >= 5) {
+                                sData.gameOver = true;
+                                const nw = getNetWorth(sData);
+                                const isHS = sData.highScores.length < 100 || nw > (sData.highScores[sData.highScores.length - 1]?.score || 0);
+                                setModal({
+                                    type: 'endgame',
+                                    data: {
+                                        reason: "License Terminated: Too many arrest warrants issued (5/5). Your operating certificate has been permanently revoked by G.O.D.",
+                                        netWorth: nw,
+                                        stats: sData.stats,
+                                        isHighScore: isHS,
+                                        days: sData.day
+                                    }
+                                });
+                            } else if (sData.shipHealth <= 0) {
                                 sData.gameOver = true;
                                 const nw = getNetWorth(sData);
                                 const isHS = sData.highScores.length < 100 || nw > (sData.highScores[sData.highScores.length - 1]?.score || 0);
@@ -8395,7 +8464,7 @@ Key Establishments & Local Flavor
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.13.2.0</p>
+                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.13.3.0</p>
                </div>
            </div>
        )}
