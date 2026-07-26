@@ -161,6 +161,8 @@ export interface GameState {
 
   // v5.7 Extensions
   warrantLevel: number; // Increases law enforcement encounter chance
+  warrant4WarningPending?: boolean;
+  warrant4WarningShown?: boolean;
   sectorPasses: string[]; // Grants free passage or bonuses in certain sectors
   isMutinyActive?: boolean; // Locks F.O.M.O. and Upgrades decks
   mutantUnrest?: number; // Tracks mutant crew unrest intensity (0 - 100)
