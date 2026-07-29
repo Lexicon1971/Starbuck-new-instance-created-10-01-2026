@@ -52,6 +52,21 @@ exports.submitScore = onRequest({ cors: true }, async (req, res) => {
     // 4. Write verified data to global leaderboard collection
     await db.collection("leaderboard").add(data);
 
+    // Prune 'leaderboard' to top 100
+    try {
+      const snapshot = await db.collection("leaderboard").orderBy("score", "desc").get();
+      if (snapshot.size > 100) {
+        const docsToDelete = snapshot.docs.slice(100);
+        const batch = db.batch();
+        docsToDelete.forEach(doc => {
+          batch.delete(doc.ref);
+        });
+        await batch.commit();
+      }
+    } catch (pruneError) {
+      console.error("Error pruning leaderboard collection:", pruneError);
+    }
+
     return res.status(200).json({ success: true, message: "Score registered." });
   } catch (error) {
     console.error("Error submitting score:", error);
