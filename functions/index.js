@@ -49,25 +49,33 @@ exports.submitScore = onRequest({ cors: true }, async (req, res) => {
       date: new Date().toLocaleDateString()
     };
 
-    // 4. Write verified data to global leaderboard collection
-    await db.collection("leaderboard").add(data);
-
-    // Prune 'leaderboard' to top 100
+    // Fetch existing entries to check if the new score deserves to be added
     try {
       const snapshot = await db.collection("leaderboard").orderBy("score", "desc").get();
-      if (snapshot.size > 100) {
-        const docsToDelete = snapshot.docs.slice(100);
-        const batch = db.batch();
-        docsToDelete.forEach(doc => {
-          batch.delete(doc.ref);
-        });
-        await batch.commit();
-      }
-    } catch (pruneError) {
-      console.error("Error pruning leaderboard collection:", pruneError);
-    }
+      const deservesEntry = snapshot.size < 100 || parsedScore > Number(snapshot.docs[snapshot.size - 1].data().score);
 
-    return res.status(200).json({ success: true, message: "Score registered." });
+      if (deservesEntry) {
+        // 4. Write verified data to global leaderboard collection
+        await db.collection("leaderboard").add(data);
+
+        // Prune 'leaderboard' to top 100 if we now exceed 100
+        const updatedSnapshot = await db.collection("leaderboard").orderBy("score", "desc").get();
+        if (updatedSnapshot.size > 100) {
+          const docsToDelete = updatedSnapshot.docs.slice(100);
+          const batch = db.batch();
+          docsToDelete.forEach(doc => {
+            batch.delete(doc.ref);
+          });
+          await batch.commit();
+        }
+        return res.status(200).json({ success: true, message: "Score registered." });
+      } else {
+        return res.status(200).json({ success: false, message: "Score does not qualify for top 100." });
+      }
+    } catch (dbError) {
+      console.error("Database operations failed:", dbError);
+      return res.status(500).send("Database Error");
+    }
   } catch (error) {
     console.error("Error submitting score:", error);
     return res.status(500).send("Internal Server Error");

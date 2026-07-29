@@ -3851,9 +3851,7 @@ export default function App() {
     const isFirebaseConfigured = import.meta.env.VITE_FIREBASE_PROJECT_ID && import.meta.env.VITE_FIREBASE_PROJECT_ID !== "PROJECT_ID";
     if (db && isFirebaseConfigured) {
         try {
-            await addDoc(collection(db, "highscores"), newScore);
-
-            // Query all documents in the highscores collection sorted by score descending to keep only the top 100
+            // Check existing high scores to only allow entry if score is higher than the lowest high score on Firestore
             const q = query(collection(db, "highscores"), orderBy("score", "desc"));
             const s = await getDocs(q);
             const docs: { id: string; score: number }[] = [];
@@ -3862,17 +3860,29 @@ export default function App() {
               docs.push({ id: d.id, score: Number(data.score) || 0 });
             });
 
-            // If we have more than 100 documents, prune the extra ones
-            if (docs.length > 100) {
-              // Delete everything from index 100 onwards
-              for (let i = 100; i < docs.length; i++) {
-                try {
-                  const docRef = doc(db, "highscores", docs[i].id);
-                  await deleteDoc(docRef);
-                } catch (err) {
-                  console.error("Failed to prune extra high score from highscores collection:", err);
+            const deservesEntry = docs.length < 100 || score > docs[docs.length - 1].score;
+
+            if (deservesEntry) {
+                await addDoc(collection(db, "highscores"), newScore);
+
+                // Re-query and prune extra entries beyond 100
+                const sUpdated = await getDocs(q);
+                const docsUpdated: { id: string; score: number }[] = [];
+                sUpdated.forEach((d) => {
+                  const data = d.data();
+                  docsUpdated.push({ id: d.id, score: Number(data.score) || 0 });
+                });
+
+                if (docsUpdated.length > 100) {
+                  for (let i = 100; i < docsUpdated.length; i++) {
+                    try {
+                      const docRef = doc(db, "highscores", docsUpdated[i].id);
+                      await deleteDoc(docRef);
+                    } catch (err) {
+                      console.error("Failed to prune extra high score from highscores collection:", err);
+                    }
+                  }
                 }
-              }
             }
         } catch(e) {
             console.error("Error saving/pruning high score in Firestore:", e);
