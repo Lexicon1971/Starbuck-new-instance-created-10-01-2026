@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v.13.3.3
+ * VERSION: v.13.3.4
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -1233,7 +1233,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v.13.3.3 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v.13.3.4 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -3851,28 +3851,85 @@ export default function App() {
     const isFirebaseConfigured = import.meta.env.VITE_FIREBASE_PROJECT_ID && import.meta.env.VITE_FIREBASE_PROJECT_ID !== "PROJECT_ID";
     if (db && isFirebaseConfigured) {
         try {
-            await addDoc(collection(db, "highscores"), newScore);
-
-            // Query all documents in the highscores collection sorted by score descending to keep only the top 100
+            // Retrieve all current high scores in the Firestore database ordered by score descending
             const q = query(collection(db, "highscores"), orderBy("score", "desc"));
             const s = await getDocs(q);
-            const docs: { id: string; score: number }[] = [];
+            const dbScores: { id: string; name: string; score: number; days: number; date: string; achievements?: string[] }[] = [];
             s.forEach((d) => {
               const data = d.data();
-              docs.push({ id: d.id, score: Number(data.score) || 0 });
+              dbScores.push({
+                id: d.id,
+                name: data.name || '',
+                score: Number(data.score) || 0,
+                days: Number(data.days) || 0,
+                date: data.date || '',
+                achievements: data.achievements || []
+              });
             });
 
-            // If we have more than 100 documents, prune the extra ones
-            if (docs.length > 100) {
-              // Delete everything from index 100 onwards
-              for (let i = 100; i < docs.length; i++) {
-                try {
-                  const docRef = doc(db, "highscores", docs[i].id);
-                  await deleteDoc(docRef);
-                } catch (err) {
-                  console.error("Failed to prune extra high score from highscores collection:", err);
+            const top100DbScores = dbScores.slice(0, 100);
+            const lowestDbScore = top100DbScores.length > 0 ? Number(top100DbScores[top100DbScores.length - 1].score) || 0 : 0;
+
+            let addedCount = 0;
+
+            // Verify if newScore qualifies
+            const newScoreQualifies = dbScores.length < 100 || newScore.score > lowestDbScore;
+            if (newScoreQualifies) {
+                await addDoc(collection(db, "highscores"), newScore);
+                addedCount++;
+            }
+
+            // Gather all "current scores in data" from local storage, local state, and loadHighScores
+            const localScoresStr = localStorage.getItem('sbe_highscores');
+            const localScores: HighScore[] = localScoresStr ? JSON.parse(localScoresStr) : [];
+            const stateScores: HighScore[] = state?.highScores || [];
+
+            const allDataScoresMap = new Map<string, HighScore>();
+            const addToMap = (item: HighScore) => {
+              const key = `${item.name.trim()}_${item.score}_${item.days}`;
+              allDataScoresMap.set(key, item);
+            };
+            currentScores.forEach(addToMap);
+            localScores.forEach(addToMap);
+            stateScores.forEach(addToMap);
+
+            const allDataScores = Array.from(allDataScoresMap.values());
+
+            // Add any other current scores in data that qualify and are not in the top 100
+            for (const item of allDataScores) {
+                const alreadyInTop100 = top100DbScores.some(dbS => dbS.name.trim() === item.name.trim() && Number(dbS.score) === Number(item.score));
+                const itemQualifies = dbScores.length < 100 || item.score > lowestDbScore;
+
+                if (!alreadyInTop100 && itemQualifies) {
+                    await addDoc(collection(db, "highscores"), {
+                        name: item.name,
+                        score: item.score,
+                        days: item.days,
+                        date: item.date || new Date().toLocaleDateString(),
+                        achievements: (item as any).achievements || []
+                    });
+                    addedCount++;
                 }
-              }
+            }
+
+            // Prune the database if any scores were added or if it contains extra documents
+            if (addedCount > 0 || dbScores.length > 100) {
+                const pruneQ = query(collection(db, "highscores"), orderBy("score", "desc"));
+                const pruneSnapshot = await getDocs(pruneQ);
+                const pruneDocs: string[] = [];
+                pruneSnapshot.forEach((d) => {
+                    pruneDocs.push(d.id);
+                });
+                if (pruneDocs.length > 100) {
+                    for (let i = 100; i < pruneDocs.length; i++) {
+                        try {
+                            const docRef = doc(db, "highscores", pruneDocs[i]);
+                            await deleteDoc(docRef);
+                        } catch (err) {
+                            console.error("Failed to prune extra high score from highscores collection:", err);
+                        }
+                    }
+                }
             }
         } catch(e) {
             console.error("Error saving/pruning high score in Firestore:", e);
@@ -4953,7 +5010,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.13.3.3</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.13.3.4</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -5278,7 +5335,7 @@ Key Establishments & Local Flavor
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.13.3.3 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.13.3.4 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -5646,7 +5703,7 @@ Key Establishments & Local Flavor
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                          <p className="text-gray-500 font-mono text-[10px] uppercase">v.13.3.3</p>
+                          <p className="text-gray-500 font-mono text-[10px] uppercase">v.13.3.4</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -6739,7 +6796,7 @@ Key Establishments & Local Flavor
                             {/* Mutant Unrest HUD Block on the right */}
                             <div className="flex flex-col items-end gap-1.5 shrink-0">
                                 <div className="text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                                    SYSTEM LOG: FABRICATION MATRIX v.13.3.3 ACTIVE
+                                    SYSTEM LOG: FABRICATION MATRIX v.13.3.4 ACTIVE
                                 </div>
                                 <div className="bg-slate-950/90 border border-red-500/40 p-2.5 rounded-xl w-56 font-mono text-xs shadow-[0_0_15px_rgba(239,68,68,0.15)] flex flex-col gap-1 text-left">
                                     <div className="flex justify-between items-center text-red-400 font-bold tracking-wider">
@@ -7722,7 +7779,7 @@ Key Establishments & Local Flavor
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v.13.3.3</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v.13.3.4</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -8016,7 +8073,7 @@ Key Establishments & Local Flavor
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.13.3.3</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.13.3.4</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -8488,7 +8545,7 @@ Key Establishments & Local Flavor
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.13.3.3</p>
+                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.13.3.4</p>
                </div>
            </div>
        )}
