@@ -150,6 +150,7 @@ export interface GameState {
   stats: Stats;
   gameOver: boolean;
   gamePhase: 1 | 2 | 3 | 4;
+  phaseChangePending?: boolean;
   highScores: HighScore[];
   
   tutorialActive: boolean;
