@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v.13.3.5
+ * VERSION: v.13.3.6
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -1233,7 +1233,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v.13.3.5 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v.13.3.6 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -5047,7 +5047,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.13.3.5</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.13.3.6</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -5372,7 +5372,7 @@ Key Establishments & Local Flavor
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.13.3.5 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.13.3.6 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -5740,7 +5740,7 @@ Key Establishments & Local Flavor
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                          <p className="text-gray-500 font-mono text-[10px] uppercase">v.13.3.5</p>
+                          <p className="text-gray-500 font-mono text-[10px] uppercase">v.13.3.6</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -5925,111 +5925,148 @@ Key Establishments & Local Flavor
         });
         if (minPrice === Infinity) minPrice = 0;
 
-        return (
-            <div className="flex flex-col h-full p-4 md:p-8 bg-black/40 animate-in zoom-in-95 duration-300">
-                <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-                    <h2 className="text-3xl font-scifi text-cyan-400 uppercase">{name} Neural Intel</h2>
-                    <button onClick={()=>{setModal({type:'shipping', data:null}); setLogisticsTab('shipping');}} className="text-red-500 hover:text-red-400"><XCircle size={32}/></button>
+        // Sort the indices first by stored stock (isStored desc), then by best sell value (price desc)
+        const venueIndices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+        const sortedIndices = [...venueIndices].sort((aIdx, bIdx) => {
+            const isStoredA = state.warehouse[aIdx]?.[name] !== undefined;
+            const isStoredB = state.warehouse[bIdx]?.[name] !== undefined;
+            if (isStoredA !== isStoredB) {
+                return isStoredA ? -1 : 1;
+            }
+            const priceA = state.markets[aIdx]?.[name]?.price || 0;
+            const priceB = state.markets[bIdx]?.[name]?.price || 0;
+            return priceB - priceA;
+        });
+
+        const firstFourIndices = sortedIndices.slice(0, 4);
+        const otherSixIndices = sortedIndices.slice(4);
+
+        const renderVenueItem = (i: number) => {
+            const m = state.markets[i];
+            const mItem = m?.[name];
+            const price = mItem ? mItem.price : 0;
+            const stock = mItem ? mItem.quantity : 0;
+            const isStored = state.warehouse[i]?.[name] !== undefined;
+
+            const h2oPasteMinMult = Math.pow(1.05, state.day);
+            const h2oPasteMaxMult = Math.pow(1.10, state.day);
+            let dMin = Math.round(c.minPrice * phaseMultiplier);
+            let dMax = Math.round(c.maxPrice * phaseMultiplier);
+            if (c.name === H2O_NAME || c.name === NUTRI_PASTE_NAME) {
+                dMin = Math.round(c.minPrice * h2oPasteMinMult);
+                dMax = Math.round(c.maxPrice * h2oPasteMaxMult);
+            }
+            const priceRangeAmt = dMax - dMin;
+            const relativePrice = (price - dMin) / (priceRangeAmt || 1);
+            let priceColorClass = 'text-yellow-400';
+            if (relativePrice <= 0.33) priceColorClass = 'text-green-400';
+            if (relativePrice >= 0.66) priceColorClass = 'text-red-400';
+
+            const isBestBuy = price === minPrice;
+            const isBestSell = price === maxPrice;
+            const isFrozen = state.fixedCommodity?.name === name;
+
+            return (
+                <div key={i} className="flex justify-between items-center bg-black/30 p-1.5 md:p-2 rounded-xl border border-gray-800 hover:border-cyan-500/20 transition-all">
+                    <div className="flex items-center gap-2">
+                        <span className="text-gray-400 font-bold text-sm">{VENUES[i]}</span>
+                        {isStored && <span className="bg-blue-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded animate-pulse">STORED</span>}
+                        {isBestBuy && stock > 0 && <span className="bg-green-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded">BEST BUY</span>}
+                        {isBestSell && <span className="bg-red-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded">BEST SELL</span>}
+                        {isFrozen && <span className="bg-cyan-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded">FROZEN</span>}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        {source === 'storage' && venueIndex === i ? (
+                            <button
+                                onClick={() => {
+                                    const whItem = state.warehouse[venueIndex!]?.[name];
+                                    if (whItem) {
+                                        sellWarehouseItem(venueIndex!, name, whItem.quantity);
+                                    }
+                                    setModal({type: 'none', data: null});
+                                }}
+                                className="text-[10px] bg-red-600 hover:bg-red-500 border border-red-400 text-white px-2 py-1 rounded font-black shrink-0"
+                            >
+                                SELL
+                            </button>
+                        ) : source === 'storage' ? (
+                            <button
+                                disabled={!((state.warehouse[venueIndex!]?.[name]?.quantity || 0) > 0)}
+                                onClick={() => {
+                                    automateStorageShipment(name, venueIndex!, i);
+                                }}
+                                className="text-[10px] bg-cyan-900 hover:bg-cyan-800 disabled:bg-gray-700 border border-cyan-500 disabled:border-gray-600 text-cyan-300 disabled:text-gray-500 px-2 py-1 rounded font-black shrink-0"
+                            >
+                                SET DESTINATION
+                            </button>
+                        ) : (
+                            <button
+                                disabled={!((state.cargo[name]?.quantity || 0) > 0)}
+                                onClick={() => {
+                                    automateCargoShipment(name, i);
+                                }}
+                                className="text-[10px] bg-cyan-900 hover:bg-cyan-800 disabled:bg-gray-700 border border-cyan-500 disabled:border-gray-600 text-cyan-300 disabled:text-gray-500 px-2 py-1 rounded font-black shrink-0"
+                            >
+                                SET DESTINATION
+                            </button>
+                        )}
+                        <span className="text-xs text-gray-500 font-mono">Stock: <span className="text-white">{stock}</span></span>
+                        <div className={priceColorClass}><PriceDisplay value={price} size="text-sm" compact /></div>
+                        {source === 'storage' && (
+                            <div className="text-xs">
+                                <PriceDisplay value={price - (state.warehouse[venueIndex!]?.[name]?.originalAvgCost || 0)} colored size="text-xs" compact />
+                            </div>
+                        )}
+                    </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 flex-grow overflow-y-auto custom-scrollbar">
-                    <div className="space-y-6">
-                        <div className="bg-slate-800/50 p-6 rounded-3xl border border-cyan-500/20">
-                            <h3 className="text-gray-400 uppercase text-[10px] font-black tracking-[0.3em] mb-4">Neural Profile</h3>
-                            <div className="flex items-center gap-6 mb-4">
-                                <div className="text-6xl p-4 bg-black/40 rounded-2xl border border-cyan-500/30">{c.icon === 'metal-lump' ? '🌑' : c.icon}</div>
+            );
+        };
+
+        return (
+            <div className="flex flex-col h-full p-4 md:p-5 bg-black/40 animate-in zoom-in-95 duration-300">
+                <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
+                    <h2 className="text-2xl font-scifi text-cyan-400 uppercase leading-none">{name} Neural Intel</h2>
+                    <button onClick={()=>{setModal({type:'shipping', data:null}); setLogisticsTab('shipping');}} className="text-red-500 hover:text-red-400"><XCircle size={24}/></button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-grow overflow-y-auto custom-scrollbar">
+                    {/* Left Column */}
+                    <div className="space-y-3">
+                        <div className="bg-slate-800/50 p-3 rounded-2xl border border-cyan-500/20">
+                            <h3 className="text-gray-400 uppercase text-[9px] font-black tracking-[0.3em] mb-1.5">Neural Profile</h3>
+                            <div className="flex items-center gap-3 mb-1.5">
+                                <div className="text-3xl p-2 bg-black/40 rounded-xl border border-cyan-500/25">{c.icon === 'metal-lump' ? '🌑' : c.icon}</div>
                                 <div>
-                                    <div className="text-white font-black text-2xl uppercase">{c.name}</div>
-                                    <div className="text-cyan-500 font-mono text-sm uppercase">Sector Rarity: {Math.round(c.rarity * 100)}%</div>
+                                    <div className="text-white font-black text-sm uppercase leading-none mb-1">{c.name}</div>
+                                    <div className="text-cyan-500 font-mono text-[10px] uppercase leading-none">Sector Rarity: {Math.round(c.rarity * 100)}%</div>
                                 </div>
                             </div>
-                            <div className="text-gray-300 text-sm italic leading-relaxed">System Analysis: A core commodity within the current sector cycle. Volatility remains locked within predictable neural thresholds.</div>
+                            <div className="text-gray-300 text-[10px] italic leading-tight">System Analysis: A core commodity within the current sector cycle. Volatility remains locked within predictable neural thresholds.</div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <h3 className="text-white font-bold uppercase tracking-widest text-[10px] border-l-2 border-cyan-500 pl-2 leading-none">Sector Market Spreads (1-4)</h3>
+                            <div className="flex justify-between text-[9px] text-gray-500 uppercase font-black px-2">
+                                <span>Venue</span>
+                                <span>Local Stock / Price</span>
+                            </div>
+                            <div className="space-y-1">
+                                {firstFourIndices.map(renderVenueItem)}
+                            </div>
                         </div>
                     </div>
-                    <div className="space-y-4">
-                        <h3 className="text-white font-bold uppercase tracking-widest text-sm border-l-2 border-cyan-500 pl-4">Sector Market Spreads</h3>
-                        <div className="flex justify-between text-[10px] text-gray-500 uppercase font-black px-4">
-                            <span>Venue</span>
-                            <span>Local Stock / Price</span>
+
+                    {/* Right Column */}
+                    <div className="space-y-3">
+                        <div className="space-y-1.5">
+                            <h3 className="text-white font-bold uppercase tracking-widest text-[10px] border-l-2 border-cyan-500 pl-2 leading-none">Sector Market Spreads (5-10)</h3>
+                            <div className="flex justify-between text-[9px] text-gray-500 uppercase font-black px-2">
+                                <span>Venue</span>
+                                <span>Local Stock / Price</span>
+                            </div>
+                            <div className="space-y-1">
+                                {otherSixIndices.map(renderVenueItem)}
+                            </div>
                         </div>
-                        {state.markets.map((m, i) => {
-                            const mItem = m?.[name];
-                            const price = mItem ? mItem.price : 0;
-                            const stock = mItem ? mItem.quantity : 0;
-                            const isStored = state.warehouse[i]?.[name] !== undefined;
-
-                            const h2oPasteMinMult = Math.pow(1.05, state.day);
-                            const h2oPasteMaxMult = Math.pow(1.10, state.day);
-                            let dMin = Math.round(c.minPrice * phaseMultiplier);
-                            let dMax = Math.round(c.maxPrice * phaseMultiplier);
-                            if (c.name === H2O_NAME || c.name === NUTRI_PASTE_NAME) {
-                                dMin = Math.round(c.minPrice * h2oPasteMinMult);
-                                dMax = Math.round(c.maxPrice * h2oPasteMaxMult);
-                            }
-                            const priceRangeAmt = dMax - dMin;
-                            const relativePrice = (price - dMin) / priceRangeAmt;
-                            let priceColorClass = 'text-yellow-400';
-                            if (relativePrice <= 0.33) priceColorClass = 'text-green-400';
-                            if (relativePrice >= 0.66) priceColorClass = 'text-red-400';
-
-                            const isBestBuy = price === minPrice;
-                            const isBestSell = price === maxPrice;
-                            const isFrozen = state.fixedCommodity?.name === name;
-
-                            return (
-                                <div key={i} className="flex justify-between items-center bg-black/30 p-4 rounded-xl border border-gray-800 hover:border-cyan-500/20 transition-all">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-gray-400 font-bold">{VENUES[i]}</span>
-                                        {isStored && <span className="bg-blue-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded animate-pulse">STORED</span>}
-                                        {isBestBuy && stock > 0 && <span className="bg-green-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded">BEST BUY</span>}
-                                        {isBestSell && <span className="bg-red-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded">BEST SELL</span>}
-                                        {isFrozen && <span className="bg-cyan-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded">FROZEN</span>}
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        {source === 'storage' && venueIndex === i ? (
-                                            <button
-                                                onClick={() => {
-                                                    const whItem = state.warehouse[venueIndex!]?.[name];
-                                                    if (whItem) {
-                                                        sellWarehouseItem(venueIndex!, name, whItem.quantity);
-                                                    }
-                                                    setModal({type: 'none', data: null});
-                                                }}
-                                                className="text-[10px] bg-red-600 hover:bg-red-500 border border-red-400 text-white px-2 py-1 rounded font-black shrink-0"
-                                            >
-                                                SELL
-                                            </button>
-                                        ) : source === 'storage' ? (
-                                            <button
-                                                disabled={!((state.warehouse[venueIndex!]?.[name]?.quantity || 0) > 0)}
-                                                onClick={() => {
-                                                    automateStorageShipment(name, venueIndex!, i);
-                                                }}
-                                                className="text-[10px] bg-cyan-900 hover:bg-cyan-800 disabled:bg-gray-700 border border-cyan-500 disabled:border-gray-600 text-cyan-300 disabled:text-gray-500 px-2 py-1 rounded font-black shrink-0"
-                                            >
-                                                SET DESTINATION
-                                            </button>
-                                        ) : (
-                                            <button
-                                                disabled={!((state.cargo[name]?.quantity || 0) > 0)}
-                                                onClick={() => {
-                                                    automateCargoShipment(name, i);
-                                                }}
-                                                className="text-[10px] bg-cyan-900 hover:bg-cyan-800 disabled:bg-gray-700 border border-cyan-500 disabled:border-gray-600 text-cyan-300 disabled:text-gray-500 px-2 py-1 rounded font-black shrink-0"
-                                            >
-                                                SET DESTINATION
-                                            </button>
-                                        )}
-                                        <span className="text-xs text-gray-500 font-mono">Stock: <span className="text-white">{stock}</span></span>
-                                        <div className={priceColorClass}><PriceDisplay value={price} size="text-md" compact /></div>
-                                        {source === 'storage' && (
-                                            <div className="text-xs">
-                                                <PriceDisplay value={price - (state.warehouse[venueIndex!]?.[name]?.originalAvgCost || 0)} colored size="text-xs" compact />
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            );
-                        })}
                     </div>
                 </div>
             </div>
@@ -6833,7 +6870,7 @@ Key Establishments & Local Flavor
                             {/* Mutant Unrest HUD Block on the right */}
                             <div className="flex flex-col items-end gap-1.5 shrink-0">
                                 <div className="text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                                    SYSTEM LOG: FABRICATION MATRIX v.13.3.5 ACTIVE
+                                    SYSTEM LOG: FABRICATION MATRIX v.13.3.6 ACTIVE
                                 </div>
                                 <div className="bg-slate-950/90 border border-red-500/40 p-2.5 rounded-xl w-56 font-mono text-xs shadow-[0_0_15px_rgba(239,68,68,0.15)] flex flex-col gap-1 text-left">
                                     <div className="flex justify-between items-center text-red-400 font-bold tracking-wider">
@@ -7816,7 +7853,7 @@ Key Establishments & Local Flavor
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v.13.3.5</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v.13.3.6</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -8110,7 +8147,7 @@ Key Establishments & Local Flavor
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.13.3.5</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.13.3.6</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -8582,7 +8619,7 @@ Key Establishments & Local Flavor
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.13.3.5</p>
+                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.13.3.6</p>
                </div>
            </div>
        )}
