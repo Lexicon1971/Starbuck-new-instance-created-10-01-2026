@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v.13.3.6
+ * VERSION: v.13.3.7
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -1158,6 +1158,9 @@ export default function App() {
     const list = s.achievements;
     return (
       <span className="inline-flex gap-1 items-center ml-2">
+        {list.includes('chairman') && (
+          <span className="inline-flex items-center justify-center bg-gradient-to-r from-slate-400 via-zinc-200 to-slate-500 text-slate-900 font-black rounded-full w-5 h-5 shadow-[0_0_12px_#a1a1aa] text-[9px] border border-zinc-300 animate-pulse" title="The Chairman of the Bet-Baza'ar Board Award (Amassed over 10T credits)">TT</span>
+        )}
         {list.includes('elon') && (
           <span className="inline-flex items-center justify-center bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-500 text-slate-900 font-black rounded-full w-5 h-5 shadow-[0_0_12px_#f59e0b] text-xs border border-yellow-300 animate-pulse animate-bounce" title="E.L.O.N. Award: Executive Lord of Orbital Networks (Richest Man)">E</span>
         )}
@@ -1177,13 +1180,13 @@ export default function App() {
           <span className="inline-flex items-center justify-center bg-cyan-900 text-cyan-300 font-bold rounded-full w-5 h-5 text-xs border border-cyan-500" title="Traveller Award (Travelled 25+ days)">🚀</span>
         )}
         {list.includes('hermit') && (
-          <span className="inline-flex items-center justify-center bg-slate-800 text-slate-300 font-bold rounded-full w-5 h-5 text-xs border border-slate-500" title="Hermit Award (Stayed at a venue 3+ days)">🏡</span>
+          <span className="inline-flex items-center justify-center bg-slate-800 text-slate-300 font-bold rounded-full w-5 h-5 text-xs border border-slate-500" title="Hermit Award (Stayed at a venue 1+ days)">🏡</span>
         )}
         {list.includes('overachiever') && (
           <span className="inline-flex items-center justify-center bg-red-900 text-red-300 font-bold rounded-full w-5 h-5 text-xs border border-red-500 animate-pulse" title="Overachiever Award (Reached final phase before day 20)">⚡</span>
         )}
         {list.includes('steel_hull') && (
-          <span className="inline-flex items-center justify-center bg-emerald-900 text-emerald-300 font-bold rounded-full w-5 h-5 text-xs border border-emerald-500" title="Steel Hull Survivor (Survived with <= 10% Hull)">🛡️</span>
+          <span className="inline-flex items-center justify-center bg-emerald-900 text-emerald-300 font-bold rounded-full w-5 h-5 text-xs border border-emerald-500" title="Steel Hull Survivor (Survived with <= 50% Hull)">🛡️</span>
         )}
         {list.includes('death') && (
           <span className="inline-flex items-center justify-center bg-black text-red-500 font-bold rounded-full w-5 h-5 text-xs border border-red-600 animate-pulse" title="Deceased (Killed in Sector)">💀</span>
@@ -1195,8 +1198,21 @@ export default function App() {
     );
   };
 
+  /**
+   * Calculates the player's current net worth.
+   * @param s The current game state.
+   * @returns The player's net worth.
+   */
+  const getNetWorth = (s: GameState) => {
+    const debt = s.activeLoans.reduce((a,b) => a + b.currentDebt, 0);
+    const cargoVal = Object.entries(s.cargo).reduce((sum, [name, item]) => sum + (item.quantity * (s.markets[s.currentVenueIndex][name]?.price || 0)), 0);
+    const invVal = s.investments.reduce((a,b) => a + b.amount, 0);
+    return s.cash + cargoVal + invVal - debt;
+  };
+
   const getAchievementName = (id: string) => {
     switch (id) {
+      case 'chairman': return "The Chairman of the Bet-Baza'ar Board";
       case 'elon': return 'E.L.O.N. (Executive Lord of Orbital Networks) Award';
       case 'mutant_survivor': return 'Mutant Crew Uprising Survivor';
       case 'master_fabricator': return 'Master Fabricator';
@@ -1233,7 +1249,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v.13.3.6 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v.13.3.7 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -1517,6 +1533,11 @@ export default function App() {
         }
       };
 
+      // Chairman of the Bet-Baza'ar Board (10T credits)
+      if (getNetWorth(s) >= 10000000000000) {
+        add('chairman');
+      }
+
       // 1. E.L.O.N.
       if (s.stocks && s.stocks.length > 0 && s.stocks.every(st => st.takeoverSuccessful)) {
         add('elon');
@@ -1542,15 +1563,15 @@ export default function App() {
         add('traveller');
       }
       // 7. Hermit
-      if ((s.daysStayedCount || 0) >= 3) {
+      if ((s.daysStayedCount || 0) >= 1) {
         add('hermit');
       }
       // 8. Overachiever
       if (s.reachedPhase4BeforeDay20) {
         add('overachiever');
       }
-      // 9. Steel Hull (lived/survived with <= 10% hull)
-      if (s.shipHealth > 0 && s.shipHealth <= 10) {
+      // 9. Steel Hull (lived/survived with <= 50% hull)
+      if (s.shipHealth > 0 && s.shipHealth <= 50) {
         if (!s.survivedCriticalHull) {
           s.survivedCriticalHull = true;
           updated = true;
@@ -1581,7 +1602,11 @@ export default function App() {
     state?.reachedPhase4BeforeDay20,
     state?.shipHealth,
     state?.survivedCriticalHull,
-    state?.warrantLevel
+    state?.warrantLevel,
+    state?.cash,
+    state?.cargo,
+    state?.investments,
+    state?.activeLoans
   ]);
 
   // Automatically switches to the warehouse tab after a shipment is made (Removed in v10.4.4 for direct console return).
@@ -3861,18 +3886,6 @@ export default function App() {
   };
 
   /**
-   * Calculates the player's current net worth.
-   * @param s The current game state.
-   * @returns The player's net worth.
-   */
-  const getNetWorth = (s: GameState) => {
-    const debt = s.activeLoans.reduce((a,b) => a + b.currentDebt, 0);
-    const cargoVal = Object.entries(s.cargo).reduce((sum, [name, item]) => sum + (item.quantity * (s.markets[s.currentVenueIndex][name]?.price || 0)), 0);
-    const invVal = s.investments.reduce((a,b) => a + b.amount, 0);
-    return s.cash + cargoVal + invVal - debt;
-  };
-
-  /**
    * Saves a new high score.
    * Calls loadHighScores.
    * @param name The player's name.
@@ -5047,7 +5060,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.13.3.6</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.13.3.7</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -5372,7 +5385,7 @@ Key Establishments & Local Flavor
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.13.3.6 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.13.3.7 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -5605,15 +5618,16 @@ Key Establishments & Local Flavor
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
+                    { id: 'chairman', name: "The Chairman of the Bet-Baza'ar Board", desc: "Reserved exclusively for the galaxy's most relentless mega-capitalists who have amassed over 10T credits. To hold this seat is to embody pure, unadulterated ambition—no longer just participating in the market, but owning the exchanges, out-trading, out-hustling, and out-accumulating all rivals. This turns supreme capital accumulation into an art form, ruling the financial cosmos from atop mountains of pure liquidity where the hunger for growth can never be satisfied, and entire stellar economies bend to your financial gravity.", reward: "Titanium Seat on the Board & TT Coin Badge", icon: <span className="inline-flex items-center justify-center bg-gradient-to-r from-slate-400 via-zinc-200 to-slate-500 text-slate-900 font-black rounded-full w-6 h-6 shadow-[0_0_10px_#a1a1aa] border border-zinc-300">TT</span> },
                     { id: 'elon', name: "E.L.O.N. Award", desc: "Executive Lord of Orbital Networks. Successfully initiate hostile takeovers for every single public stock in the Known Galaxy.", reward: "Eternal Prestige & Golden Shiny E Badge", icon: <span className="inline-flex items-center justify-center bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-500 text-slate-900 font-black rounded-full w-6 h-6 shadow-[0_0_10px_#f59e0b] border border-yellow-300">E</span> },
                     { id: 'mutant_survivor', name: "Mutant Crew Uprising Survivor", desc: "Successfully pacify, bribe, or pay off a rogue crew mutiny to regain control of your ship decks.", reward: "Moral boost & mutant skull badge", icon: "👾" },
                     { id: 'master_fabricator', name: "Master Fabricator", desc: "Fabricate 20 or more batches of items using the F.O.M.O. Engineering Deck.", reward: "Crafting mastery badge", icon: "🛠️" },
                     { id: 'corruption_master', name: "Corruption Master / Bribe Expert", desc: "Successfully bribe or pay off safety inspectors, customs checkpoints, and tax enforcers 5 or more times.", reward: "Waiver clearance badge", icon: "💼" },
                     { id: 'jetsetter', name: "and GOOD LUCK, MR. GORSKY", desc: "Successfully land on all 10 distinct venues in the Rusty Redeemer.", reward: "Good Luck, Mr. Gorsky badge", icon: <img src={gorskyIcon} className="w-12 h-12 object-contain rounded-full border border-yellow-500/30" alt="Gorsky" /> },
                     { id: 'traveller', name: "Traveller Award", desc: "Spend 25 or more cycles travelling to trade venues in the Known star systems.", reward: "Cosmic odometer badge", icon: "🚀" },
-                    { id: 'hermit', name: "Hermit Award", desc: "Remain anchored at the exact same venue for 3 or more days using stay-in-place actions.", reward: "Planetary anchor badge", icon: "🏡" },
+                    { id: 'hermit', name: "Hermit Award", desc: "Remain anchored at the exact same venue for 1 or more days using stay-in-place actions.", reward: "Planetary anchor badge", icon: "🏡" },
                     { id: 'overachiever', name: "Overachiever Award", desc: "Advance to the final trading phase (Phase 4) in record time, before D.A.Y. 20.", reward: "Chronos speedrunner badge", icon: "⚡" },
-                    { id: 'steel_hull', name: "Steel Hull Survivor", desc: "Survive or travel through danger zones with hull integrity depleted to 10% or less.", reward: "Unyielding chassis badge", icon: "🛡️" },
+                    { id: 'steel_hull', name: "Steel Hull Survivor", desc: "Survive or travel through danger zones with hull integrity depleted to 50% or less.", reward: "Unyielding chassis badge", icon: "🛡️" },
                     { id: 'outlaw', name: "Sector Outlaw", desc: "Attract the attention of law enforcement by carrying an arrest warrant in your name.", reward: "Outlaw Badge of Infamy", icon: "🚨" },
                     { id: 'death', name: "Killed in Action / Deceased", desc: "Meet your tragic demise through structural failure or mutant worker uprising in the StarBucks Sector.", reward: "Tombstone Memorial in Sector", icon: "💀" }
                   ].map(ach => {
@@ -5740,7 +5754,7 @@ Key Establishments & Local Flavor
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                          <p className="text-gray-500 font-mono text-[10px] uppercase">v.13.3.6</p>
+                          <p className="text-gray-500 font-mono text-[10px] uppercase">v.13.3.7</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -6870,7 +6884,7 @@ Key Establishments & Local Flavor
                             {/* Mutant Unrest HUD Block on the right */}
                             <div className="flex flex-col items-end gap-1.5 shrink-0">
                                 <div className="text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                                    SYSTEM LOG: FABRICATION MATRIX v.13.3.6 ACTIVE
+                                    SYSTEM LOG: FABRICATION MATRIX v.13.3.7 ACTIVE
                                 </div>
                                 <div className="bg-slate-950/90 border border-red-500/40 p-2.5 rounded-xl w-56 font-mono text-xs shadow-[0_0_15px_rgba(239,68,68,0.15)] flex flex-col gap-1 text-left">
                                     <div className="flex justify-between items-center text-red-400 font-bold tracking-wider">
@@ -7853,7 +7867,7 @@ Key Establishments & Local Flavor
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v.13.3.6</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v.13.3.7</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -8147,7 +8161,7 @@ Key Establishments & Local Flavor
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.13.3.6</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.13.3.7</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -8402,7 +8416,8 @@ Key Establishments & Local Flavor
                                const updatedState = {
                                    ...state,
                                    playerName: tempSaveName.trim(),
-                                   saveCount: nextSaveCount
+                                   saveCount: nextSaveCount,
+                                   highScores: universalLeaderboard.length > 0 ? universalLeaderboard : (state?.highScores || [])
                                } as GameState;
 
                                try {
@@ -8411,7 +8426,7 @@ Key Establishments & Local Flavor
                                    SFX.play('success');
 
                                    const nw = getNetWorth(updatedState);
-                                   const displayScores = universalLeaderboard.length > 0 ? universalLeaderboard : state.highScores;
+                                   const displayScores = universalLeaderboard.length > 0 ? universalLeaderboard : updatedState.highScores;
                                    const threshold = displayScores.length < 100 ? 0 : displayScores[displayScores.length - 1].score;
                                    const isLegend = nw > threshold;
 
@@ -8619,7 +8634,7 @@ Key Establishments & Local Flavor
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.13.3.6</p>
+                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.13.3.7</p>
                </div>
            </div>
        )}
