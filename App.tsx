@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v.13.3.7
+ * VERSION: v.13.3.8
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -1249,7 +1249,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v.13.3.7 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v.13.3.8 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -1742,6 +1742,12 @@ export default function App() {
    */
   const handleFeatureClick = (feature: string, callback: () => void) => {
       SFX.play('click');
+      if (state?.gameOver) {
+          if (feature === 'highscores') {
+              callback();
+          }
+          return;
+      }
       if (state?.isMutinyActive && (feature === 'shop' || feature === 'fomo')) {
         return setModal({
             type: 'message',
@@ -2218,6 +2224,30 @@ export default function App() {
      if (destIdx === s.currentVenueIndex) {
          s.day++;
          s.daysStayedCount = (s.daysStayedCount || 0) + 1; // Track stay days (Enhancement 136)
+
+         // Automatically transfer local warehouse items to cargo on day switch (Enhancement 178)
+         const arrivedItems = s.warehouse[s.currentVenueIndex];
+         const claimed: string[] = [];
+         if (arrivedItems) {
+             Object.keys(arrivedItems).forEach(key => {
+                 const item = arrivedItems[key];
+                 if (item.arrivalDay <= s.day && !item.isContractReserved) {
+                     const c = COMMODITIES.find(x => x.name === key)!;
+                     const cur = s.cargo[key] || { quantity: 0, averageCost: 0 };
+                     const newTotal = cur.quantity + item.quantity;
+                     const newAvg = ((cur.quantity * cur.averageCost) + (item.quantity * item.originalAvgCost)) / newTotal;
+                     s.cargo[key] = { quantity: newTotal, averageCost: newAvg };
+                     s.cargoWeight += item.quantity * c.unitWeight;
+                     claimed.push(`${item.quantity} ${key}`);
+                     delete s.warehouse[s.currentVenueIndex][key];
+                 }
+             });
+             if (Object.keys(s.warehouse[s.currentVenueIndex]).length === 0) delete s.warehouse[s.currentVenueIndex];
+         }
+         if (claimed.length > 0) {
+             report.events.unshift(`ARRIVAL LOGISTICS: Shipment automatically transferred to cargo: ${claimed.join(', ')}`);
+         }
+
          processDay(s, report);
          checkWarrants(s);
          const nw = getNetWorth(s);
@@ -2259,7 +2289,7 @@ export default function App() {
              return;
          }
 
-         const deadlineLimit = s.gamePhase === 1 ? GOAL_PHASE_1_DAYS : (state.gamePhase === 2 ? GOAL_PHASE_2_DAYS : (state.gamePhase === 3 ? GOAL_PHASE_3_DAYS : GOAL_OVERTIME_DAYS));
+         const deadlineLimit = s.gamePhase === 1 ? GOAL_PHASE_1_DAYS : (s.gamePhase === 2 ? GOAL_PHASE_2_DAYS : (s.gamePhase === 3 ? GOAL_PHASE_3_DAYS : GOAL_OVERTIME_DAYS));
 
          if (s.day > GOAL_OVERTIME_DAYS) {
              s.gameOver = true;
@@ -2279,6 +2309,11 @@ export default function App() {
          
          if (s.day === deadlineLimit) {
              setModal({type:'message', data: "URGENT WARNING: Today is the Phase Deadline. Meet the goal or face license revocation!", color: 'text-red-500'});
+             setTimeout(() => {
+                setModal({ type: 'report', data: { events: report.events, day: s.day, tips: getMarketTips(s), quirky: report.quirkyMessage } });
+                if (report.quirkyMessage) speakRetro(report.quirkyMessage.text);
+             }, 2000);
+             setState(s);
              SFX.play('alarm');
          } else if (!s.gameOver) {
             setModal({ type: 'report', data: { events: report.events, day: s.day, tips: getMarketTips(s), quirky: report.quirkyMessage } });
@@ -5060,7 +5095,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.13.3.7</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.13.3.8</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -5385,7 +5420,7 @@ Key Establishments & Local Flavor
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.13.3.7 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.13.3.8 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -5754,7 +5789,7 @@ Key Establishments & Local Flavor
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                          <p className="text-gray-500 font-mono text-[10px] uppercase">v.13.3.7</p>
+                          <p className="text-gray-500 font-mono text-[10px] uppercase">v.13.3.8</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -6884,7 +6919,7 @@ Key Establishments & Local Flavor
                             {/* Mutant Unrest HUD Block on the right */}
                             <div className="flex flex-col items-end gap-1.5 shrink-0">
                                 <div className="text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                                    SYSTEM LOG: FABRICATION MATRIX v.13.3.7 ACTIVE
+                                    SYSTEM LOG: FABRICATION MATRIX v.13.3.8 ACTIVE
                                 </div>
                                 <div className="bg-slate-950/90 border border-red-500/40 p-2.5 rounded-xl w-56 font-mono text-xs shadow-[0_0_15px_rgba(239,68,68,0.15)] flex flex-col gap-1 text-left">
                                     <div className="flex justify-between items-center text-red-400 font-bold tracking-wider">
@@ -7867,7 +7902,7 @@ Key Establishments & Local Flavor
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v.13.3.7</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v.13.3.8</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -8161,12 +8196,12 @@ Key Establishments & Local Flavor
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.13.3.7</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.13.3.8</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
-                        <button onClick={toggleSound} 
-                                className="w-9 h-9 rounded-full bg-gray-800/80 border border-gray-700 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-lg text-white hover:text-cyan-400" 
+                        <button disabled={state?.gameOver} onClick={toggleSound}
+                                className={`w-9 h-9 rounded-full bg-gray-800/80 border border-gray-700 flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-lg text-white hover:text-cyan-400 ${state?.gameOver ? 'opacity-30 grayscale pointer-events-none' : ''}`}
                                 title="Toggle Audio">
                             {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
                         </button>
@@ -8213,37 +8248,37 @@ Key Establishments & Local Flavor
 
            <div className="flex flex-col items-stretch">
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-8 gap-1 px-1">
-                 <button onClick={()=>handleFeatureClick('shop', ()=>setModal({type:'shop', data:null}))} 
-                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-purple-600/50 ${modal.type==='shop'?'bg-purple-900/60 text-white shadow-[0_-5px_15px_rgba(147,51,234,0.3)]':'bg-purple-900/20 text-purple-300 hover:bg-purple-900/40'} font-scifi font-bold text-[11px] md:text-[13px] transition-all`}>
+                 <button disabled={state?.gameOver} onClick={()=>handleFeatureClick('shop', ()=>setModal({type:'shop', data:null}))}
+                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-purple-600/50 ${modal.type==='shop'?'bg-purple-900/60 text-white shadow-[0_-5px_15px_rgba(147,51,234,0.3)]':'bg-purple-900/20 text-purple-300 hover:bg-purple-900/40'} font-scifi font-bold text-[11px] md:text-[13px] transition-all ${state?.gameOver ? 'opacity-30 grayscale pointer-events-none' : ''}`}>
                     <Zap className="mb-1" size={14}/> Upgrades
                  </button>
-                 <button onClick={()=>handleFeatureClick('banking', ()=>setModal({type:'banking', data:null}))} 
-                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-yellow-600/50 ${modal.type==='banking'?'bg-yellow-900/60 text-white shadow-[0_-5px_15px_rgba(234,179,8,0.3)]':'bg-yellow-900/20 text-yellow-500 hover:bg-yellow-900/40'} font-scifi font-bold text-[11px] md:text-[13px] transition-all`}>
+                 <button disabled={state?.gameOver} onClick={()=>handleFeatureClick('banking', ()=>setModal({type:'banking', data:null}))}
+                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-yellow-600/50 ${modal.type==='banking'?'bg-yellow-900/60 text-white shadow-[0_-5px_15px_rgba(234,179,8,0.3)]':'bg-yellow-900/20 text-yellow-500 hover:bg-yellow-900/40'} font-scifi font-bold text-[11px] md:text-[13px] transition-all ${state?.gameOver ? 'opacity-30 grayscale pointer-events-none' : ''}`}>
                     <Building2 className="mb-1" size={14}/> I.B.A.N.K.
                     <span className={`text-[8px] flex items-center font-bold ${totalDebt > 0 ? 'text-red-500' : (totalInv > 0 ? 'text-green-500' : 'text-yellow-600')}`}>{totalDebt > 0 ? formatCompactNumber(totalDebt) : (totalInv > 0 ? formatCompactNumber(totalInv) : '')}</span>
                  </button>
-                 <button onClick={()=>{setModal({type:'none', data:null}); SFX.play('click');}} 
-                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-blue-500/50 ${modal.type==='none'?'bg-blue-900/60 text-white shadow-[0_-5px_15px_rgba(37,99,235,0.3)]':'bg-blue-900/20 text-blue-400 hover:bg-blue-900/40'} font-scifi font-bold text-[11px] md:text-[13px] transition-all`}>
+                 <button disabled={state?.gameOver} onClick={()=>{setModal({type:'none', data:null}); SFX.play('click');}}
+                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-blue-500/50 ${modal.type==='none'?'bg-blue-900/60 text-white shadow-[0_-5px_15px_rgba(37,99,235,0.3)]':'bg-blue-900/20 text-blue-400 hover:bg-blue-900/40'} font-scifi font-bold text-[11px] md:text-[13px] transition-all ${state?.gameOver ? 'opacity-30 grayscale pointer-events-none' : ''}`}>
                     <LineChart className="mb-1" size={14}/> Console
                  </button>
-                 <button onClick={()=>handleFeatureClick('fomo', ()=>setModal({type:'fomo', data:null}))} 
-                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-orange-600/50 ${modal.type==='fomo'?'bg-orange-900/60 text-white shadow-[0_-5px_15px_rgba(234,88,12,0.3)]':'bg-orange-900/20 text-orange-300 hover:bg-orange-900/40'} font-scifi font-bold text-[11px] md:text-[13px] transition-all`}>
+                 <button disabled={state?.gameOver} onClick={()=>handleFeatureClick('fomo', ()=>setModal({type:'fomo', data:null}))}
+                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-orange-600/50 ${modal.type==='fomo'?'bg-orange-900/60 text-white shadow-[0_-5px_15px_rgba(234,88,12,0.3)]':'bg-orange-900/20 text-orange-300 hover:bg-orange-900/40'} font-scifi font-bold text-[11px] md:text-[13px] transition-all ${state?.gameOver ? 'opacity-30 grayscale pointer-events-none' : ''}`}>
                     <Factory className="mb-1" size={14}/> F.O.M.O.
                  </button>
-                 <button onClick={()=>handleFeatureClick('travel', ()=>setModal({type:'travel', data:null}))} 
-                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-emerald-600/50 ${modal.type==='travel' || modal.type==='venue_intel' ?'bg-emerald-900/60 text-white shadow-[0_-5px_15px_rgba(16,185,129,0.3)]':'bg-emerald-900/20 text-emerald-300 hover:bg-emerald-900/40'} font-scifi font-bold text-[11px] md:text-[13px] transition-all`}>
+                 <button disabled={state?.gameOver} onClick={()=>handleFeatureClick('travel', ()=>setModal({type:'travel', data:null}))}
+                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-emerald-600/50 ${modal.type==='travel' || modal.type==='venue_intel' ?'bg-emerald-900/60 text-white shadow-[0_-5px_15px_rgba(16,185,129,0.3)]':'bg-emerald-900/20 text-emerald-300 hover:bg-emerald-900/40'} font-scifi font-bold text-[11px] md:text-[13px] transition-all ${state?.gameOver ? 'opacity-30 grayscale pointer-events-none' : ''}`}>
                     <Rocket className="mb-1" size={14}/> Travel
                  </button>
-                 <button onClick={()=>handleFeatureClick('shipping', ()=>setModal({type:'shipping', data:null}))} 
-                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-blue-600/50 ${modal.type==='shipping' ?'bg-blue-800/60 text-white shadow-[0_-5px_15px_rgba(37,99,235,0.3)]':'bg-blue-900/20 text-blue-300 hover:bg-blue-900/40'} font-scifi font-bold text-[11px] md:text-[13px] transition-all`}>
+                 <button disabled={state?.gameOver} onClick={()=>handleFeatureClick('shipping', ()=>setModal({type:'shipping', data:null}))}
+                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-blue-600/50 ${modal.type==='shipping' ?'bg-blue-800/60 text-white shadow-[0_-5px_15px_rgba(37,99,235,0.3)]':'bg-blue-900/20 text-blue-300 hover:bg-blue-900/40'} font-scifi font-bold text-[11px] md:text-[13px] transition-all ${state?.gameOver ? 'opacity-30 grayscale pointer-events-none' : ''}`}>
                     <Truck className="mb-1" size={14}/> Logistics
                  </button>
-                 <button onClick={()=>handleFeatureClick('comms', ()=>setModal({type:'comms', data:null}))} 
-                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-cyan-500/50 ${modal.type==='comms'?'bg-cyan-900/60 text-white shadow-[0_-5px_15px_rgba(6,182,212,0.3)]':'bg-cyan-900/20 text-cyan-300 hover:bg-cyan-900/40'} font-scifi font-bold text-[11px] md:text-[13px] transition-all`}>
+                 <button disabled={state?.gameOver} onClick={()=>handleFeatureClick('comms', ()=>setModal({type:'comms', data:null}))}
+                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-cyan-500/50 ${modal.type==='comms'?'bg-cyan-900/60 text-white shadow-[0_-5px_15px_rgba(6,182,212,0.3)]':'bg-cyan-900/20 text-cyan-300 hover:bg-cyan-900/40'} font-scifi font-bold text-[11px] md:text-[13px] transition-all ${state?.gameOver ? 'opacity-30 grayscale pointer-events-none' : ''}`}>
                     <Radio className="mb-1" size={14}/> G.I.G.O.
                  </button>
-                 <button onClick={()=>handleFeatureClick('wiki', ()=>setModal({type:'wiki', data:null}))} 
-                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-orange-600/50 ${modal.type==='wiki'?'bg-orange-800/60 text-white shadow-[0_-5px_15px_rgba(234,88,12,0.3)]':'bg-orange-900/20 text-orange-400 hover:bg-orange-800/60'} font-scifi font-bold text-[11px] md:text-[13px] transition-all`}>
+                 <button disabled={state?.gameOver} onClick={()=>handleFeatureClick('wiki', ()=>setModal({type:'wiki', data:null}))}
+                         className={`tab-btn flex flex-col items-center justify-center p-2 rounded-t-xl border-x border-t border-orange-600/50 ${modal.type==='wiki'?'bg-orange-800/60 text-white shadow-[0_-5px_15px_rgba(234,88,12,0.3)]':'bg-orange-900/20 text-orange-400 hover:bg-orange-800/60'} font-scifi font-bold text-[11px] md:text-[13px] transition-all ${state?.gameOver ? 'opacity-30 grayscale pointer-events-none' : ''}`}>
                     <BookOpen className="mb-1" size={14}/> Codex
                  </button>
               </div>
@@ -8252,30 +8287,32 @@ Key Establishments & Local Flavor
            <div id="main-console" className={`card sci-fi-box rounded-b-xl rounded-t-none p-0 flex-grow flex flex-col bg-transparent overflow-hidden min-h-0 border-t-2 border-t-blue-500/30 ${
                modal.type === 'none' || modal.type === 'comms' || modal.type === 'shipping' || modal.type === 'fomo' || modal.type === 'shop' || modal.type === 'banking' || modal.type === 'wiki' ? 'retro-terminal-background' : ''
              }`}>
-              {renderTerminalContent()}
+              <div className={`flex flex-col h-full min-h-0 flex-grow ${state?.gameOver && !['endgame', 'highscores', 'credits', 'save_prompt', 'save_confirm'].includes(modal.type) ? 'opacity-30 grayscale pointer-events-none' : ''}`}>
+                  {renderTerminalContent()}
 
-              {/*
-                G.I.G.O Live Feed Window:
-                Displays the 2 most recent messages from G.I.G.O logs right inside the main terminal console,
-                allowing remote sales and logs feedback to be viewed dynamically without modal interruptions.
-              */}
-              <div className="bg-black/80 border-t border-cyan-500/20 px-4 py-2.5 font-mono text-xs flex flex-col gap-1 shrink-0 z-40 select-none">
-                  <div className="flex justify-between items-center text-[10px] text-cyan-400 uppercase tracking-widest font-black border-b border-cyan-500/10 pb-1 mb-1">
-                      <span>G.I.G.O. Live Feed Ticker</span>
-                      <span className="animate-pulse flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>LIVE SIGNAL
-                      </span>
+                  {/*
+                    G.I.G.O Live Feed Window:
+                    Displays the 2 most recent messages from G.I.G.O logs right inside the main terminal console,
+                    allowing remote sales and logs feedback to be viewed dynamically without modal interruptions.
+                  */}
+                  <div className="bg-black/80 border-t border-cyan-500/20 px-4 py-2.5 font-mono text-xs flex flex-col gap-1 shrink-0 z-40 select-none">
+                      <div className="flex justify-between items-center text-[10px] text-cyan-400 uppercase tracking-widest font-black border-b border-cyan-500/10 pb-1 mb-1">
+                          <span>G.I.G.O. Live Feed Ticker</span>
+                          <span className="animate-pulse flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>LIVE SIGNAL
+                          </span>
+                      </div>
+                      {state.messages && state.messages.length > 0 ? (
+                          state.messages.slice(-2).reverse().map((msg) => (
+                              <div key={msg.id} className={`flex items-start overflow-hidden text-ellipsis whitespace-nowrap leading-tight ${getLogColorClass(msg.type)}`}>
+                                  <span className="opacity-40 mr-2 font-bold shrink-0">[{new Date(msg.id).toLocaleTimeString()}]</span>
+                                  <span className="truncate">{renderLogMessage(msg.message)}</span>
+                              </div>
+                          ))
+                      ) : (
+                          <div className="text-gray-600 italic">No live G.I.G.O comms signals detected.</div>
+                      )}
                   </div>
-                  {state.messages && state.messages.length > 0 ? (
-                      state.messages.slice(-2).reverse().map((msg) => (
-                          <div key={msg.id} className={`flex items-start overflow-hidden text-ellipsis whitespace-nowrap leading-tight ${getLogColorClass(msg.type)}`}>
-                              <span className="opacity-40 mr-2 font-bold shrink-0">[{new Date(msg.id).toLocaleTimeString()}]</span>
-                              <span className="truncate">{renderLogMessage(msg.message)}</span>
-                          </div>
-                      ))
-                  ) : (
-                      <div className="text-gray-600 italic">No live G.I.G.O comms signals detected.</div>
-                  )}
               </div>
            </div>
          </>
@@ -8634,7 +8671,7 @@ Key Establishments & Local Flavor
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.13.3.7</p>
+                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.13.3.8</p>
                </div>
            </div>
        )}
