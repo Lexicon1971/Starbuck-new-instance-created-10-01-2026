@@ -224,7 +224,9 @@ export const COMMODITIES: Commodity[] = [
     minPrice: 50,
     maxPrice: 2500,
     rarity: 0.8,
-    description: `The ultimate industrial backbone of interstellar construction. Containing a hyper-dense, chaotic matrix of every heavy metal known to the galaxy, it is the fundamental building block for heavy freighters, station bulkheads, and the Z@onflex Weave Mesh linings used in the Rusty Redeemer's cargo bay. Warning: Due to its extreme density, a single standard chunk weighs a crushing 5 tons—meaning your cargo struts will groan in agony the moment it touches the deck. Also makes an exceptionally expensive, floor-cracking paperweight for the captain's desk.`
+    description: `The ultimate industrial backbone of interstellar construction. Containing a hyper-dense, chaotic matrix of every heavy metal known to the galaxy, it is the fundamental building block for heavy freighters, station bulkheads, and the Z@onflex Weave Mesh linings used in the Rusty Redeemer's cargo bay. Warning: Due to its extreme density, a single standard chunk weighs a crushing 5 tons—meaning your cargo struts will groan in agony the moment it touches the deck. Also makes an exceptionally expensive, floor-cracking paperweight for the captain's desk.
+
+Demand Matrix Note: Corellia Shipyards (+44% Extreme), Giedi Plaza (+22% Extra), Acheron LV-426 (+11% High-Demand).`
   },
   {
     name: "Syntho-Zip-Cloth",
@@ -233,7 +235,9 @@ export const COMMODITIES: Commodity[] = [
     minPrice: 100,
     maxPrice: 1000,
     rarity: 0.6,
-    description: `A high-tensile textile engineered from the finest recycled polymers extracted from the bellies of deep-space marine mammals who really, really loved eating space-station plastic straws. Essential for rigging cargo nets, pressure seals, and the flexible foundation of your Z@onflex Weave Mesh cargo bay. Now proudly manufactured in our new "slightly less scratchy" grade, meaning your crew will complain marginally less during bunk time.`
+    description: `A high-tensile textile engineered from the finest recycled polymers extracted from the bellies of deep-space marine mammals who really, really loved eating space-station plastic straws. Essential for rigging cargo nets, pressure seals, and the flexible foundation of your Z@onflex Weave Mesh cargo bay. Now proudly manufactured in our new "slightly less scratchy" grade, meaning your crew will complain marginally less during bunk time.
+
+Demand Matrix Note: Deep Space 9 1/2 (+44% Extreme), Corellia Shipyards (+22% Extra), Serenity Valley (+11% High-Demand).`
   },
   {
     name: H2O_NAME,
@@ -242,11 +246,15 @@ export const COMMODITIES: Commodity[] = [
     minPrice: 5,
     maxPrice: 50,
     rarity: 0.1,
-    description: `The ultimate, irreplaceable elixir of life. Or, as the cynical old-timers in the outer rim docks call it, "water." Essential for keeping biological crew members from turning into space-dried jerky, quenching the thirst of overworked isotope hummers, and acting as the crucial chemical binding agent in everything from your Z@onflex Weave Mesh cargo bay to crafting high-demand Gummi-Pearrie-Stims (GPS). It may be common, but try flying a sector without it and see how far your stubborn hope gets you.`
+    description: `The ultimate, irreplaceable elixir of life. Or, as the cynical old-timers in the outer rim docks call it, "water." Essential for keeping biological crew members from turning into space-dried jerky, quenching the thirst of overworked isotope hummers, and acting as the crucial chemical binding agent in everything from your Z@onflex Weave Mesh cargo bay to crafting high-demand Gummi-Pearrie-Stims (GPS). It may be common, but try flying a sector without it and see how far your stubborn hope gets you.
+
+Demand Matrix Note: Serenity Valley (+44% Extreme), Acheron LV-426 (+22% Extra), Deep Space 9 1/2 (+11% High-Demand).`
   },
   { name: "Medi-Bio-Boo-Boo Packs", icon: "🩹", unitWeight: 0.01, minPrice: 400, maxPrice: 4000, rarity: 0.7, description: `Full Name: Medi-Bio-Boo-Boo Trauma & Hull-Burn Stabilization Kit
 
 Description: For when the hull holds together but you don't. Perfect for patching a leaky suit or a gaping flesh wound, whichever comes first. Contains enough synthetic skin-glue and over-the-counter painkillers to keep you functional until you reach the next port. Features our proprietary extra space-space-bandages guaranteed to stick to anything except the wound.
+
+Demand Matrix Note: Deep Space 9 1/2 (+44% Extreme), Cantina Mos Elsewhere (+22% Extra), Acheron LV-426 (+11% High-Demand).
 
 Application: Essential for field maintenance of biological crew members following combat damage, hull burns, structural depressurization, or accidental exposure to shipboard hazards.
 
@@ -258,7 +266,9 @@ Interesting Fact: If combined with 2 Nutri-Paste and 1 H2O, it creates high-pote
     minPrice: 10,
     maxPrice: 100,
     rarity: 0.1,
-    description: `The culinary cornerstone of long-haul space travel. Tastes precisely like chicken-flavored oatmeal—or perhaps oatmeal-flavored chicken, depending entirely on which way the life-support filters are currently failing. It's hard to tell, but it keeps the crew's caloric intake just above the legal definition of starvation. Crucially, it doubles as both baseline rations and a key ingredient when combined with H2O to synthesize fresh Gummi-Pearrie-Stims (GPS) via F.O.M.O. Engineering.`
+    description: `The culinary cornerstone of long-haul space travel. Tastes precisely like chicken-flavored oatmeal—or perhaps oatmeal-flavored chicken, depending entirely on which way the life-support filters are currently failing. It's hard to tell, but it keeps the crew's caloric intake just above the legal definition of starvation. Crucially, it doubles as both baseline rations and a key ingredient when combined with H2O to synthesize fresh Gummi-Pearrie-Stims (GPS) via F.O.M.O. Engineering.
+
+Demand Matrix Note: Serenity Valley (+44% Extreme), Deep Space 9 1/2 (+22% Extra), Acheron LV-426 (+11% High-Demand).`
   },
   {
     name: MESH_NAME,
@@ -267,7 +277,9 @@ Interesting Fact: If combined with 2 Nutri-Paste and 1 H2O, it creates high-pote
     minPrice: 5000,
     maxPrice: 25000,
     rarity: 0.9,
-    description: `A true marvel of modern space-faring engineering. Compounded from a responsive matrix of H2O, Syntho-Zip-Cloth, and dense Allthemantium Ore, this flexible fabric features a pseudo-biological second-skin elasticity. It can physically expand and contract to hug any cargo profile, locking down volatile payloads during phase-shifting jumps and safely stretching the boundaries of your cargo hold beyond its structural limits. Just don't ask how it breathes when the jump drive charges—some mysteries are better left sealed in the dark.`
+    description: `A true marvel of modern space-faring engineering. Compounded from a responsive matrix of H2O, Syntho-Zip-Cloth, and dense Allthemantium Ore, this flexible fabric features a pseudo-biological second-skin elasticity. It can physically expand and contract to hug any cargo profile, locking down volatile payloads during phase-shifting jumps and safely stretching the boundaries of your cargo hold beyond its structural limits. Just don't ask how it breathes when the jump drive charges—some mysteries are better left sealed in the dark.
+
+Demand Matrix Note: Corellia Shipyards (+44% Extreme), Deep Space 9 1/2 (+22% Extra), Giedi Plaza (+11% High-Demand).`
   },
   {
     name: "Gummi-Pearrie-Stims (GPS)",
@@ -278,7 +290,9 @@ Interesting Fact: If combined with 2 Nutri-Paste and 1 H2O, it creates high-pote
     rarity: 0.85,
     description: `The ultimate pharmaceutical insurance policy for the desperate trader. For when you absolutely, positively have to stay awake for three days straight while dodging Spice Bandits and managing an overheating isotope reactor. Packed with enough high-velocity adrenaline, synthetic skin-glue, and legal-gray-area stimulants to keep your heart hammering in your chest, they are in massive demand by biological colonies throughout the sector.
 
-The unique gummi-ness comes from Nutri-Paste and a pear-extract flavored elixir being poured over Medi-Bio-Boo-Boo Packs, then blended together in an industrial mixer until drinkable—putting an unmistakable, vibrant spring in your stride and helping you find your ~~pearing~~ bearing. Crafted right in your ship using a Medi-Bio-Boo-Boo Pack, 2 Nutri-Paste, H2O, and a whole lot of reckless ambition via F.O.M.O. Engineering.`
+The unique gummi-ness comes from Nutri-Paste and a pear-extract flavored elixir being poured over Medi-Bio-Boo-Boo Packs, then blended together in an industrial mixer until drinkable—putting an unmistakable, vibrant spring in your stride and helping you find your ~~pearing~~ bearing. Crafted right in your ship using a Medi-Bio-Boo-Boo Pack, 2 Nutri-Paste, H2O, and a whole lot of reckless ambition via F.O.M.O. Engineering.
+
+Demand Matrix Note: Cantina Mos Elsewhere (+44% Extreme), Deep Space 9 1/2 (+22% Extra), Acheron LV-426 (+11% High-Demand).`
   },
   {
     name: "Spacetime Tea",
@@ -287,16 +301,20 @@ The unique gummi-ness comes from Nutri-Paste and a pear-extract flavored elixir 
     minPrice: 7,
     maxPrice: 70000,
     rarity: 0.5,
-    description: `A wildly volatile, multi-dimensional brew that allows the drinker to experience all moments of their life simultaneously. You'll remember what you ate for breakfast on your eighth birthday while tasting tomorrow's disaster right now. Best not to drink the whole cup at once unless you want your consciousness scattered across three distinct quadrants of the galaxy. Highly prized by temporal scholars, stressed-out traders, and anyone looking to casually bypass a warp-drive delay.`
+    description: `A wildly volatile, multi-dimensional brew that allows the drinker to experience all moments of their life simultaneously. You'll remember what you ate for breakfast on your eighth birthday while tasting tomorrow's disaster right now. Best not to drink the whole cup at once unless you want your consciousness scattered across three distinct quadrants of the galaxy. Highly prized by temporal scholars, stressed-out traders, and anyone looking to casually bypass a warp-drive delay.
+
+Demand Matrix Note: Deep Space 9 1/2 (+44% Extreme), Centauri Prime (+22% Extra), Trantor Promenade (+11% High-Demand).`
   },
   {
-    name: "G.I.R.L (Lite) Matter",
+    name: "G.I.R.L (Lite) Plasma",
     icon: "💥",
     unitWeight: 0.5,
     minPrice: 10000,
     maxPrice: 100000,
     rarity: 0.99,
-    description: `Guaranteed Instability, Remarkably Lucrative. A profoundly illegal, sub-atomic cocktail that defies standard physics. The "Lite" version means it is only slightly less likely to spontaneously detonate and turn your cargo bay into a glowing tear in the fabric of space-time. Highly sought after by black-market research syndicates and reckless speculators willing to risk total molecular disintegration for a jaw-dropping payout at the terminal. Handle with extreme, prayerful caution.`
+    description: `Guaranteed Instability, Remarkably Lucrative (Lite) Plasma is a profoundly illegal, sub-atomic cocktail that defies standard physics. The "Lite" version means it is only slightly less likely to spontaneously detonate and turn your cargo bay into a glowing tear in the fabric of space-time. Highly sought after by black-market research syndicates and reckless speculators willing to risk total molecular disintegration for a jaw-dropping payout at the terminal. Handle with extreme, prayerful caution.
+
+Demand Matrix Note: Deep Space 9 1/2 (+44% Extreme), Trantor Promenade (+22% Extra), Giedi Plaza (+11% High-Demand).`
   },
   {
     name: "Dark Matter",
@@ -305,7 +323,9 @@ The unique gummi-ness comes from Nutri-Paste and a pear-extract flavored elixir 
     minPrice: 5000,
     maxPrice: 50000,
     rarity: 0.98,
-    description: `It's dark, it matters, and it is astronomical levels of expensive. A swirling, light-devouring anomaly contained within heavily shielded magnetic isolation flasks. What does it actually do? Don't ask, don't look directly at it without polarized visors, and definitely don't tap on the glass. Rumored to power jump drives, bend spacetime, or at the very least, make your cargo manifest look intensely intimidating to customs inspectors.`
+    description: `It's dark, it matters, and it is astronomical levels of expensive. A swirling, light-devouring anomaly contained within heavily shielded magnetic isolation flasks. What does it actually do? Don't ask, don't look directly at it without polarized visors, and definitely don't tap on the glass. Rumored to power jump drives, bend spacetime, or at the very least, make your cargo manifest look intensely intimidating to customs inspectors.
+
+Demand Matrix Note: Acheron LV-426 (+44% Extreme), Giedi Plaza (+22% Extra), High Charity (+11% High-Demand).`
   },
   {
     name: "Antimatter Rod",
