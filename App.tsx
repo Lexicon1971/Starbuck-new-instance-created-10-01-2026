@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * PROJECT: STAR BUCKS GALAXY TRADE EMPIRE 
- * VERSION: v.13.3.8
+ * VERSION: v.13.3.9
  * ============================================================================
  *
  * DEVELOPER'S NOTE: All future code changes must be accompanied by comments
@@ -975,7 +975,7 @@ export default function App() {
   const [shippingSuccessMessage, setShippingSuccessMessage] = useState<string | null>(null);
   const [cargoUpgradeQty, setCargoUpgradeQty] = useState<string>('1');
   const [fomoQty, setFomoQty] = useState<string>(''); 
-  const [fomoStimQty, setFomoStimQty] = useState<string>(''); 
+  const [fomoGpsQty, setFomoGpsQty] = useState<string>('');
   const [donateChipsQty, setDonateChipsQty] = useState<string>('');
   const [claimQuantities, setClaimQuantities] = useState<Record<string, string>>({});
   const [shippingPriorityItem, setShippingPriorityItem] = useState<string | null>(null);
@@ -1249,7 +1249,7 @@ export default function App() {
         loanTakenToday: false,
         venueTradeBans: {},
         messages: [
-          { id: 1, message: `System Init v.13.3.8 ... Welcome aboard, Captain.`, type: 'info' },
+          { id: 1, message: `System Init v.13.3.9 ... Welcome aboard, Captain.`, type: 'info' },
           { id: 2, message: `Widow's Gift Sent: ${formatCurrencyLog(30000)}. Loan secured from ${initialLoan.firmName}.`, type: 'debt' },
           { id: 3, message: `System Status: S.H.A.N.E. Online.`, type: 'info' }
         ],
@@ -1674,7 +1674,7 @@ export default function App() {
       const kitsAmt = state.cargo['Medi-Bio-Boo-Boo Packs']?.quantity || 0;
       const cashMaxAmtStims = Math.floor(state.cash / 200);
       const maxStims = Math.max(0, Math.min(h2oAmt, Math.floor(pasteAmt / 2), kitsAmt, cashMaxAmtStims));
-      setFomoStimQty(maxStims.toString());
+      setFomoGpsQty(maxStims.toString());
     }
   }, [modal.type, state]);
   // F. PERSISTENCE & TUTORIAL LOGIC
@@ -1762,7 +1762,7 @@ export default function App() {
           else if (feature === 'travel') { title = "C.A.T. Station"; text = "Chart and Travel. Check 'Risk' levels. High risk = Pirates/Hazards. Ensure you have Fuel, Cash if you want to insure your commodities in transit, and please take advantage of our \"Before you Jump\" offer of depositing 95% of your $tarBucks in the bank at 5% per day (only available if debt fee, those are the terms and they always apply).\n\nPro-Tip: Captain, fuel costs increase significantly with Phase advancement and heavy cargo loads (1 Fuel per 1000T)."; }
           else if (feature === 'shipping') { title = "Void-Ex Logistics"; text = "Take advantage of Corporate Contracts and fulfil them by shipping the goods within the term limit. Only shipped goods allowed, delivered within or before the term expires, will be accepted so long as they are the exact quantities requested. Use the Fulfil option to ensure you comply; no in-person or further correspondence is needed. \nFailure to meet these terms will result in a 3 day ban to the market associated with that request. \nWe offer high-paying rewards for those who comply. \n\nPro-Tip: Captain, if your bay is too small to hold a large load, you can always use the 'Private Shipping' to move goods to a warehouse at any venue; no one else needs to know. However, any goods left unmoved for 3 days will be sold to defray storage costs."; }
           else if (feature === 'comms') { title = "G.I.G.O. Panel"; text = "Review daily logs, market intel, and previous event reports. Garbage In, Garbage Out... usually."; }
-          else if (feature === 'fomo') { title = "F.O.M.O. Engineering Deck"; text = "Fabricate Output Management Operations. Craft valuable Z@onflex Weave Mesh and Stim-Packs from resources. Fabrication is limited to one batch per day per item type. Maximize your output!\n\nDo not ask for extra Fabrication Batch if you want to carry on living"; }
+          else if (feature === 'fomo') { title = "F.O.M.O. Engineering Deck"; text = "Fabricate Output Management Operations. Craft valuable Z@onflex Weave Mesh and Gummi-Pearrie-Stims (GPS) from resources. Fabrication is limited to one batch per day per item type. Maximize your output!\n\nDo not ask for extra Fabrication Batch if you want to carry on living"; }
           else if (feature === 'highscores') { title = "Galactic Legends Registry"; text = "Behold the titans of industry. These captains turned oxidation into empire."; }
           else if (feature === 'wiki') { title = "Sector Codex Explorer"; text = "Gain deeper insight into the lore, mechanics, and survival tactics of the StarBucks Sector. Knowledge is the most valuable cargo of all."; }
           setModal({ type: 'tutorial_popup', data: { title, text, feature, callback } });
@@ -3124,7 +3124,7 @@ export default function App() {
 
         // Sell score (higher prices on fabricated goods)
         score += market[MESH_NAME]?.price || 0;
-        score += market['Stim-Packs']?.price || 0;
+        score += market['Gummi-Pearrie-Stims (GPS)']?.price || 0;
 
         if (score > bestScore) {
             bestScore = score;
@@ -4713,7 +4713,7 @@ export default function App() {
         data: {
           name: MESH_NAME,
           quantity: q,
-          remainingName: 'Stim-Packs'
+          remainingName: 'Gummi-Pearrie-Stims (GPS)'
         }
       });
     } else {
@@ -4722,11 +4722,11 @@ export default function App() {
   };
 
   /**
-   * Fabricates Stim-Packs.
+   * Fabricates Gummi-Pearrie-Stims (GPS).
    * Calls SFX.play.
    * @param q The quantity to fabricate.
    */
-  const fabricateStimPacks = (q: number) => {
+  const fabricateGummiPearrieStims = (q: number) => {
     if (!state) return;
     const processFee = 200;
     const totalCost = q * processFee;
@@ -4749,11 +4749,11 @@ export default function App() {
     newCargo['Medi-Bio-Boo-Boo Packs'].quantity -= medKitsNeeded;
     if (newCargo['Medi-Bio-Boo-Boo Packs'].quantity <= 0) delete newCargo['Medi-Bio-Boo-Boo Packs'];
 
-    const cData = COMMODITIES.find(c => c.name === 'Stim-Packs')!;
-    const cur = newCargo['Stim-Packs'] || { quantity: 0, averageCost: 0 };
+    const cData = COMMODITIES.find(c => c.name === 'Gummi-Pearrie-Stims (GPS)')!;
+    const cur = newCargo['Gummi-Pearrie-Stims (GPS)'] || { quantity: 0, averageCost: 0 };
     const newTotal = cur.quantity + q;
     const newAvg = ((cur.quantity * cur.averageCost) + (q * 0)) / newTotal;
-    newCargo['Stim-Packs'] = { quantity: newTotal, averageCost: newAvg };
+    newCargo['Gummi-Pearrie-Stims (GPS)'] = { quantity: newTotal, averageCost: newAvg };
 
     const weightDelta = (q * cData.unitWeight) - (h2oNeeded * 1.0) - (pasteNeeded * 0.5) - (medKitsNeeded * 0.01);
 
@@ -4782,8 +4782,8 @@ export default function App() {
       };
     });
 
-    log(`FABRICATION: Used ${h2oNeeded} ${H2O_NAME}, ${pasteNeeded} ${NUTRI_PASTE_NAME}, and ${medKitsNeeded} Medi-Bio-Boo-Boo Packs to produce ${q} Stim-Packs. (Crew Unrest: ${nextUnrest}%)`, 'mining');
-    setFomoStimQty('');
+    log(`FABRICATION: Used ${h2oNeeded} ${H2O_NAME}, ${pasteNeeded} ${NUTRI_PASTE_NAME}, and ${medKitsNeeded} Medi-Bio-Boo-Boo Packs to produce ${q} Gummi-Pearrie-Stims (GPS). (Crew Unrest: ${nextUnrest}%)`, 'mining');
+    setFomoGpsQty('');
     SFX.play('success');
 
     if (mutinyTriggered) {
@@ -4802,13 +4802,13 @@ export default function App() {
       setModal({
         type: 'fabrication_prompt',
         data: {
-          name: 'Stim-Packs',
+          name: 'Gummi-Pearrie-Stims (GPS)',
           quantity: q,
           remainingName: MESH_NAME
         }
       });
     } else {
-      setModal({ type: 'fabrication_success', data: { quantity: q, name: 'Stim-Packs' } });
+      setModal({ type: 'fabrication_success', data: { quantity: q, name: 'Gummi-Pearrie-Stims (GPS)' } });
     }
   };
 
@@ -5095,7 +5095,7 @@ export default function App() {
   // This block contains the main JSX for rendering the game's UI.
 
   // Display a loading message if the game state has not yet been initialized.
-  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.13.3.8</span>...</div>;
+  if (!state) return <div className="text-center text-white p-10 font-scifi">Loading <span className="bg-yellow-400 text-black px-1">v.13.3.9</span>...</div>;
 
   // Pre-calculate some values for easier access in the JSX.
   const currentMarketLocal = state.markets[state.currentVenueIndex];
@@ -5176,7 +5176,7 @@ Maintenance & Quirks: Crew members working in the cargo hold quickly learn to re
       {
         title: "F.O.M.O. Engineering & Personnel Dynamics",
         icon: Factory,
-        content: `Core Function (Fabricate Output Management Operations): Allows captains to synthesize raw materials into high-value commodities. Z@onflex Weave Mesh is critical for cargo bay expansions, while Stim-Packs are in high demand by biological colonies throughout the sector. Don't miss out on using it each D.A.Y.
+        content: `Core Function (Fabricate Output Management Operations): Allows captains to synthesize raw materials into high-value commodities. Z@onflex Weave Mesh is critical for cargo bay expansions, while Gummi-Pearrie-Stims (GPS) are in high demand by biological colonies throughout the sector. Don't miss out on using it each D.A.Y.
 
 Operational Hazard & The Mutiny Meter: Every single fabrication batch processed through F.O.M.O. Engineering places heavy strain on the crew and the ship's ancient systems, directly increasing the Mutiny Meter. Pushing for extra batches out of pure Fear Of Missing Out will quickly drive your crew to the brink. (A stark reminder for the captain: pushing past safe limits like this is exactly how your former partner met his end).
 
@@ -5196,7 +5196,7 @@ Contract Terms & Shipping: Unlike standard cargo transfers, fulfilling a Cartel 
 
 The No-Trade & Travel Penalty: Failing to deliver the agreed-upon quantity within the designated timeframe constitutes a severe breach of trust with the cartels. To enforce discipline, a strict 3-day no-trade and no-travel ban is instantly slapped on the target star system where the failed contract was bound. During this 3-day lockout period, the system's market and storage terminals remain completely blacked out for your vessel.`
       },
-      { title: "Void-Sickness", icon: Info, content: "Hauling massive cargo loads across unmapped dark systems often induces Void-Sickness. Affected crew members report hearing the faint, chilling voices of ancient marketing executives whispering long-forgotten quarterly sales targets in their minds. It is recommended to administer high-potency Stim-Packs to any crew showing signs of auditory advertising hallucinations." },
+      { title: "Void-Sickness", icon: Info, content: "Hauling massive cargo loads across unmapped dark systems often induces Void-Sickness. Affected crew members report hearing the faint, chilling voices of ancient marketing executives whispering long-forgotten quarterly sales targets in their minds. It is recommended to administer high-potency Gummi-Pearrie-Stims (GPS) to any crew showing signs of auditory advertising hallucinations." },
       { title: "Temporal Phase Shifts", icon: Rocket, content: "Advancing through Phase 1, Phase 2, and Phase 3 is not just a commercial progression—it is a literal spatial-temporal shift. The S.H.A.N.E. network employs quantum algorithms that rewrite the physics of trade: spiking fuel costs, increasing pirate encounter frequencies, and creating highly volatile stock market dynamics." },
       { title: "Crew Mutiny & Unrest", icon: Skull, content: "Mutant crew members working on the F.O.M.O. Engineering Deck are prone to severe unrest under intensive fabrication shifts. Their mutiny status increases with every fabrication done by the team and rises as temporal phases advance. If unrest reaches 100%, they will initiate a hostile mutiny, locking control of the F.O.M.O. and Upgrades decks! Resolving a mutiny event with an appeasing payment decreases their unrest, while paying their ransom at an I.B.A.N.K. Hub fully pacifies them." },
       {
@@ -5374,13 +5374,13 @@ Key Establishments & Local Flavor
       { name: "Cantina Mos Elsewhere", desc: `Venue Data Entry: Cantina Mos Elsewhere
 •	Designation: Cantina Mos Elsewhere ("The Desert Outpost Hub")
 •	Location Coordinates: Outer Rim Dune Sea Sector (Set amidst a vast, arid desert under a multi-moon sky)
-•	Official Motto: "A wretched hive of scum and villainy. Perfect for off-the-books transactions, illegal stim smuggling, and high-interest Hutt loans."
+•	Official Motto: "A wretched hive of scum and villainy. Perfect for off-the-books transactions, illegal Gummi-Pearrie-Stims (GPS) smuggling, and high-interest Hutt loans."
 •	Station Lore & Atmosphere
 •	Cantina Mos Elsewhere is a rugged, dome-styled desert outpost standing resilient against the harsh, windswept dunes of a desolate planetary frontier. As seen in the visual logs, the compound features a prominent, multi-tiered primary structure with sweeping panoramic observation windows, complemented by low-slung dome habitations and outdoor seating areas buried in fine desert sand.
 •	The skies above are dominated by multiple planetary bodies and moons hanging low over a warm horizon, casting a stark twilight across the barren landscape. The atmosphere is thick with dust, low-frequency hums of idling repulsorcraft, and the tense, quiet paranoia of smugglers, outlaws, and bounty hunters negotiating deals far outside the reach of galactic law enforcement.
 •	Key Establishments & Local Flavor
 •	The Central Dome Lounge: The primary domed structure featuring wide-view windows overlooking the dunes. This is where independent operators gather to trade information, dodge local authorities, and negotiate off-the-books contracts.
-•	The Outer Patio Tables: Shaded outdoor seating arrangements nestled in the sand where shady brokers conduct high-interest Hutt loans and illegal stim smuggling arrangements under the watchful eyes of local sentries.
+•	The Outer Patio Tables: Shaded outdoor seating arrangements nestled in the sand where shady brokers conduct high-interest Hutt loans and illegal Gummi-Pearrie-Stims (GPS) smuggling arrangements under the watchful eyes of local sentries.
 •	The Dune-Side Annex: A smaller, connected dome outpost handling local supply storage and vehicle access, serving as the main staging point for anyone looking to slip in or out of the sector unnoticed.` },
       { name: "Centauri Prime", desc: `Venue Data Entry: Centauri Prime
 •	Designation: Centauri Prime ("The Imperial Spire")
@@ -5420,7 +5420,7 @@ Key Establishments & Local Flavor
             <BookOpen className="text-orange-500 animate-pulse" size={28} />
             <div>
               <h2 className="text-2xl font-scifi text-orange-400 uppercase tracking-widest leading-none">Sector Codex</h2>
-              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.13.3.8 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-wider">v.13.3.9 // S.H.A.N.E. DIRECTIVE ACTIVE</span>
             </div>
           </div>
           <button onClick={() => setModal({ type: 'none', data: null })} className="text-red-500 hover:text-red-400 hover:scale-110 transition-all font-bold">
@@ -5713,7 +5713,7 @@ Key Establishments & Local Flavor
                     { id: 'travel', title: "C.A.T. Station (Travel & Jump)", desc: "Chart flight paths and warp. Check lane Risk levels (High risk increases Crimson Fleet pirates and asteroid storm chances). Purchase warp transit cargo insurance. Place 95% of cash in safe 1-day CDs at 5% interest (debt-free only!).", image: catBg },
                     { id: 'shipping', title: "Void-Ex Logistics (Logistics & Contracts)", desc: "Access high-paying Corporate contracts and private logistics transfers. Corporate contracts require shipping exact commodity quantities to destination venues before the deadline. Failed contracts result in market trade bans and heavy liquidated damages fines. Private logistics allows 1-day express storage transfers to local warehouses. Warning: Unmoved warehouse stock is sold off after 3 cycles.", image: logisticBg },
                     { id: 'comms', title: "G.I.G.O. Panel (Communications)", desc: "Garbage In, Garbage Out. Access and monitor system logs, galactic volatility feeds, space-news flashcasts, and intercept signals.", image: gigoBg },
-                    { id: 'fomo', title: "F.O.M.O. Engineering Deck (Fabrication)", desc: "Craft valuable Z@onflex Weave Mesh and high-potency Stim-Packs from basic mined raw materials and cargo stock. Fabrication is restricted to one batch run per item type per cycle. Maximize your batch sizes to optimize yield!", image: fomoBg },
+                    { id: 'fomo', title: "F.O.M.O. Engineering Deck (Fabrication)", desc: "Craft valuable Z@onflex Weave Mesh and high-potency Gummi-Pearrie-Stims (GPS) from basic mined raw materials and cargo stock. Fabrication is restricted to one batch run per item type per cycle. Maximize your batch sizes to optimize yield!", image: fomoBg },
                     { id: 'highscores', title: "Galactic Legends Registry (Universal Sync)", desc: "High-resolution registry of the top 100 interstellar tycoons. Syncs real-time net-worth indexes to the Universal I.B.A.N.K. Leaderboard." },
                     { id: 'wiki', title: "Sector Codex Explorer (Wiki Systems)", desc: "Your universal repository of galactic lore, corporate compliance regulations, acronym directories, and achievement records.", image: codexBg }
                   ].map(panel => {
@@ -5789,7 +5789,7 @@ Key Establishments & Local Flavor
                       <div className="space-y-3">
                           <h1 className="text-4xl md:text-5xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                           <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                          <p className="text-gray-500 font-mono text-[10px] uppercase">v.13.3.8</p>
+                          <p className="text-gray-500 font-mono text-[10px] uppercase">v.13.3.9</p>
                       </div>
 
                       <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -5869,7 +5869,7 @@ Key Establishments & Local Flavor
                    {modal.data.feature === 'fomo' ? (
                        <div className="space-y-4">
                            <p className="text-gray-300 text-lg leading-relaxed whitespace-pre-wrap">
-                               Fabricate Output Management Operations. Craft valuable Z@onflex Weave Mesh and Stim-Packs from resources. Fabrication is limited to one batch per day per item type. Maximize your output!
+                               Fabricate Output Management Operations. Craft valuable Z@onflex Weave Mesh and Gummi-Pearrie-Stims (GPS) from resources. Fabrication is limited to one batch per day per item type. Maximize your output!
                            </p>
                            <p className="text-red-500 font-bold animate-pulse text-lg uppercase tracking-wider block">
                                Do not ask for extra Fabrication Batch if you want to carry on living
@@ -6919,7 +6919,7 @@ Key Establishments & Local Flavor
                             {/* Mutant Unrest HUD Block on the right */}
                             <div className="flex flex-col items-end gap-1.5 shrink-0">
                                 <div className="text-[10px] text-orange-600 font-mono text-right italic leading-tight uppercase opacity-70">
-                                    SYSTEM LOG: FABRICATION MATRIX v.13.3.8 ACTIVE
+                                    SYSTEM LOG: FABRICATION MATRIX v.13.3.9 ACTIVE
                                 </div>
                                 <div className="bg-slate-950/90 border border-red-500/40 p-2.5 rounded-xl w-56 font-mono text-xs shadow-[0_0_15px_rgba(239,68,68,0.15)] flex flex-col gap-1 text-left">
                                     <div className="flex justify-between items-center text-red-400 font-bold tracking-wider">
@@ -6978,8 +6978,8 @@ Key Establishments & Local Flavor
 
                             <div className="bg-slate-800/80 p-5 rounded-2xl border border-orange-500/30 flex flex-col justify-between hover:border-orange-500/60 transition-all shadow-xl min-h-[330px]">
                                 <div className="space-y-3 mb-4">
-                                    <h3 className="text-xl md:text-2xl font-bold text-white flex items-center"><Pill className="mr-3 text-orange-400"/> Stim-Packs</h3>
-                                    <p className="text-gray-400 text-sm leading-relaxed">Medical Grade adrenaline synthesizers. Highly valuable for biological trade hubs.</p>
+                                    <h3 className="text-xl md:text-2xl font-bold text-white flex items-center"><Pill className="mr-3 text-orange-400"/> Gummi-Pearrie-Stims (GPS)</h3>
+                                    <p className="text-gray-400 text-sm leading-relaxed">The ultimate pharmaceutical insurance policy for desperate traders.</p>
                                     <div className="bg-black/40 p-3 rounded-xl border border-orange-500/10 space-y-1">
                                         <div className="flex justify-between text-xs"><span className="text-gray-500 uppercase font-bold">Input A:</span><span className="text-white font-bold">1x {H2O_NAME}</span></div>
                                         <div className="flex justify-between text-xs"><span className="text-gray-500 uppercase font-bold">Input B:</span><span className="text-white font-bold">2x {NUTRI_PASTE_NAME}</span></div>
@@ -6989,16 +6989,16 @@ Key Establishments & Local Flavor
                                 </div>
                                 <div className="flex gap-3">
                                     {/* Expanded quantity input for phase 4 values (10 digits + scroll room) */}
-                                    <input type="number" placeholder="Qty" className="w-[190px] bg-gray-900 text-white text-center rounded-xl border border-gray-700 text-lg font-bold p-3" value={fomoStimQty || ''} onChange={e=>setFomoStimQty(e.target.value)} />
+                                    <input type="number" placeholder="Qty" className="w-[190px] bg-gray-900 text-white text-center rounded-xl border border-gray-700 text-lg font-bold p-3" value={fomoGpsQty || ''} onChange={e=>setFomoGpsQty(e.target.value)} />
                                     <button onClick={()=>{
                                         const h2oAmt = state.cargo[H2O_NAME]?.quantity || 0;
                                         const pasteAmt = state.cargo[NUTRI_PASTE_NAME]?.quantity || 0;
                                         const kitsAmt = state.cargo['Medi-Bio-Boo-Boo Packs']?.quantity || 0;
                                         const cashMaxAmt = Math.floor(state.cash / 200);
                                         const maxFab = Math.max(0, Math.min(h2oAmt, Math.floor(pasteAmt/2), kitsAmt, cashMaxAmt));
-                                        setFomoStimQty(maxFab.toString());
+                                        setFomoGpsQty(maxFab.toString());
                                     }} className="bg-gray-700 hover:bg-gray-600 px-4 rounded-xl text-white font-bold text-sm uppercase transition-colors">MAX</button>
-                                    <button onClick={()=>{ const qVal = parseInt(fomoStimQty); if(!isNaN(qVal) && qVal>0) fabricateStimPacks(qVal); }} disabled={state.fomoDailyUse.stims} className="flex-grow bg-orange-600 hover:bg-orange-500 disabled:bg-gray-700 text-white font-black rounded-xl text-xl shadow-lg action-btn uppercase">{state.fomoDailyUse.stims ? 'LOCKOUT' : 'SYNTHESIZE'}</button>
+                                    <button onClick={()=>{ const qVal = parseInt(fomoGpsQty); if(!isNaN(qVal) && qVal>0) fabricateGummiPearrieStims(qVal); }} disabled={state.fomoDailyUse.stims} className="flex-grow bg-orange-600 hover:bg-orange-500 disabled:bg-gray-700 text-white font-black rounded-xl text-xl shadow-lg action-btn uppercase">{state.fomoDailyUse.stims ? 'LOCKOUT' : 'SYNTHESIZE'}</button>
                                 </div>
                             </div>
                         </div>
@@ -7902,7 +7902,7 @@ Key Establishments & Local Flavor
                               <div className="space-y-3">
                                   <h1 className="text-5xl md:text-7xl font-scifi text-yellow-500 font-black tracking-widest uppercase animate-pulse">$TAR BUCKS</h1>
                                   <p className="text-cyan-400 font-mono text-sm tracking-[0.3em] uppercase font-bold">GALAXY TRADE EMPIRE</p>
-                                  <p className="text-gray-500 font-mono text-xs uppercase">v.13.3.8</p>
+                                  <p className="text-gray-500 font-mono text-xs uppercase">v.13.3.9</p>
                               </div>
 
                               <div className="border-t border-b border-gray-800 py-6 my-10 space-y-2">
@@ -8196,7 +8196,7 @@ Key Establishments & Local Flavor
               <div className="flex flex-col items-start md:w-1/4">
                  <div className="flex items-baseline space-x-2 whitespace-nowrap overflow-visible">
                     <h1 className="font-scifi text-2xl md:text-3xl font-bold text-white tracking-widest shrink-0 uppercase">$tar Bucks</h1>
-                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.13.3.8</span>
+                    <span className="text-xs text-yellow-500 font-mono bg-yellow-400/10 px-1 border border-yellow-500/20 font-bold shrink-0">v.13.3.9</span>
                     
                     <div className="flex items-center space-x-2 ml-4 border-l border-gray-700 pl-4 shrink-0 relative z-50">
                         {/* Audio Toggle */}
@@ -8671,7 +8671,7 @@ Key Establishments & Local Flavor
                   <div className="flex justify-center px-4 w-full max-w-2xl">
                     <button onClick={()=>{setModal({type:'none', data:null}); startNewGame();}} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-6 px-4 md:px-16 rounded-xl text-2xl md:text-4xl shadow-[0_0_40px_rgba(16,185,129,0.5)] action-btn border-4 border-emerald-400 uppercase tracking-widest">Board Ship</button>
                   </div>
-                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.13.3.8</p>
+                   <p className="text-gray-500 font-mono text-[10px] mt-6 uppercase tracking-[0.4em]">Neural Link Interface v.13.3.9</p>
                </div>
            </div>
        )}
