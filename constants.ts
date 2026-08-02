@@ -242,7 +242,7 @@ export const COMMODITIES: Commodity[] = [
     minPrice: 5,
     maxPrice: 50,
     rarity: 0.1,
-    description: `The ultimate, irreplaceable elixir of life. Or, as the cynical old-timers in the outer rim docks call it, "water." Essential for keeping biological crew members from turning into space-dried jerky, quenching the thirst of overworked isotope hummers, and acting as the crucial chemical binding agent in everything from your Z@onflex Weave Mesh cargo bay to crafting high-demand Stim-Packs. It may be common, but try flying a sector without it and see how far your stubborn hope gets you.`
+    description: `The ultimate, irreplaceable elixir of life. Or, as the cynical old-timers in the outer rim docks call it, "water." Essential for keeping biological crew members from turning into space-dried jerky, quenching the thirst of overworked isotope hummers, and acting as the crucial chemical binding agent in everything from your Z@onflex Weave Mesh cargo bay to crafting high-demand Gummi-Pearrie-Stims (GPS). It may be common, but try flying a sector without it and see how far your stubborn hope gets you.`
   },
   { name: "Medi-Bio-Boo-Boo Packs", icon: "🩹", unitWeight: 0.01, minPrice: 400, maxPrice: 4000, rarity: 0.7, description: `Full Name: Medi-Bio-Boo-Boo Trauma & Hull-Burn Stabilization Kit
 
@@ -250,7 +250,7 @@ Description: For when the hull holds together but you don't. Perfect for patchin
 
 Application: Essential for field maintenance of biological crew members following combat damage, hull burns, structural depressurization, or accidental exposure to shipboard hazards.
 
-Interesting Fact: If combined with 2 Nutri-Paste and 1 H2O, it creates a high-potency Stim-Pack.` },
+Interesting Fact: If combined with 2 Nutri-Paste and 1 H2O, it creates high-potency Gummi-Pearrie-Stims (GPS).` },
   {
     name: NUTRI_PASTE_NAME,
     icon: "🍲",
@@ -258,7 +258,7 @@ Interesting Fact: If combined with 2 Nutri-Paste and 1 H2O, it creates a high-po
     minPrice: 10,
     maxPrice: 100,
     rarity: 0.1,
-    description: `The culinary cornerstone of long-haul space travel. Tastes precisely like chicken-flavored oatmeal—or perhaps oatmeal-flavored chicken, depending entirely on which way the life-support filters are currently failing. It's hard to tell, but it keeps the crew's caloric intake just above the legal definition of starvation. Crucially, it doubles as both baseline rations and a key ingredient when combined with H2O to synthesize fresh Stim-Packs via F.O.M.O. Engineering.`
+    description: `The culinary cornerstone of long-haul space travel. Tastes precisely like chicken-flavored oatmeal—or perhaps oatmeal-flavored chicken, depending entirely on which way the life-support filters are currently failing. It's hard to tell, but it keeps the crew's caloric intake just above the legal definition of starvation. Crucially, it doubles as both baseline rations and a key ingredient when combined with H2O to synthesize fresh Gummi-Pearrie-Stims (GPS) via F.O.M.O. Engineering.`
   },
   {
     name: MESH_NAME,
@@ -270,13 +270,15 @@ Interesting Fact: If combined with 2 Nutri-Paste and 1 H2O, it creates a high-po
     description: `A true marvel of modern space-faring engineering. Compounded from a responsive matrix of H2O, Syntho-Zip-Cloth, and dense Allthemantium Ore, this flexible fabric features a pseudo-biological second-skin elasticity. It can physically expand and contract to hug any cargo profile, locking down volatile payloads during phase-shifting jumps and safely stretching the boundaries of your cargo hold beyond its structural limits. Just don't ask how it breathes when the jump drive charges—some mysteries are better left sealed in the dark.`
   },
   {
-    name: "Stim-Packs",
+    name: "Gummi-Pearrie-Stims (GPS)",
     icon: "💉",
     unitWeight: 0.25,
     minPrice: 5000,
     maxPrice: 15000,
     rarity: 0.85,
-    description: `The ultimate pharmaceutical insurance policy for the desperate trader. For when you absolutely, positively have to stay awake for three days straight while dodging Spice Bandits and managing an overheating isotope reactor. Packed with enough high-velocity adrenaline, synthetic skin-glue, and legal-gray-area stimulants to keep your heart hammering in your chest, they are in massive demand by biological colonies throughout the sector. Crafted right in your ship using a Medi-Bio-Boo-Boo Pack,2 Nutri-Paste, H2O, and a whole lot of reckless ambition via F.O.M.O. Engineering.`
+    description: `The ultimate pharmaceutical insurance policy for the desperate trader. For when you absolutely, positively have to stay awake for three days straight while dodging Spice Bandits and managing an overheating isotope reactor. Packed with enough high-velocity adrenaline, synthetic skin-glue, and legal-gray-area stimulants to keep your heart hammering in your chest, they are in massive demand by biological colonies throughout the sector.
+
+The unique gummi-ness comes from Nutri-Paste and a pear-extract flavored elixir being poured over Medi-Bio-Boo-Boo Packs, then blended together in an industrial mixer until drinkable—putting an unmistakable, vibrant spring in your stride and helping you find your ~~pearing~~ bearing. Crafted right in your ship using a Medi-Bio-Boo-Boo Pack, 2 Nutri-Paste, H2O, and a whole lot of reckless ambition via F.O.M.O. Engineering.`
   },
   {
     name: "Spacetime Tea",
