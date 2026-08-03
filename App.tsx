@@ -3193,6 +3193,168 @@ export default function App() {
     
     s.activeContracts = s.activeContracts.filter(c => c.status === 'active' || c.dayCompleted === s.day);
 
+    // --- ENHANCEMENT 180: SPECIAL STOCK CHECK & REPLENISHMENT ---
+    // Always check "Hummers" stock first each day and place the stock check as the first activity concerning stock at day switchover.
+    const hummersName = POWER_CELL_NAME; // "Hot Isotope Hummers"
+
+    // 1. Get initial global stocks of all commodities before any modifications
+    const initialGlobalStocks: Record<string, number> = {};
+    COMMODITIES.forEach(c => {
+        let total = 0;
+        s.markets.forEach(m => {
+            if (m && m[c.name]) {
+                total += m[c.name].quantity || 0;
+            }
+        });
+        initialGlobalStocks[c.name] = total;
+    });
+
+    // 2. CHECK HUMMERS STOCK FIRST
+    const initialHummersGlobal = initialGlobalStocks[hummersName] || 0;
+    const zeroHummersVenues: number[] = [];
+    s.markets.forEach((m, idx) => {
+        if (m && (m[hummersName]?.quantity || 0) === 0) {
+            zeroHummersVenues.push(idx);
+        }
+    });
+
+    if (zeroHummersVenues.length >= 2) {
+        if (initialHummersGlobal === 0) {
+            // Hummers fall into "issues" (global stock is 0 and 2+ venues have 0 stock).
+            // Check for the commodity with the highest global stock and use that value to replenish Hummers.
+            let highestGlobalStockVal = 0;
+            Object.entries(initialGlobalStocks).forEach(([name, val]) => {
+                if (name !== hummersName && val > highestGlobalStockVal) {
+                    highestGlobalStockVal = val;
+                }
+            });
+
+            const replenishQty = Math.max(highestGlobalStockVal, VENUES.length);
+
+            // Ensure every venue has at least 1 stock
+            s.markets.forEach(m => {
+                if (m && m[hummersName]) {
+                    m[hummersName].quantity = 1;
+                }
+            });
+
+            let remainingQty = replenishQty - VENUES.length;
+            while (remainingQty > 0) {
+                const chunk = Math.min(remainingQty, Math.ceil(replenishQty / 10));
+                const vIdx = Math.floor(Math.random() * VENUES.length);
+                if (s.markets[vIdx] && s.markets[vIdx][hummersName]) {
+                    s.markets[vIdx][hummersName].quantity += chunk;
+                }
+                remainingQty -= chunk;
+            }
+
+            report.events.push(`STOCK CONTROL: Hot Isotope Hummers fell into issues. Replenished with ${replenishQty} units (derived from highest global stock commodity) distributed across all venues.`);
+        } else {
+            // Global stock is not 0. Inject 22% of Hummers global stock amongst zero-stock venues randomly, ensuring they each get some.
+            let injectQty = Math.ceil(initialHummersGlobal * 0.22);
+            if (injectQty < zeroHummersVenues.length) {
+                injectQty = zeroHummersVenues.length;
+            }
+
+            zeroHummersVenues.forEach(vIdx => {
+                if (s.markets[vIdx] && s.markets[vIdx][hummersName]) {
+                    s.markets[vIdx][hummersName].quantity = 1;
+                }
+            });
+
+            let remainingQty = injectQty - zeroHummersVenues.length;
+            while (remainingQty > 0) {
+                const chunk = Math.min(remainingQty, Math.ceil(injectQty / 10));
+                const randIdx = Math.floor(Math.random() * zeroHummersVenues.length);
+                const vIdx = zeroHummersVenues[randIdx];
+                if (s.markets[vIdx] && s.markets[vIdx][hummersName]) {
+                    s.markets[vIdx][hummersName].quantity += chunk;
+                }
+                remainingQty -= chunk;
+            }
+
+            report.events.push(`STOCK CONTROL: Injected 22% (+${injectQty} units) of Hot Isotope Hummers global stock among ${zeroHummersVenues.length} zero-stock venues.`);
+        }
+    }
+
+    // Calculate current global stock of Hummers after its check/replenishment
+    let currentHummersGlobal = 0;
+    s.markets.forEach(m => {
+        if (m && m[hummersName]) {
+            currentHummersGlobal += m[hummersName].quantity || 0;
+        }
+    });
+
+    // 3. CHECK EVERY OTHER COMMODITY
+    COMMODITIES.forEach(c => {
+        if (c.name === hummersName) return; // Already processed Hummers
+
+        let globalCStock = 0;
+        const zeroCVenues: number[] = [];
+        s.markets.forEach((m, idx) => {
+            if (m && m[c.name]) {
+                const qty = m[c.name].quantity || 0;
+                globalCStock += qty;
+                if (qty === 0) {
+                    zeroCVenues.push(idx);
+                }
+            }
+        });
+
+        if (zeroCVenues.length >= 2) {
+            if (globalCStock === 0) {
+                // If two or more venues with 0 stock and the global stock is 0,
+                // inject stock back into that commodity using the current global value of stock for the "hummers".
+                // Ensure every venue has some stock.
+                const replenishQty = Math.max(currentHummersGlobal, VENUES.length);
+
+                s.markets.forEach(m => {
+                    if (m && m[c.name]) {
+                        m[c.name].quantity = 1;
+                    }
+                });
+
+                let remainingQty = replenishQty - VENUES.length;
+                while (remainingQty > 0) {
+                    const chunk = Math.min(remainingQty, Math.ceil(replenishQty / 10));
+                    const vIdx = Math.floor(Math.random() * VENUES.length);
+                    if (s.markets[vIdx] && s.markets[vIdx][c.name]) {
+                        s.markets[vIdx][c.name].quantity += chunk;
+                    }
+                    remainingQty -= chunk;
+                }
+
+                report.events.push(`STOCK CONTROL: ${c.name} had critical zero stock. Replenished with ${replenishQty} units (value of current Hummers global stock) distributed across all venues.`);
+            } else {
+                // If the global stock is not 0, inject 22% of Hummers global stock value amongst zero-stock venues randomly, ensuring they each get some.
+                let injectQty = Math.ceil(currentHummersGlobal * 0.22);
+                if (injectQty < zeroCVenues.length) {
+                    injectQty = zeroCVenues.length;
+                }
+
+                zeroCVenues.forEach(vIdx => {
+                    if (s.markets[vIdx] && s.markets[vIdx][c.name]) {
+                        s.markets[vIdx][c.name].quantity = 1;
+                    }
+                });
+
+                let remainingQty = injectQty - zeroCVenues.length;
+                while (remainingQty > 0) {
+                    const chunk = Math.min(remainingQty, Math.ceil(injectQty / 10));
+                    const randIdx = Math.floor(Math.random() * zeroCVenues.length);
+                    const vIdx = zeroCVenues[randIdx];
+                    if (s.markets[vIdx] && s.markets[vIdx][c.name]) {
+                        s.markets[vIdx][c.name].quantity += chunk;
+                    }
+                    remainingQty -= chunk;
+                }
+
+                report.events.push(`STOCK CONTROL: Injected 22% (+${injectQty} units) of Hot Isotope Hummers global stock value into ${c.name} among ${zeroCVenues.length} zero-stock venues.`);
+            }
+        }
+    });
+    // --------------------------------------------------------------------
+
     COMMODITIES.forEach(c => {
         let total = 0;
         s.markets.forEach(m => {
@@ -6441,9 +6603,24 @@ Demand Matrix Note: Spacetime Tea (+22% Extra).` }
                                                     >
                                                         SHIP
                                                     </button>
-                                                    {activeContract && (
-                                                        <button onClick={() => handleFulfill(activeContract)} disabled={owned.quantity < activeContract.quantity || pulsingContractId !== null} className={`w-auto px-4 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 disabled:opacity-50 text-white text-sm rounded font-bold py-1 action-btn ${pulsingContractId === activeContract.id ? 'animate-pulse' : ''}`}>FULFILL</button>
-                                                    )}
+                                                    {activeContract && (() => {
+                                                        const hasEnoughStock = owned.quantity >= activeContract.quantity;
+                                                        return (
+                                                            <button
+                                                                onClick={() => handleFulfill(activeContract)}
+                                                                disabled={!hasEnoughStock || pulsingContractId !== null}
+                                                                className={`w-auto px-4 text-white text-sm rounded font-bold py-1 action-btn transition-all ${
+                                                                    pulsingContractId === activeContract.id ? 'animate-pulse' : ''
+                                                                } ${
+                                                                    hasEnoughStock
+                                                                        ? 'bg-purple-600 hover:bg-purple-500 border border-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.75)] hover:scale-105'
+                                                                        : 'bg-purple-950/30 text-purple-400/50 border border-purple-900/50 opacity-40 hover:bg-purple-950/40 cursor-not-allowed'
+                                                                }`}
+                                                            >
+                                                                FULFILL
+                                                            </button>
+                                                        );
+                                                    })()}
                                                 </div>
                                             </div>
                                         </td>
